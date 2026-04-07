@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "138992055382",
+    "project_id": "tnt-lh",
+    "storage_bucket": "tnt-lh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:138992055382:android:34df3316ae5402a761b7f7",
+        "android_client_info": {
+          "package_name": "com.manuen.tnt_lh"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "138992055382-mqqiupgfm3qv1ihoi4e1oq2r6k65f12o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZwpsf2Uta3ElRFpxFBUHeH0UjcxNoFgU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138992055382-mqqiupgfm3qv1ihoi4e1oq2r6k65f12o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.manuen.tntLh"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
