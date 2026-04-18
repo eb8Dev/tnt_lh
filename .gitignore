@@ -46,3 +46,5 @@ app.*.map.json
 
 /copy_of_customer_controllers
 /copy_of_models
+
+./lib/onboarding/slide_to_start.dart

@@ -222,7 +222,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                   color: Colors.grey[100],
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.local_cafe, size: 20),
+                                child: const Icon(
+                                  Icons.local_cafe_rounded,
+                                  size: 20,
+                                  color: Colors.black,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -271,7 +275,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     _buildSection(
                       child: Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, size: 20),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 20,
+                            color: Colors.black,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -323,8 +331,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           children: [
                             Icon(
                               order.paymentStatus == 'paid'
-                                  ? Icons.check_circle
-                                  : Icons.info_outline,
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.info_outline_rounded,
                               size: 16,
                               color: order.paymentStatus == 'paid'
                                   ? Colors.green

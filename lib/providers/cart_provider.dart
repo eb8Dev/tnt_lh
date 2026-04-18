@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/services/cart_service.dart';
@@ -79,8 +80,35 @@ class CartNotifier extends AsyncNotifier<Cart> {
   }
 
   Future<void> clearCart({String? brand}) async {
-    await CartService.clearCart(brand: brand);
-    await fetchCart(background: true);
+    try {
+      // If the backend is returning "Catched" for the global clear, we should do a client-side sequential clear
+      // This is more reliable if the backend DELETE endpoint is broken.
+      
+      final currentCart = state.value;
+      if (currentCart == null || currentCart.items.isEmpty) return;
+
+      final itemsToClear = brand == null
+          ? currentCart.items
+          : currentCart.items.where((i) => i.brand == brand).toList();
+
+      if (itemsToClear.isEmpty) return;
+
+      // Sequential clear (Reliable fallback)
+      for (final item in itemsToClear) {
+        try {
+          await CartService.removeItem(item.id, brand: item.brand);
+        } catch (e) {
+          debugPrint("Failed to remove item ${item.id} during clear: $e");
+        }
+      }
+
+      // Final re-fetch to ensure everything is in sync
+      await fetchCart(background: true);
+      
+    } catch (e) {
+      debugPrint("CartNotifier.clearCart error: $e");
+      rethrow;
+    }
   }
 }
 

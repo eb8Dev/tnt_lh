@@ -125,7 +125,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     widget.initialMobile != null &&
                     widget.initialMobile!.isNotEmpty,
                 keyboardType: TextInputType.phone,
-                icon: Icons.phone_outlined,
+                icon: Icons.phone_android_rounded,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Mobile is required';
@@ -142,7 +142,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: "Full Name",
                 controller: _nameController,
                 hint: "John Doe",
-                icon: Icons.person_outline_rounded,
+                icon: Icons.person_rounded,
                 validator: (val) => (val == null || val.trim().isEmpty)
                     ? 'Name is required'
                     : null,
@@ -244,7 +244,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             hintStyle: GoogleFonts.poppins(color: Colors.black26, fontSize: 14),
             filled: true,
             fillColor: Colors.grey.shade50,
-            prefixIcon: Icon(icon, color: const Color(0xFFA9BCA4), size: 20),
+            prefixIcon: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,

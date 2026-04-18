@@ -35,7 +35,8 @@ class AppConfig {
       String remoteBaseUrl = remoteConfig.getString("base_url");
       if (remoteBaseUrl.isNotEmpty) {
         // Robustly ensure the base URL includes the /api suffix if expected
-        if (!remoteBaseUrl.endsWith('/api') && !remoteBaseUrl.contains('/api/')) {
+        if (!remoteBaseUrl.endsWith('/api') &&
+            !remoteBaseUrl.contains('/api/')) {
           if (remoteBaseUrl.endsWith('/')) {
             remoteBaseUrl = '${remoteBaseUrl}api';
           } else {
@@ -55,10 +56,10 @@ class AppConfig {
     String path, {
     String? brand,
     Map<String, dynamic>? queryParameters,
+    bool includeBrandSegment = true,
   }) {
-    final brandSegment = brand ?? defaultBrand;
     final formattedPath = path.startsWith('/') ? path : '/$path';
-    
+
     // Normalize baseUrl - remove trailing slash if present
     String normalizedBase = baseUrl;
     if (normalizedBase.endsWith('/')) {
@@ -73,6 +74,15 @@ class AppConfig {
       );
     }
 
+    if (!includeBrandSegment) {
+      return Uri.parse('$normalizedBase$formattedPath').replace(
+        queryParameters: queryParameters?.map(
+          (k, v) => MapEntry(k, v.toString()),
+        ),
+      );
+    }
+
+    final brandSegment = brand ?? defaultBrand;
     return Uri.parse('$normalizedBase/$brandSegment$formattedPath').replace(
       queryParameters: queryParameters?.map(
         (k, v) => MapEntry(k, v.toString()),

@@ -4,12 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
-import 'package:tnt_lh/screens/bakery/bakery_home.dart';
-import 'package:tnt_lh/screens/cafe/cafe_home.dart';
+import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
 import 'package:tnt_lh/services/auth_service.dart';
 import 'package:tnt_lh/services/order_service.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
+import 'package:tnt_lh/widgets/tactile_button.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final Cart cart;
@@ -100,9 +100,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
 
       if (result['success'] == true) {
-        // Backend handles clearing the cart for global checkout.
-        // For store-wise checkout, we need to remove items manually since /customer/orders
-        // doesn't clear the cart by default.
         if (!_isGlobal) {
           for (var item in widget.cart.items) {
             try {
@@ -145,10 +142,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: Text(
           "Order Placed!",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -161,31 +159,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
             ),
             if (isMultiOrder) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               ...orders.map(
                 (o) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Text(
-                    "• ${o['brand'] == 'teasntrees' ? 'Cafe' : 'Bakery'}: #${o['orderNumber']}",
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFFA9BCA4),
-                    ),
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: o['brand'] == 'teasntrees' 
+                              ? const Color(0xFF57733C) 
+                              : const Color(0xFF8C3414),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "${o['brand'] == 'teasntrees' ? 'Cafe' : 'Bakery'}: #${o['orderNumber']}",
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-            ] else if (_isGlobal &&
-                !isMultiOrder &&
-                orders != null &&
-                orders.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                "Order Number: #${orders[0]['orderNumber']}",
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFA9BCA4),
                 ),
               ),
             ],
@@ -198,9 +198,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ref.read(brandProvider) == 'teasntrees'
-                      ? const CafeHome(initialIndex: 3)
-                      : const BakeryHome(initialIndex: 3),
+                  builder: (_) => const StoreHomeScreen(initialIndex: 3),
                 ),
                 (route) => false,
               );
@@ -209,12 +207,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               "My Orders",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
-                color: Colors.black54,
+                color: Colors.black45,
               ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
+          TactileButton(
+            onTap: () {
               Navigator.pop(ctx);
               if (orderId.isNotEmpty) {
                 Navigator.pushAndRemoveUntil(
@@ -231,24 +229,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ref.read(brandProvider) == 'teasntrees'
-                        ? const CafeHome(initialIndex: 3)
-                        : const BakeryHome(initialIndex: 3),
+                    builder: (_) => const StoreHomeScreen(initialIndex: 3),
                   ),
                   (route) => false,
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(14),
               ),
-            ),
-            child: Text(
-              "Track Order",
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              child: Text(
+                "Track Order",
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
             ),
           ),
         ],
@@ -263,18 +259,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final total = subtotal + _deliveryCharge + tax;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         title: Text(
-          _isGlobal ? "Checkout All" : "Checkout Store Wise",
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
+          _isGlobal ? "Checkout All" : "Checkout Store",
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.black87,
+                fontSize: 20,
+              ),
         ),
       ),
       body: SafeArea(
@@ -287,29 +283,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 if (_isGlobal && widget.cart.itemCount > 0)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 24),
-                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 32),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFA9BCA4).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: const Color(0xFFA9BCA4).withValues(alpha: 0.2),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.shopping_bag_outlined,
-                          color: Color(0xFFA9BCA4),
+                        Icon(
+                          Icons.shopping_bag_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 28,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Text(
-                            "You are placing orders for all items in your bags from both stores.",
+                            "We'll separate your orders for each brand to ensure the best experience.",
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: Colors.black87,
                               fontWeight: FontWeight.w500,
+                              height: 1.4,
                             ),
                           ),
                         ),
@@ -318,43 +316,50 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
 
                 _buildSectionTitle("Delivery Address"),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _addressController,
                   maxLines: 3,
                   style: GoogleFonts.poppins(fontSize: 14),
                   decoration: _inputDecoration(
-                    "Enter your full delivery address",
+                    "Where should we deliver?",
                   ),
                   validator: (val) =>
                       val!.isEmpty ? "Address is required" : null,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 36),
 
-                _buildSectionTitle("Delivery Instructions"),
-                const SizedBox(height: 12),
+                _buildSectionTitle("Special Instructions"),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _instructionsController,
                   style: GoogleFonts.poppins(fontSize: 14),
                   decoration: _inputDecoration(
-                    "e.g. Ring the bell, leave at gate...",
+                    "e.g. Ring the bell, leave at the gate...",
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 36),
 
                 _buildSectionTitle("Payment Method"),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.grey.shade100),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
                   ),
                   child: Column(
                     children: [
-                      RadioListTile(
+                      RadioListTile<String>(
                         value: "COD",
                         groupValue: _paymentMethod,
                         onChanged: (val) =>
@@ -368,17 +373,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                         subtitle: Text(
                           "Pay when your order arrives",
-                          style: GoogleFonts.poppins(fontSize: 12),
+                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.black38),
                         ),
-                        activeColor: const Color(0xFFA9BCA4),
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       ),
-                      Divider(
-                        height: 1,
-                        indent: 20,
-                        endIndent: 20,
-                        color: Colors.grey.shade200,
-                      ),
-                      RadioListTile(
+                      const Divider(height: 1, indent: 20, endIndent: 20, color: Color(0xFFF0F0F0)),
+                      RadioListTile<String>(
                         value: "Online",
                         groupValue: _paymentMethod,
                         onChanged: (val) {
@@ -396,9 +397,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                         subtitle: Text(
                           "UPI, Cards, Netbanking",
-                          style: GoogleFonts.poppins(fontSize: 12),
+                          style: GoogleFonts.poppins(fontSize: 12, color: Colors.black38),
                         ),
-                        activeColor: const Color(0xFFA9BCA4),
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       ),
                     ],
                   ),
@@ -408,11 +410,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 // Summary
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade100),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
                   ),
                   child: Column(
                     children: [
@@ -420,19 +429,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         "Item Total",
                         "₹${subtotal.toStringAsFixed(2)}",
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       _buildSummaryRow(
                         "Delivery Fee",
                         "₹${_deliveryCharge.toStringAsFixed(2)}",
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       _buildSummaryRow(
                         "GST ($_gstRate%)",
                         "₹${tax.toStringAsFixed(2)}",
                       ),
                       const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Divider(color: Colors.black12),
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Divider(color: Color(0xFFF0F0F0)),
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -442,14 +451,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
+                              color: Colors.black87,
                             ),
                           ),
                           Text(
                             "₹${total.toStringAsFixed(2)}",
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                              color: const Color(0xFFA9BCA4),
+                              fontSize: 24,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ],
@@ -458,40 +468,45 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 48),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _placeOrder,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      elevation: 0,
+                TactileButton(
+                  onTap: _isLoading ? null : _placeOrder,
+                  child: Container(
+                    width: double.infinity,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
+                    alignment: Alignment.center,
                     child: _isLoading
                         ? const SizedBox(
                             height: 24,
                             width: 24,
                             child: CircularProgressIndicator(
                               color: Colors.white,
-                              strokeWidth: 2,
+                              strokeWidth: 2.5,
                             ),
                           )
                         : Text(
-                            _isGlobal ? "Place All Orders" : "Place Order",
+                            _isGlobal ? "Place All Orders" : "Confirm Order",
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 17,
+                              color: Colors.white,
                             ),
                           ),
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 60),
               ],
             ),
           ),
@@ -503,25 +518,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.poppins(
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
-        color: Colors.black87,
-      ),
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            color: Colors.black87,
+          ),
     );
   }
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.black26),
+      hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.black26),
       filled: true,
-      fillColor: Colors.grey.shade50,
+      fillColor: Colors.white,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
       ),
-      contentPadding: const EdgeInsets.all(16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
     );
   }
 
@@ -533,15 +556,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: Colors.black54,
+            color: Colors.black45,
             fontWeight: FontWeight.w500,
           ),
         ),
         Text(
           amount,
           style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Colors.black,
+            fontSize: 15,
+            color: Colors.black87,
             fontWeight: FontWeight.w600,
           ),
         ),

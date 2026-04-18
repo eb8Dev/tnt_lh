@@ -311,7 +311,9 @@ class AuthService {
           },
           body: jsonEncode({'refreshToken': refreshToken}),
         );
-      } catch (e) {}
+      } catch (e) {
+        // Ignore errors during remote logout/revocation
+      }
     }
 
     await firebase_auth.FirebaseAuth.instance.signOut();

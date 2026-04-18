@@ -31,12 +31,13 @@ class WishlistScreen extends ConsumerWidget {
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,
+            size: 24.0,
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: wishlistAsync.when(
-        loading: () => const Center(child: HouseOfFlavorsLoader(size: 80)),
+        loading: () => const Center(child: HouseOfFlavorsLoader(size: 160)),
         error: (err, _) =>
             Center(child: Text("Error: $err", style: GoogleFonts.poppins())),
         data: (items) {
@@ -52,7 +53,7 @@ class WishlistScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.favorite_border_rounded,
+                      Icons.favorite_rounded,
                       size: 80,
                       color: Colors.grey.shade300,
                     ),
@@ -163,8 +164,8 @@ class WishlistScreen extends ConsumerWidget {
                           : Center(
                               child: Icon(
                                 product.brand == 'littleh'
-                                    ? Icons.cake
-                                    : Icons.local_cafe,
+                                    ? Icons.cake_rounded
+                                    : Icons.local_cafe_rounded,
                                 size: 40,
                                 color: Colors.grey.shade200,
                               ),
@@ -218,7 +219,7 @@ class WishlistScreen extends ConsumerWidget {
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
-                          color: const Color(0xFFA9BCA4),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       Container(
@@ -227,7 +228,7 @@ class WishlistScreen extends ConsumerWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFA9BCA4).withValues(alpha: 0.1),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -235,7 +236,7 @@ class WishlistScreen extends ConsumerWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 8,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFFA9BCA4),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),

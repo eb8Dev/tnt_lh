@@ -286,7 +286,11 @@ class _AnimatedArrowsState extends State<AnimatedArrows>
           opacity: animation.value,
           child: Transform.translate(
             offset: Offset(animation.value * 6, 0),
-            child: Icon(Icons.arrow_forward, size: size, color: widget.color),
+            child: Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: size,
+              color: widget.color,
+            ),
           ),
         );
       },

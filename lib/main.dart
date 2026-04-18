@@ -9,17 +9,68 @@ import 'package:tnt_lh/onboarding/otp_verify.dart';
 import 'package:tnt_lh/onboarding/register_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
-import 'package:tnt_lh/screens/bakery/bakery_home.dart';
-import 'package:tnt_lh/screens/cafe/cafe_home.dart';
-import 'package:tnt_lh/screens/store_selection_screen.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:tnt_lh/providers/brand_provider.dart';
+import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/loading_indicator.dart';
 import 'package:tnt_lh/core/config.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("Handling a background message: ${message.messageId}");
 }
+
+// ...
+// Define brand-specific themes
+final ThemeData teasNTreesTheme = ThemeData(
+  useMaterial3: true,
+  scaffoldBackgroundColor: const Color(0xFFFCFBF4),
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const Color(0xFF57733C), // Dark Green
+    primary: const Color(0xFF57733C),
+    onPrimary: const Color(0xFFF2F2F2),
+    secondary: const Color(0xFFA5BF45),
+    onSecondary: Colors.black,
+    tertiary: const Color(0xFF8FA63F),
+    onTertiary: Colors.black,
+    surface: const Color(0xFFFCFBF4),
+    onSurface: Colors.black,
+  ),
+  textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+    displayLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    displayMedium: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    displaySmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    headlineLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    headlineMedium: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    headlineSmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    titleLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w600),
+  ),
+);
+
+final ThemeData littleHTheme = ThemeData(
+  useMaterial3: true,
+  scaffoldBackgroundColor: const Color(0xFFFCFBF4),
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const Color(0xFFF2F0D5), // Cream/Light Yellow
+    primary: const Color(0xFF8C3414), // Dark Brown/Red
+    onPrimary: const Color(0xFFF2F0D5),
+    secondary: const Color(0xFFD96F66), // Coral/Orange-Red
+    onSecondary: Colors.white,
+    tertiary: const Color(0xFFF2E4DC), // Light Peach/Pink
+    onTertiary: Colors.black,
+    surface: const Color(0xFFFCFBF4),
+    onSurface: Colors.black,
+  ),
+  textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+    displayLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    displayMedium: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    displaySmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    headlineLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    headlineMedium: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    headlineSmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
+    titleLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w600),
+  ),
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +80,6 @@ void main() async {
   await AppConfig.initializeRemoteConfig();
 
   // FCM Setup
-
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   await messaging.requestPermission(alert: true, badge: true, sound: true);
 
@@ -44,14 +94,13 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.read(socketManagerProvider);
+    final brand = ref.watch(brandProvider);
+    final theme = brand == 'teasntrees' ? teasNTreesTheme : littleHTheme;
 
     return MaterialApp(
       title: 'Teas n Trees & Little H',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-      ),
+      theme: theme,
       builder: (context, child) => GlobalListener(child: child!),
       home: const AuthWrapper(),
     );
@@ -89,7 +138,6 @@ class AuthWrapper extends ConsumerStatefulWidget {
 }
 
 class _AuthWrapperState extends ConsumerState<AuthWrapper> {
-  String? _lastStore;
   bool _checkedStore = false;
 
   @override
@@ -99,8 +147,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   }
 
   Future<void> _checkStorePref() async {
-    const storage = FlutterSecureStorage();
-    _lastStore = await storage.read(key: 'last_visited_store');
+    // brandProvider already handles initialization from storage
     if (mounted) {
       setState(() => _checkedStore = true);
     }
@@ -110,22 +157,18 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Only show full screen loader on initial app start or during login/registration redirect
-    // Don't show it if we are already authenticated and just updating profile (isLoading will be true then)
-    if ((authState.isLoading && !authState.isAuthenticated && !authState.requiresRegistration) || !_checkedStore) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF7E9DE),
-        body: Center(child: HouseOfFlavorsLoader(size: 80)),
+    if ((authState.isLoading &&
+            !authState.isAuthenticated &&
+            !authState.requiresRegistration) ||
+        !_checkedStore) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: const Center(child: HouseOfFlavorsLoader(size: 160)),
       );
     }
 
     if (authState.isAuthenticated) {
-      if (_lastStore == 'cafe') {
-        return const CafeHome();
-      } else if (_lastStore == 'bakery') {
-        return const BakeryHome();
-      }
-      return const StoreSelectionScreen();
+      return const StoreHomeScreen();
     }
 
     if (authState.requiresRegistration) {
@@ -147,7 +190,6 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
       );
     }
 
-    // Handle Auth Error State (e.g. Firebase Logged in but Backend Failed)
     if (authState.firebaseUser != null && authState.error != null) {
       return Scaffold(
         body: Center(

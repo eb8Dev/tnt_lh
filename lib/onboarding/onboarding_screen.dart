@@ -23,19 +23,18 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen>
-    with TickerProviderStateMixin {
-  late final PageController _controller;
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final PageController _pageController = PageController();
   double _page = 0;
 
-  final List<_OnboardData> _pages = const [
-    _OnboardData(
+  List<_OnboardData> get _pages => [
+    const _OnboardData(
       title: "Teas n Trees Cafe",
       description: "Fresh brews, calm vibes, and nature-inspired teas.",
       image: "assets/images/teas_n_trees_no_bg.png",
       gradient: [Color(0xFFFDFFDC), Color(0xFFEAF4C8)],
     ),
-    _OnboardData(
+    const _OnboardData(
       title: "Cafe Experience",
       description: "A peaceful place to sip, relax, and reconnect.",
       image: "assets/images/teas_n_trees_no_bg.png",
@@ -45,9 +44,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       title: "Little H Bakery",
       description: "Freshly baked happiness made with love.",
       image: "assets/images/little_h_logo_no_bg.png",
-      gradient: [Color(0xFFF7E9DE), Color(0xFFF3D4C2)],
+      gradient: [Theme.of(context).colorScheme.surface, const Color(0xFFF3D4C2)],
     ),
-    _OnboardData(
+    const _OnboardData(
       title: "Sweet Moments",
       description: "Desserts that make every moment special.",
       image: "assets/images/little_h_logo_no_bg.png",
@@ -58,40 +57,48 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   void initState() {
     super.initState();
-    _controller = PageController()
-      ..addListener(() {
-        setState(() => _page = _controller.page ?? 0);
-      });
+    _pageController.addListener(() {
+      setState(() => _page = _pageController.page ?? 0);
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
-  }
-
-  void _next() {
-    if (_page.round() == _pages.length - 1) {
-      widget.onGetStarted();
-    } else {
-      _controller.nextPage(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOutCubic,
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLast = _page.round() == _pages.length - 1;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Stack(
         children: [
+          // Dynamic Background
+          ..._pages.asMap().entries.map((entry) {
+            final index = entry.key;
+            final data = entry.value;
+            final opacity = (1 - (_page - index).abs()).clamp(0.0, 1.0);
+
+            return Opacity(
+              opacity: opacity,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: data.gradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          // Content
           PageView.builder(
-            controller: _controller,
+            controller: _pageController,
             itemCount: _pages.length,
-            physics: const BouncingScrollPhysics(),
             itemBuilder: (_, i) {
               final progress = (_page - i).abs();
               final scale = 1 - (progress * 0.1).clamp(0.0, 0.2);
@@ -101,72 +108,101 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 scale: scale,
                 child: Opacity(
                   opacity: opacity,
-                  child: _OnboardingPage(
-                    data: _pages[i],
-                    pageOffset: _page - i,
+                  child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          _pages[i].image,
+                          height: size.height * 0.35,
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 60),
+                        Text(
+                          _pages[i].title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          _pages[i].description,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
             },
           ),
+
+          // Bottom Bar
           Positioned(
-            top: 50,
-            right: 24,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: TextButton(
-                  onPressed: widget.onGetStarted,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    backgroundColor: Colors.white.withValues(alpha: 0.25),
-                  ),
-                  child: const Text(
-                    "Skip",
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            left: 24,
-            right: 24,
+            bottom: 60,
+            left: 0,
+            right: 0,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                _ProgressBar(progress: (_page + 1) / _pages.length),
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _next,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 6,
-                    ),
-                    child: Text(
-                      isLast ? "Enter Experience" : "Continue",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
+                // Indicators
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _pages.length,
+                    (index) => _buildIndicator(index),
                   ),
                 ),
+                const SizedBox(height: 40),
+
+                // Button
+                if (_page.round() == _pages.length - 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton(
+                        onPressed: widget.onGetStarted,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          "Get Started",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  IconButton(
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.black,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -174,86 +210,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
     );
   }
-}
 
-class _OnboardingPage extends StatelessWidget {
-  final _OnboardData data;
-  final double pageOffset;
-
-  const _OnboardingPage({required this.data, required this.pageOffset});
-
-  @override
-  Widget build(BuildContext context) {
-    final imageTranslate = pageOffset * 40;
-
+  Widget _buildIndicator(int index) {
+    final progress = (1 - (_page - index).abs()).clamp(0.0, 1.0);
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      height: 8,
+      width: 8 + (16 * progress),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: data.gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Transform.translate(
-                offset: Offset(imageTranslate, 0),
-                child: Image.asset(data.image, height: 230),
-              ),
-              const SizedBox(height: 60),
-              Text(
-                data.title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: .5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                data.description,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  height: 1.5,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProgressBar extends StatelessWidget {
-  final double progress;
-
-  const _ProgressBar({required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 6,
-      decoration: BoxDecoration(
-        color: Colors.black12,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-          width: MediaQuery.of(context).size.width * progress,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
+        color: index == _page.round() ? Colors.black : Colors.black26,
+        borderRadius: BorderRadius.circular(4),
       ),
     );
   }

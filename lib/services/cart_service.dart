@@ -21,9 +21,11 @@ class CartService {
       final response = await http.get(url, headers: headers);
 
       final dynamic data = jsonDecode(response.body);
-      
+
       if (data is String) {
-        debugPrint("API Error: getCart returned a String instead of Map: $data");
+        debugPrint(
+          "API Error: getCart returned a String instead of Map: $data",
+        );
         return {
           'success': false,
           'message': data,
@@ -124,18 +126,37 @@ class CartService {
   }
 
   static Future<void> clearCart({String? brand}) async {
-    final url = AppConfig.buildUrl('/customer/cart', brand: brand);
+    // Backend requires a brand identifier in the URL even for global cart operations
+    final targetBrand = brand ?? AppConfig.defaultBrand;
+    final url = AppConfig.buildUrl('/customer/cart', brand: targetBrand);
+    
+    debugPrint("CartService.clearCart: calling DELETE $url");
     try {
       final headers = await _getHeaders();
       final response = await http.delete(url, headers: headers);
 
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200) {
+      debugPrint(
+        "CartService.clearCart: response status: ${response.statusCode}",
+      );
+      debugPrint("CartService.clearCart: response body: ${response.body}");
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 204 ||
+          response.statusCode == 404) {
+        // Handle suspicious 'Catched' response or failure flags
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['success'] == false || data['message'] == 'Catched') {
+            throw data['message'] ?? 'Failed to clear cart (Server error)';
+          }
+        }
         return;
       } else {
+        final data = jsonDecode(response.body);
         throw data['message'] ?? 'Failed to clear cart';
       }
     } catch (e) {
+      debugPrint("CartService.clearCart error: $e");
       rethrow;
     }
   }

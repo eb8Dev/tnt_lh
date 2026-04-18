@@ -6,10 +6,10 @@ class HomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<HomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
@@ -23,12 +23,11 @@ class _MyHomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-
         title: Text(widget.title),
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('You have pushed the button this many times:'),
             Text(
@@ -41,7 +40,10 @@ class _MyHomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        child: const Icon(
+          Icons.add_rounded,
+          color: Colors.white,
+        ),
       ),
     );
   }

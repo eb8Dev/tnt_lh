@@ -151,6 +151,13 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 10),Text(
+  "We'll save your preferences now and use them to reach you in future updates.",
+  style: TextStyle(
+    color: Colors.black.withValues(alpha: 0.5), // 50% opacity
+  ),
+),
+                  const SizedBox(height: 10),
                   const SizedBox(height: 20),
                   _buildPreferenceTile(
                     title: "Push Notifications",
@@ -197,7 +204,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
         style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
       ),
       value: value,
-      activeThumbColor: const Color(0xFFA9BCA4),
+      activeThumbColor: Theme.of(context).colorScheme.primary,
       onChanged: onChanged,
       contentPadding: EdgeInsets.zero,
     );
@@ -350,7 +357,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     if (authState.isLoading && user == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: Center(child: HouseOfFlavorsLoader(size: 80)),
+        body: Center(child: HouseOfFlavorsLoader(size: 160)),
       );
     }
 
@@ -371,8 +378,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              _isEditing ? Icons.close_rounded : Icons.edit_outlined,
+              _isEditing ? Icons.close_rounded : Icons.edit_rounded,
               color: _isEditing ? Colors.red : Colors.black54,
+              size: 24,
             ),
             onPressed: () {
               setState(() {
@@ -404,7 +412,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFFA9BCA4).withValues(alpha: 0.3),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
@@ -416,7 +424,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                             : null,
                         child: user?.profileImage == null
                             ? const Icon(
-                                Icons.person_outline_rounded,
+                                Icons.person_rounded,
                                 size: 50,
                                 color: Colors.black26,
                               )
@@ -468,7 +476,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
               _buildInputField(
                 label: "Full Name",
                 controller: _nameController,
-                icon: Icons.person_outline_rounded,
+                icon: Icons.person_rounded,
                 enabled: _isEditing,
                 validator: (val) => val!.isEmpty ? 'Name is required' : null,
               ),
@@ -546,7 +554,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                     const SizedBox(height: 12),
                     _buildMenuTile(
                       title: "Privacy Policy",
-                      icon: Icons.privacy_tip_rounded,
+                      icon: Icons.security_rounded,
                       onTap: _launchPrivacyPolicy,
                     ),
                     const SizedBox(height: 32),
@@ -615,7 +623,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
             label,
             prefixIcon: Icon(
               icon,
-              color: enabled ? const Color(0xFFA9BCA4) : Colors.black26,
+              color: enabled ? Theme.of(context).colorScheme.primary : Colors.black26,
+              size: 20,
             ),
             enabled: enabled,
           ),
@@ -646,7 +655,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFA9BCA4), width: 1.5),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -691,7 +700,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.black26),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.black26, size: 20),
           ],
         ),
       ),

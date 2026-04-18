@@ -46,7 +46,7 @@ class SnackBarUtils {
         ),
         backgroundColor: isError
             ? Colors.redAccent.shade400
-            : const Color(0xFFA9BCA4),
+            : Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(20),
