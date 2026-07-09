@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
@@ -78,7 +79,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,
           ),
@@ -90,12 +91,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.w600,
-            fontSize: 18,
+            fontSize: 18.sp,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(30.0),
+        padding: EdgeInsets.all(30.0.r),
         child: Form(
           key: _formKey,
           child: Column(
@@ -104,18 +105,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Text(
                 "Welcome to the Family",
                 style: GoogleFonts.poppins(
-                  fontSize: 28,
+                  fontSize: 28.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Text(
                 "Complete your profile to get the most of your premium experience.",
-                style: GoogleFonts.poppins(fontSize: 15, color: Colors.black54),
+                style: GoogleFonts.poppins(fontSize: 15.sp, color: Colors.black54),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40.h),
 
               _buildInputField(
                 label: "Mobile Number",
@@ -136,7 +137,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
 
               _buildInputField(
                 label: "Full Name",
@@ -147,7 +148,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ? 'Name is required'
                     : null,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
 
               _buildInputField(
                 label: "Email Address",
@@ -165,7 +166,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
 
               _buildInputField(
                 label: "Delivery Address",
@@ -177,33 +178,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ? 'Address is required'
                     : null,
               ),
-              const SizedBox(height: 48),
+              SizedBox(height: 48.h),
 
               SizedBox(
                 width: double.infinity,
-                height: 58,
+                height: 58.h,
                 child: ElevatedButton(
                   onPressed: isLoading ? null : _completeProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18.r),
                     ),
                     elevation: 0,
                   ),
                   child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: Colors.white)
                       : Text(
                           "Continue to Experience",
                           style: GoogleFonts.poppins(
-                            fontSize: 16,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),
               ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40.h),
             ],
           ),
         ),
@@ -227,33 +228,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10.h),
         TextFormField(
           controller: controller,
           readOnly: readOnly,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500),
+          style: GoogleFonts.poppins(fontSize: 15.sp, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(color: Colors.black26, fontSize: 14),
+            hintStyle: GoogleFonts.poppins(color: Colors.black26, fontSize: 14.sp),
             filled: true,
             fillColor: Colors.grey.shade50,
             prefixIcon: Icon(
               icon,
               color: Theme.of(context).colorScheme.primary,
-              size: 20,
+              size: 20.sp,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16.r),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.all(18),
+            contentPadding: EdgeInsets.all(18.r),
           ),
           validator: validator,
         ),

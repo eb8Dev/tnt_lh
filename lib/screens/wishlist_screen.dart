@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/product_model.dart';
@@ -24,20 +25,20 @@ class WishlistScreen extends ConsumerWidget {
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.w600,
-            fontSize: 18,
+            fontSize: 18.sp,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,
-            size: 24.0,
+            size: 24.0.sp,
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: wishlistAsync.when(
-        loading: () => const Center(child: HouseOfFlavorsLoader(size: 160)),
+        loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
         error: (err, _) =>
             Center(child: Text("Error: $err", style: GoogleFonts.poppins())),
         data: (items) {
@@ -47,32 +48,32 @@ class WishlistScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(30),
+                    padding: EdgeInsets.all(30.r),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.favorite_rounded,
-                      size: 80,
+                      size: 80.sp,
                       color: Colors.grey.shade300,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   Text(
                     "No favorites yet",
                     style: GoogleFonts.poppins(
-                      fontSize: 20,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     "Tap the heart on any item to save it for later.",
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: Colors.black45,
                     ),
                   ),
@@ -82,8 +83,8 @@ class WishlistScreen extends ConsumerWidget {
           }
 
           return GridView.builder(
-            padding: const EdgeInsets.all(20),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            padding: EdgeInsets.all(20.r),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 20,
@@ -131,13 +132,13 @@ class WishlistScreen extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.r),
           border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 15,
-              offset: const Offset(0, 5),
+              offset: Offset(0, 5),
             ),
           ],
         ),
@@ -151,13 +152,13 @@ class WishlistScreen extends ConsumerWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade50,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24.r),
                       ),
                     ),
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24.r),
                       ),
                       child: product.image != null && product.image!.isNotEmpty
                           ? Image.network(product.image!, fit: BoxFit.cover)
@@ -166,7 +167,7 @@ class WishlistScreen extends ConsumerWidget {
                                 product.brand == 'littleh'
                                     ? Icons.cake_rounded
                                     : Icons.local_cafe_rounded,
-                                size: 40,
+                                size: 40.sp,
                                 color: Colors.grey.shade200,
                               ),
                             ),
@@ -180,14 +181,14 @@ class WishlistScreen extends ConsumerWidget {
                           .read(wishlistProvider.notifier)
                           .toggleFavorite(product),
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: EdgeInsets.all(6.r),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.favorite_rounded,
-                          size: 18,
+                          size: 18.sp,
                           color: Colors.redAccent,
                         ),
                       ),
@@ -197,7 +198,7 @@ class WishlistScreen extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: EdgeInsets.all(12.0.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -207,10 +208,10 @@ class WishlistScreen extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 14.sp,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -218,23 +219,23 @@ class WishlistScreen extends ConsumerWidget {
                         "₹${product.displayPrice}",
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                          fontSize: 15.sp,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 2.h,
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
                           product.brand == 'littleh' ? "BAKERY" : "CAFE",
                           style: GoogleFonts.poppins(
-                            fontSize: 8,
+                            fontSize: 8.sp,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
                           ),

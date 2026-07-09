@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/cart_model.dart';
@@ -134,26 +135,26 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           "My Bags",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.black87,
-                fontSize: 20,
+                fontSize: 20.sp,
               ),
         ),
         actions: [
           TactileButton(
             onTap: _clearCart,
-            child: const Padding(
-              padding: EdgeInsets.all(12.0),
+            child: Padding(
+              padding: EdgeInsets.all(12.0.r),
               child: Icon(
                 Icons.delete_sweep_rounded,
                 color: Colors.black45,
-                size: 24,
+                size: 24.sp,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
         ],
       ),
       body: cartState.when(
-        loading: () => const Center(child: HouseOfFlavorsLoader(size: 160)),
+        loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
         error: (err, stack) =>
             Center(child: Text("Error: $err", style: GoogleFonts.poppins())),
         data: (cart) {
@@ -172,29 +173,29 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 10.h,
                   ),
                   children: [
                     if (cafeItems.isNotEmpty)
                       _buildBrandSection(
                         "Teas N Trees (Cafe)",
                         cafeItems,
-                        const Color(0xFF57733C),
+                        Color(0xFF57733C),
                         'teasntrees',
                       ),
 
                     if (bakeryItems.isNotEmpty) ...[
-                      const SizedBox(height: 36),
+                      SizedBox(height: 36.h),
                       _buildBrandSection(
                         "Little H (Bakery)",
                         bakeryItems,
-                        const Color(0xFF8C3414),
+                        Color(0xFF8C3414),
                         'littleh',
                       ),
                     ],
-                    const SizedBox(height: 40),
+                    SizedBox(height: 40.h),
                   ],
                 ),
               ),
@@ -227,18 +228,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             Row(
               children: [
                 Container(
-                  width: 6,
-                  height: 24,
+                  width: 6.w,
+                  height: 24.h,
                   decoration: BoxDecoration(
                     color: themeColor,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(3.r),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: 18,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
@@ -250,19 +251,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 TactileButton(
                   onTap: () => _clearBrandCart(brand),
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.delete_outline_rounded,
-                      size: 18,
+                      size: 18.sp,
                       color: Colors.redAccent,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 TactileButton(
                   onTap: () {
                     final brandCart = Cart(
@@ -279,15 +280,15 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                     decoration: BoxDecoration(
                       color: themeColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
                     child: Text(
                       "Checkout Store",
                       style: GoogleFonts.poppins(
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.bold,
                         color: themeColor,
                       ),
@@ -298,10 +299,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         ...items.map(
           (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
+            padding: EdgeInsets.only(bottom: 16.0),
             child: _buildCartItem(item),
           ),
         ),
@@ -316,27 +317,27 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       background: Container(
         decoration: BoxDecoration(
           color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.r),
         ),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        child: const Icon(
+        padding: EdgeInsets.only(right: 24),
+        child: Icon(
           Icons.delete_sweep_rounded,
           color: Color(0xFFEF5350), // Colors.red.shade400
-          size: 32,
+          size: 32.sp,
         ),
       ),
       onDismissed: (_) => _removeItem(item.id, item.brand),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(24.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
-              offset: const Offset(0, 6),
+              offset: Offset(0, 6),
             ),
           ],
           border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
@@ -344,33 +345,33 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         child: Row(
           children: [
             Container(
-              height: 75,
-              width: 75,
+              height: 75.h,
+              width: 75.w,
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18.r),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18.r),
                 child:
                     item.product.image != null && item.product.image!.isNotEmpty
                     ? Image.network(
                         item.product.image!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => const Icon(
+                        errorBuilder: (_, _, _) => Icon(
                           Icons.fastfood_rounded,
                           color: Colors.black12,
-                          size: 32,
+                          size: 32.sp,
                         ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.fastfood_rounded,
                         color: Colors.black12,
-                        size: 32,
+                        size: 32.sp,
                       ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +382,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontSize: 15.sp,
                           color: Colors.black87,
                         ),
                   ),
@@ -389,16 +390,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     Text(
                       item.customization!,
                       style: GoogleFonts.poppins(
-                        fontSize: 11,
+                        fontSize: 11.sp,
                         color: Colors.black38,
                       ),
                     ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6.h),
                   Text(
                     "₹${item.price * item.quantity}",
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
@@ -406,10 +407,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ),
             ),
             Container(
-              height: 36,
+              height: 36.h,
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: Row(
                 children: [
@@ -422,14 +423,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       }
                     },
                     child: Container(
-                      width: 32,
-                      height: 32,
+                      width: 32.w,
+                      height: 32.h,
                       alignment: Alignment.center,
                       child: Icon(
                         item.quantity == 1
                             ? Icons.delete_outline_rounded
                             : Icons.remove_rounded,
-                        size: 18,
+                        size: 18.sp,
                         color: item.quantity == 1
                             ? Colors.redAccent
                             : Colors.black87,
@@ -437,12 +438,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    padding: EdgeInsets.symmetric(horizontal: 4.0.w),
                     child: Text(
                       "${item.quantity}",
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                       ),
                     ),
                   ),
@@ -450,10 +451,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     onTap: () =>
                         _updateQuantity(item.id, item.quantity + 1),
                     child: Container(
-                      width: 32,
-                      height: 32,
+                      width: 32.w,
+                      height: 32.h,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.add_rounded, size: 18, color: Colors.black87),
+                      child: Icon(Icons.add_rounded, size: 18.sp, color: Colors.black87),
                     ),
                   ),
                 ],
@@ -471,7 +472,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(40),
+            padding: EdgeInsets.all(40.r),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -484,11 +485,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
             child: Icon(
               Icons.shopping_basket_rounded,
-              size: 80,
+              size: 80.sp,
               color: Colors.black.withValues(alpha: 0.05),
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32.h),
           Text(
             "Your bags are empty",
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -496,29 +497,29 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   color: Colors.black87,
                 ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Text(
             "Discover something delicious today",
-            style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14),
+            style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14.sp),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: 40.h),
           TactileButton(
             onTap: () => Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => const StoreHomeScreen()),
+              MaterialPageRoute(builder: (_) => StoreHomeScreen()),
               (route) => false,
             ),
             child: Container(
-              width: 220,
-              height: 56,
+              width: 220.w,
+              height: 56.h,
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18.r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 15,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
@@ -528,7 +529,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 16.sp,
                 ),
               ),
             ),
@@ -540,15 +541,15 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   Widget _buildGlobalCheckoutFooter(Cart cart) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 34),
+      padding: EdgeInsets.fromLTRB(24, 24, 24, 34),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36.r)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 30,
-            offset: const Offset(0, -10),
+            offset: Offset(0, -10),
           ),
         ],
       ),
@@ -562,7 +563,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               Text(
                 "Total Amount",
                 style: GoogleFonts.poppins(
-                  fontSize: 13,
+                  fontSize: 13.sp,
                   color: Colors.black38,
                   fontWeight: FontWeight.w600,
                 ),
@@ -570,7 +571,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               Text(
                 "₹${cart.subtotal}",
                 style: GoogleFonts.poppins(
-                  fontSize: 26,
+                  fontSize: 26.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -583,16 +584,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               MaterialPageRoute(builder: (_) => CheckoutScreen(cart: cart)),
             ),
             child: Container(
-              width: 180,
-              height: 60,
+              width: 180.w,
+              height: 60.h,
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(20.r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 15,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
@@ -602,13 +603,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   Text(
                     "Checkout All",
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 20, color: Colors.white),
+                  SizedBox(width: 8.w),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 20.sp, color: Colors.white),
                 ],
               ),
             ),

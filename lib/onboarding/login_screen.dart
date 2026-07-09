@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
@@ -117,15 +118,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: TactileButton(
                     onTap: widget.onBack,
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12.r),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: 20.sp,
                       ),
                     ),
                   ),
@@ -135,9 +136,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        height: 120,
-                        width: 120,
-                        padding: const EdgeInsets.all(20),
+                        height: 120.h,
+                        width: 120.w,
+                        padding: EdgeInsets.all(20.r),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -153,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20.h),
                       Text(
                         "Welcome Back",
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -174,10 +175,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Container(
               height: size.height * 0.6,
               width: double.infinity,
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(32.r),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(40.r)),
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -189,48 +190,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Text(
                       "We'll send you a verification code",
-                      style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14),
+                      style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14.sp),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32.h),
 
                     // Phone Input
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(20.r),
                         border: Border.all(color: Colors.grey.shade100),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 4.h),
                       child: Row(
                         children: [
                           Text(
                             "+91",
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 16.sp,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Container(width: 1, height: 24, color: Colors.black12),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12.w),
+                          Container(width: 1.w, height: 24.h, color: Colors.black12),
+                          SizedBox(width: 12.w),
                           Expanded(
                             child: TextField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
                               maxLength: 10,
                               style: GoogleFonts.poppins(
-                                fontSize: 16,
+                                fontSize: 16.sp,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 1.5,
+                                letterSpacing: 1.5.sp,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: "Mobile Number",
                                 hintStyle: TextStyle(
                                   color: Colors.black26,
-                                  letterSpacing: 0,
+                                  letterSpacing: 0.sp,
                                   fontWeight: FontWeight.normal,
                                 ),
                                 border: InputBorder.none,
@@ -238,7 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 prefixIcon: Icon(
                                   Icons.phone_android_rounded,
                                   color: Colors.black45,
-                                  size: 20,
+                                  size: 20.sp,
                                 ),
                               ),
                             ),
@@ -247,29 +248,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32.h),
 
                     TactileButton(
                       onTap: _isLoading ? null : _sendOtp,
                       child: Container(
                         width: double.infinity,
-                        height: 60,
+                        height: 60.h,
                         decoration: BoxDecoration(
                           color: Colors.black,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(20.r),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 15,
-                              offset: const Offset(0, 8),
+                              offset: Offset(0, 8),
                             ),
                           ],
                         ),
                         alignment: Alignment.center,
                         child: _isLoading
-                            ? const SizedBox(
-                                height: 24,
-                                width: 24,
+                            ? SizedBox(
+                                height: 24.h,
+                                width: 24.w,
                                 child: CircularProgressIndicator(
                                   color: Colors.white,
                                   strokeWidth: 2.5,
@@ -280,46 +281,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 style: GoogleFonts.poppins(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                 ),
                               ),
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     Center(
                       child: Text(
                         "OR",
                         style: GoogleFonts.poppins(
                           color: Colors.black26,
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 12.sp,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
 
                     // Google Login
                     TactileButton(
                       onTap: _isLoading ? null : _signInWithGoogle,
                       child: Container(
                         width: double.infinity,
-                        height: 60,
+                        height: 60.h,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(20.r),
                           border: Border.all(color: Colors.grey.shade200),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset("assets/images/google_logo.png", height: 24),
-                            const SizedBox(width: 12),
+                            Image.asset("assets/images/google_logo.png", height: 24.h),
+                            SizedBox(width: 12.w),
                             Text(
                               "Sign in with Google",
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 15,
+                                fontSize: 15.sp,
                               ),
                             ),
                           ],

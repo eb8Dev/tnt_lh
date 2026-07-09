@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:math' as math;
 
 class StoreTransitionOverlay extends StatefulWidget {
@@ -53,22 +54,22 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: Duration(milliseconds: 1200),
     );
 
     _expandAnimation = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOutCubic),
+      curve: Interval(0.0, 0.6, curve: Curves.easeInOutCubic),
     );
 
     _logoAnimation = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.3, 0.8, curve: Curves.elasticOut),
+      curve: Interval(0.3, 0.8, curve: Curves.elasticOut),
     );
 
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.8, 1.0, curve: Curves.easeIn),
+      curve: Interval(0.8, 1.0, curve: Curves.easeIn),
     );
 
     _controller.addListener(() {
@@ -119,7 +120,7 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
                     child: Opacity(
                       opacity: (_logoAnimation.value * 2).clamp(0.0, 1.0),
                       child: Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsets.all(20.r),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -127,14 +128,14 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.15),
                               blurRadius: 30,
-                              offset: const Offset(0, 10),
+                              offset: Offset(0, 10),
                             ),
                           ],
                         ),
                         child: Image.asset(
                           widget.logoAsset,
-                          width: 160,
-                          height: 160,
+                          width: 160.w,
+                          height: 160.h,
                         ),
                       ),
                     ),

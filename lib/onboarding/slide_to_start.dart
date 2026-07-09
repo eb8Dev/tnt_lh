@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/physics.dart';
 
@@ -27,7 +28,7 @@ class _SlideToStartState extends State<SlideToStart>
     /// Initial idle bounce
     _bounceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: Duration(milliseconds: 900),
     );
 
     _bounceAnimation =
@@ -44,7 +45,7 @@ class _SlideToStartState extends State<SlideToStart>
         setState(() => _dragValue = _springController.value);
       });
 
-    Future.delayed(const Duration(milliseconds: 400), () {
+    Future.delayed(Duration(milliseconds: 400), () {
       if (mounted) _bounceController.forward();
     });
   }
@@ -54,7 +55,7 @@ class _SlideToStartState extends State<SlideToStart>
     _springController.value = from;
 
     final simulation = SpringSimulation(
-      const SpringDescription(mass: 1, stiffness: 380, damping: 22),
+      SpringDescription(mass: 1, stiffness: 380, damping: 22),
       from,
       to,
       0,
@@ -76,10 +77,10 @@ class _SlideToStartState extends State<SlideToStart>
     final colorScheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          const double knobSize = 56;
+          double knobSize = 56;
           final double maxDrag = constraints.maxWidth - knobSize;
 
           final bool passedHalfway = _dragValue > maxDrag * 0.55;
@@ -108,7 +109,7 @@ class _SlideToStartState extends State<SlideToStart>
             height: knobSize,
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(30.r),
             ),
             child: Stack(
               alignment: Alignment.centerLeft,
@@ -121,7 +122,7 @@ class _SlideToStartState extends State<SlideToStart>
                     height: animatedHeight,
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(30.r),
                     ),
                   ),
                 ),
@@ -134,7 +135,7 @@ class _SlideToStartState extends State<SlideToStart>
                       text: displayText,
                       style: theme.textTheme.bodyLarge!.copyWith(
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.4,
+                        letterSpacing: 0.4.sp,
                       ),
                     ),
                   ),
@@ -171,7 +172,7 @@ class _SlideToStartState extends State<SlideToStart>
                           BoxShadow(
                             color: colorScheme.shadow.withValues(alpha: 0.3),
                             blurRadius: 8,
-                            offset: const Offset(0, 4),
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
@@ -209,7 +210,7 @@ class _ShimmerTextState extends State<ShimmerText>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: Duration(seconds: 2),
     )..repeat();
   }
 
@@ -232,9 +233,9 @@ class _ShimmerTextState extends State<ShimmerText>
                 Colors.white,
                 Colors.white.withValues(alpha: 0.4),
               ],
-              stops: const [0.0, 0.5, 1.0],
+              stops: [0.0, 0.5, 1.0],
               begin: Alignment(-1 + _controller.value * 2, 0),
-              end: const Alignment(1, 0),
+              end: Alignment(1, 0),
             ).createShader(bounds);
           },
           child: Text(widget.text, style: widget.style),
@@ -263,7 +264,7 @@ class _AnimatedArrowsState extends State<AnimatedArrows>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: Duration(milliseconds: 900),
     )..repeat();
   }
 
@@ -301,7 +302,7 @@ class _AnimatedArrowsState extends State<AnimatedArrows>
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [_arrow(0.0, 18), const SizedBox(width: 2), _arrow(0.2, 14)],
+      children: [_arrow(0.0, 18), SizedBox(width: 2.w), _arrow(0.2, 14)],
     );
   }
 }

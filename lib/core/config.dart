@@ -2,7 +2,12 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  static String _baseUrl = "http://10.0.2.2:5000/api";
+  // Debug builds hit the local emulator host; release builds fall back to
+  // production HTTPS if Remote Config is unavailable. Remote Config `base_url`
+  // overrides either at runtime.
+  static const String _prodBaseUrl = "https://api.teasntrees.in/api";
+  static const String _devBaseUrl = "http://10.0.2.2:5000/api";
+  static String _baseUrl = kDebugMode ? _devBaseUrl : _prodBaseUrl;
   static const String defaultBrand = "teasntrees";
 
   static String get baseUrl => _baseUrl;
@@ -27,7 +32,7 @@ class AppConfig {
       );
 
       // Default values
-      await remoteConfig.setDefaults({"base_url": "http://10.0.2.2:5000/api"});
+      await remoteConfig.setDefaults({"base_url": _baseUrl});
 
       // Fetch and activate
       await remoteConfig.fetchAndActivate();

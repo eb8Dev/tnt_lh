@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class _OnboardData {
   final String title;
@@ -28,13 +29,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   double _page = 0;
 
   List<_OnboardData> get _pages => [
-    const _OnboardData(
+    _OnboardData(
       title: "Teas n Trees Cafe",
       description: "Fresh brews, calm vibes, and nature-inspired teas.",
       image: "assets/images/teas_n_trees_no_bg.png",
       gradient: [Color(0xFFFDFFDC), Color(0xFFEAF4C8)],
     ),
-    const _OnboardData(
+    _OnboardData(
       title: "Cafe Experience",
       description: "A peaceful place to sip, relax, and reconnect.",
       image: "assets/images/teas_n_trees_no_bg.png",
@@ -44,9 +45,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: "Little H Bakery",
       description: "Freshly baked happiness made with love.",
       image: "assets/images/little_h_logo_no_bg.png",
-      gradient: [Theme.of(context).colorScheme.surface, const Color(0xFFF3D4C2)],
+      gradient: [Theme.of(context).colorScheme.surface, Color(0xFFF3D4C2)],
     ),
-    const _OnboardData(
+    _OnboardData(
       title: "Sweet Moments",
       description: "Desserts that make every moment special.",
       image: "assets/images/little_h_logo_no_bg.png",
@@ -109,7 +110,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Opacity(
                   opacity: opacity,
                   child: Padding(
-                    padding: const EdgeInsets.all(40),
+                    padding: EdgeInsets.all(40.r),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -118,24 +119,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: size.height * 0.35,
                           fit: BoxFit.contain,
                         ),
-                        const SizedBox(height: 60),
+                        SizedBox(height: 60.h),
                         Text(
                           _pages[i].title,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 28,
+                          style: TextStyle(
+                            fontSize: 28.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20.h),
                         Text(
                           _pages[i].description,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             color: Colors.black54,
-                            height: 1.5,
+                            height: 1.5.h,
                           ),
                         ),
                       ],
@@ -161,29 +162,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     (index) => _buildIndicator(index),
                   ),
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: 40.h),
 
                 // Button
                 if (_page.round() == _pages.length - 1)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    padding: EdgeInsets.symmetric(horizontal: 40.w),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 60,
+                      height: 60.h,
                       child: ElevatedButton(
                         onPressed: widget.onGetStarted,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20.r),
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
+                        child: Text(
                           "Get Started",
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -194,11 +195,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   IconButton(
                     onPressed: () {
                       _pageController.nextPage(
-                        duration: const Duration(milliseconds: 500),
+                        duration: Duration(milliseconds: 500),
                         curve: Curves.easeInOut,
                       );
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_forward_ios_rounded,
                       color: Colors.black,
                     ),
@@ -214,12 +215,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildIndicator(int index) {
     final progress = (1 - (_page - index).abs()).clamp(0.0, 1.0);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      height: 8,
-      width: 8 + (16 * progress),
+      margin: EdgeInsets.symmetric(horizontal: 4.w),
+      height: 8.h,
+      width: 8.w + (16 * progress),
       decoration: BoxDecoration(
         color: index == _page.round() ? Colors.black : Colors.black26,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(4.r),
       ),
     );
   }

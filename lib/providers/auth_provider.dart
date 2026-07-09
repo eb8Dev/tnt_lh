@@ -6,6 +6,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:tnt_lh/services/auth_service.dart';
 import 'package:tnt_lh/models/user_model.dart';
 
+// Sentinel to tell "argument not passed" apart from "explicitly set to null"
+// in copyWith. Without this, nullable fields (user/firebaseUser/error) could
+// never be cleared — a transient error would persist even after a later success.
+const _unset = Object();
+
 // State for Auth
 class AuthState {
   final bool isLoading;
@@ -28,17 +33,19 @@ class AuthState {
     bool? isLoading,
     bool? isAuthenticated,
     bool? requiresRegistration,
-    User? user,
-    fb.User? firebaseUser,
-    String? error,
+    Object? user = _unset,
+    Object? firebaseUser = _unset,
+    Object? error = _unset,
   }) {
     return AuthState(
       isLoading: isLoading ?? this.isLoading,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       requiresRegistration: requiresRegistration ?? this.requiresRegistration,
-      user: user ?? this.user,
-      firebaseUser: firebaseUser ?? this.firebaseUser,
-      error: error ?? this.error,
+      user: identical(user, _unset) ? this.user : user as User?,
+      firebaseUser: identical(firebaseUser, _unset)
+          ? this.firebaseUser
+          : firebaseUser as fb.User?,
+      error: identical(error, _unset) ? this.error : error as String?,
     );
   }
 }
@@ -108,29 +115,12 @@ class AuthNotifier extends Notifier<AuthState> {
 
         if (userData == null) throw "No user data in login response";
 
-        User user = User.fromJson(userData);
+        final User user = User.fromJson(userData);
 
-        // ALWAYS fetch full profile to ensure email and address are populated
-        // The login response often contains a minimal user object
-        debugPrint(
-          "Auth: Fetching full profile to ensure all fields are populated...",
-        );
-        try {
-          final profileResult = await AuthService.getProfile();
-          final fullUserData =
-              profileResult['data']?['user'] ?? profileResult['user'];
-
-          if (fullUserData != null) {
-            user = User.fromJson(fullUserData);
-            debugPrint(
-              "Auth: Full profile loaded. Email: ${user.email}, Address: ${user.address}",
-            );
-          }
-        } catch (e) {
-          debugPrint("Auth: Profile fetch failed, using login data: $e");
-          // If profile fetch fails but we have login data, we continue
-        }
-
+        // Unblock the UI immediately with the login user. The login response is
+        // partial (no address / PIN / prefs), so enrich it with the full
+        // profile in the background instead of blocking startup on a second
+        // sequential round-trip.
         state = state.copyWith(
           isLoading: false,
           isAuthenticated: user.isProfileComplete,
@@ -138,6 +128,10 @@ class AuthNotifier extends Notifier<AuthState> {
           user: user,
           error: null,
         );
+
+        if (user.isProfileComplete) {
+          _enrichProfileInBackground();
+        }
       } catch (e) {
         debugPrint("Auth: Error during auth flow: $e");
         final errorStr = e.toString();
@@ -153,6 +147,22 @@ class AuthNotifier extends Notifier<AuthState> {
           error: errorStr,
         );
       }
+    }
+  }
+
+  /// Fetches the full profile (address, verification PIN, notification prefs)
+  /// after login without blocking the initial render. Updates state.user in
+  /// place when it arrives; failures are non-fatal (login data is kept).
+  Future<void> _enrichProfileInBackground() async {
+    try {
+      final profileResult = await AuthService.getProfile();
+      final fullUserData =
+          profileResult['data']?['user'] ?? profileResult['user'];
+      if (fullUserData != null) {
+        state = state.copyWith(user: User.fromJson(fullUserData));
+      }
+    } catch (e) {
+      debugPrint("Auth: background profile enrich failed: $e");
     }
   }
 

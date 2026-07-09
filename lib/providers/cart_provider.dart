@@ -21,21 +21,25 @@ class CartNotifier extends AsyncNotifier<Cart> {
   }
 
   Future<Cart> _fetchCartInternal() async {
-    // Backend returns unified cart for user
-    try {
-      final result = await CartService.getCart();
-      if (result['success'] == true && result['data'] is Map<String, dynamic>) {
-        return Cart.fromJson(result['data']);
-      }
-      return Cart(items: [], subtotal: 0, itemCount: 0);
-    } catch (e) {
-      return Cart(items: [], subtotal: 0, itemCount: 0);
+    // Backend returns the unified cart for the user. Let failures propagate so
+    // the UI can show a real error state instead of a fake "empty cart".
+    final result = await CartService.getCart();
+    if (result['success'] == true && result['data'] is Map<String, dynamic>) {
+      return Cart.fromJson(result['data']);
     }
+    // Success-but-empty (e.g. 404 the service maps to an empty cart).
+    return Cart(items: [], subtotal: 0, itemCount: 0);
   }
 
   Future<void> fetchCart({bool background = false}) async {
     if (!background) state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _fetchCartInternal());
+    final result = await AsyncValue.guard(() => _fetchCartInternal());
+    // A background refresh that fails must not replace a good cart with an
+    // error screen (e.g. a flaky refresh right after a successful add).
+    if (background && result is AsyncError && state.hasValue) {
+      return;
+    }
+    state = result;
   }
 
   /// Helper to get items for a specific brand

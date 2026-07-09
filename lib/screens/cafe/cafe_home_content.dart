@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/product_model.dart';
@@ -36,12 +37,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
     super.initState();
     _floatController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: Duration(seconds: 4),
     )..repeat(reverse: true);
 
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: Duration(seconds: 2),
     )..repeat(reverse: true);
   }
 
@@ -56,7 +57,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(Duration(milliseconds: 500), () {
       setState(() {
         _searchQuery = query;
       });
@@ -77,8 +78,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
       ),
       builder: (context) {
         return SafeArea(
@@ -90,17 +91,17 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
             builder: (context, scrollController) {
               return Column(
                 children: [
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Container(
-                    width: 40,
-                    height: 5,
+                    width: 40.w,
+                    height: 5.h,
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: EdgeInsets.all(24.0.r),
                     child: Text(
                       "Explore Categories",
                       style: Theme.of(context).textTheme.headlineSmall
@@ -113,9 +114,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                   Expanded(
                     child: GridView.builder(
                       controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(horizontal: 24.w),
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                          SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 20,
@@ -134,12 +135,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                             children: [
                               Expanded(
                                 child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
+                                  duration: Duration(milliseconds: 200),
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? Theme.of(context).colorScheme.primary
                                         : Colors.white,
-                                    borderRadius: BorderRadius.circular(24),
+                                    borderRadius: BorderRadius.circular(24.r),
                                     boxShadow: [
                                       BoxShadow(
                                         color: isSelected
@@ -151,14 +152,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                 alpha: 0.03,
                                               ),
                                         blurRadius: 10,
-                                        offset: const Offset(0, 4),
+                                        offset: Offset(0, 4),
                                       ),
                                     ],
                                   ),
                                   child: Center(
                                     child: cat.image != null
                                         ? Padding(
-                                            padding: const EdgeInsets.all(12.0),
+                                            padding: EdgeInsets.all(12.0.r),
                                             child: Image.network(
                                               cat.image!,
                                               errorBuilder: (_, _, _) => Icon(
@@ -166,13 +167,13 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                 color: isSelected
                                                     ? Colors.white
                                                     : Colors.black54,
-                                                size: 24,
+                                                size: 24.sp,
                                               ),
                                             ),
                                           )
                                         : Icon(
                                             Icons.grid_view_rounded,
-                                            size: 30,
+                                            size: 30.sp,
                                             color: isSelected
                                                 ? Colors.white
                                                 : Colors.black54,
@@ -180,14 +181,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8.h),
                               Text(
                                 cat.name,
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.poppins(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   fontWeight: isSelected
                                       ? FontWeight.w600
                                       : FontWeight.w400,
@@ -214,8 +215,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
       ),
       builder: (_) => AddToCartSheet(product: product),
     );
@@ -296,7 +297,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
+          padding: EdgeInsets.only(left: 16.0),
           child: Image.asset(logoAsset, fit: BoxFit.contain),
         ),
         centerTitle: true,
@@ -304,26 +305,26 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
           brandTitle,
           style: Theme.of(
             context,
-          ).textTheme.titleLarge?.copyWith(color: Colors.black87, fontSize: 20),
+          ).textTheme.titleLarge?.copyWith(color: Colors.black87, fontSize: 20.sp),
         ),
         actions: [
           TactileButton(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const WishlistScreen()),
+                MaterialPageRoute(builder: (_) => WishlistScreen()),
               );
             },
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
+            child: Padding(
+              padding: EdgeInsets.all(8.0.r),
               child: Icon(
                 Icons.favorite_border_rounded,
                 color: Colors.black87,
-                size: 24,
+                size: 24.sp,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
         ],
       ),
       body: SafeArea(
@@ -335,13 +336,13 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                   return [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.all(20.0),
+                        padding: EdgeInsets.all(20.0.r),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             /// Premium Creative Hero Section
                             TweenAnimationBuilder<double>(
-                              duration: const Duration(milliseconds: 1000),
+                              duration: Duration(milliseconds: 1000),
                               tween: Tween<double>(begin: 0, end: 1),
                               curve: Curves.easeOutQuart,
                               builder: (context, value, child) {
@@ -355,9 +356,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               },
                               child: Container(
                                 width: double.infinity,
-                                height: 190,
+                                height: 190.h,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(36),
+                                  borderRadius: BorderRadius.circular(36.r),
                                   gradient: LinearGradient(
                                     colors: [
                                       Theme.of(context).colorScheme.primary,
@@ -373,33 +374,33 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           .primary
                                           .withValues(alpha: 0.3),
                                       blurRadius: 30,
-                                      offset: const Offset(0, 12),
+                                      offset: Offset(0, 12),
                                     ),
                                   ],
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(36),
+                                  borderRadius: BorderRadius.circular(36.r),
                                   child: Stack(
                                     children: [
                                       // Subtle Animated Background Elements
                                       _buildFloatingShape(
                                         left: -20,
                                         top: -20,
-                                        size: 100,
+                                        size: 100.sp,
                                       ),
                                       _buildFloatingShape(
                                         right: 40,
                                         bottom: -30,
-                                        size: 80,
+                                        size: 80.sp,
                                       ),
                                       _buildFloatingShape(
                                         right: -10,
                                         top: 20,
-                                        size: 60,
+                                        size: 60.sp,
                                       ),
 
                                       Padding(
-                                        padding: const EdgeInsets.all(28.0),
+                                        padding: EdgeInsets.all(28.0.r),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -414,15 +415,15 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                               ).animate(_pulseController),
                                               child: Container(
                                                 padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 6,
+                                                    EdgeInsets.symmetric(
+                                                      horizontal: 12.w,
+                                                      vertical: 6.h,
                                                     ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.white
                                                       .withValues(alpha: 0.2),
                                                   borderRadius:
-                                                      BorderRadius.circular(20),
+                                                      BorderRadius.circular(20.r),
                                                 ),
                                                 child: Row(
                                                   mainAxisSize:
@@ -434,9 +435,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                                 .favorite_rounded
                                                           : Icons.spa_rounded,
                                                       color: Colors.white,
-                                                      size: 14,
+                                                      size: 14.sp,
                                                     ),
-                                                    const SizedBox(width: 6),
+                                                    SizedBox(width: 6.w),
                                                     Text(
                                                       isLittleH
                                                           ? "Handcrafted"
@@ -444,7 +445,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                       style:
                                                           GoogleFonts.poppins(
                                                             color: Colors.white,
-                                                            fontSize: 11,
+                                                            fontSize: 11.sp,
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                           ),
@@ -453,7 +454,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(height: 16),
+                                            SizedBox(height: 16.h),
                                             Text(
                                               heroTitle,
                                               style: Theme.of(context)
@@ -462,19 +463,19 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                   ?.copyWith(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.bold,
-                                                    height: 1.1,
+                                                    height: 1.1.h,
                                                   ),
                                             ),
-                                            const SizedBox(height: 8),
+                                            SizedBox(height: 8.h),
                                             SizedBox(
-                                              width: 220,
+                                              width: 220.w,
                                               child: Text(
                                                 heroSubtitle,
                                                 style: GoogleFonts.poppins(
-                                                  fontSize: 14,
+                                                  fontSize: 14.sp,
                                                   color: Colors.white
                                                       .withValues(alpha: 0.9),
-                                                  height: 1.4,
+                                                  height: 1.4.h,
                                                 ),
                                               ),
                                             ),
@@ -495,7 +496,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                             isLittleH
                                                 ? Icons.bakery_dining_rounded
                                                 : Icons.local_cafe_rounded,
-                                            size: 100,
+                                            size: 100.sp,
                                             color: Colors.white.withValues(
                                               alpha: 0.15,
                                             ),
@@ -508,14 +509,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               ),
                             ),
 
-                            const SizedBox(height: 32),
+                            SizedBox(height: 32.h),
 
                             /// Redesigned Search Bar
                             Container(
-                              height: 56,
+                              height: 56.h,
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(20.r),
                                 border: Border.all(
                                   color: Colors.black.withValues(alpha: 0.05),
                                 ),
@@ -523,7 +524,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.03),
                                     blurRadius: 15,
-                                    offset: const Offset(0, 5),
+                                    offset: Offset(0, 5),
                                   ),
                                 ],
                               ),
@@ -536,18 +537,18 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       : "Find your perfect drink...",
                                   hintStyle: GoogleFonts.poppins(
                                     color: Colors.black26,
-                                    fontSize: 14,
+                                    fontSize: 14.sp,
                                   ),
-                                  prefixIcon: const Icon(
+                                  prefixIcon: Icon(
                                     Icons.search_rounded,
                                     color: Colors.black45,
-                                    size: 20,
+                                    size: 20.sp,
                                   ),
                                   suffixIcon: _searchController.text.isNotEmpty
                                       ? IconButton(
-                                          icon: const Icon(
+                                          icon: Icon(
                                             Icons.close_rounded,
-                                            size: 18,
+                                            size: 18.sp,
                                             color: Colors.black45,
                                           ),
                                           onPressed: () {
@@ -557,14 +558,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                         )
                                       : null,
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 16,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 16.h,
                                   ),
                                 ),
                               ),
                             ),
 
-                            const SizedBox(height: 36),
+                            SizedBox(height: 36.h),
 
                             /// Categories Section
                             Row(
@@ -578,7 +579,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       ?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black87,
-                                        fontSize: 18,
+                                        fontSize: 18.sp,
                                       ),
                                 ),
                                 TactileButton(
@@ -591,7 +592,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                   child: Text(
                                     "See All",
                                     style: GoogleFonts.poppins(
-                                      fontSize: 14,
+                                      fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
                                       color: Theme.of(
                                         context,
@@ -602,11 +603,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               ],
                             ),
 
-                            const SizedBox(height: 20),
+                            SizedBox(height: 20.h),
 
                             /// Modern Category List
                             SizedBox(
-                              height: 110,
+                              height: 110.h,
                               child: categoriesAsync.when(
                                 loading: () => Center(
                                   child: CircularProgressIndicator(
@@ -627,7 +628,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                             : categories.length) +
                                         1,
                                     separatorBuilder: (_, _) =>
-                                        const SizedBox(width: 20),
+                                        SizedBox(width: 20.w),
                                     itemBuilder: (context, index) {
                                       if (index == 0) {
                                         final isSelected =
@@ -662,7 +663,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               ),
                             ),
 
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             Text(
                               _selectedCategoryIndex == -1
                                   ? "Freshly Prepared"
@@ -671,7 +672,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
-                                    fontSize: 18,
+                                    fontSize: 18.sp,
                                   ),
                             ),
                           ],
@@ -694,12 +695,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.fastfood_rounded,
-                              size: 64,
+                              size: 64.sp,
                               color: Colors.black12,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16.h),
                             Text(
                               "No items found in this section",
                               style: GoogleFonts.poppins(color: Colors.black38),
@@ -709,9 +710,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                       );
                     }
                     return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                      padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
                       itemCount: products.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 20),
+                      separatorBuilder: (_, _) => SizedBox(height: 20.h),
                       itemBuilder: (context, index) {
                         final product = products[index];
                         return TweenAnimationBuilder<double>(
@@ -785,9 +786,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
       child: Column(
         children: [
           AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            height: 68,
-            width: 68,
+            duration: Duration(milliseconds: 300),
+            height: 68.h,
+            width: 68.w,
             decoration: BoxDecoration(
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
@@ -801,42 +802,42 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                         ).colorScheme.primary.withValues(alpha: 0.3)
                       : Colors.black.withValues(alpha: 0.04),
                   blurRadius: 12,
-                  offset: const Offset(0, 6),
+                  offset: Offset(0, 6),
                 ),
               ],
               border: Border.all(
                 color: isSelected
                     ? Colors.white.withValues(alpha: 0.2)
                     : Colors.black.withValues(alpha: 0.03),
-                width: 1,
+                width: 1.w,
               ),
             ),
             child: Center(
               child: image != null
                   ? Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0.r),
                       child: Image.network(
                         image,
                         color: isSelected ? Colors.white : Colors.black87,
                         errorBuilder: (_, _, _) => Icon(
                           fallbackIcon,
                           color: isSelected ? Colors.white : Colors.black87,
-                          size: 24,
+                          size: 24.sp,
                         ),
                       ),
                     )
                   : Icon(
                       fallbackIcon,
                       color: isSelected ? Colors.white : Colors.black87,
-                      size: 26,
+                      size: 26.sp,
                     ),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10.h),
           Text(
             name,
             style: GoogleFonts.poppins(
-              fontSize: 12,
+              fontSize: 12.sp,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color: isSelected ? Colors.black : Colors.black54,
             ),
@@ -875,15 +876,15 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
             );
           },
           child: Container(
-            height: 145,
+            height: 145.h,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(32.r),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  offset: Offset(0, 8),
                 ),
               ],
               border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
@@ -893,14 +894,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                 Hero(
                   tag: product.id,
                   child: Container(
-                    width: 135,
-                    margin: const EdgeInsets.all(8),
+                    width: 135.w,
+                    margin: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(26),
+                      borderRadius: BorderRadius.circular(26.r),
                       color: Theme.of(context).scaffoldBackgroundColor,
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(26),
+                      borderRadius: BorderRadius.circular(26.r),
                       child: Stack(
                         children: [
                           product.image != null && product.image!.isNotEmpty
@@ -915,7 +916,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                     isLittleH
                                         ? Icons.cake_rounded
                                         : Icons.local_cafe_rounded,
-                                    size: 40,
+                                    size: 40.sp,
                                     color: Colors.black12,
                                   ),
                                 ),
@@ -937,7 +938,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       .read(wishlistProvider.notifier)
                                       .toggleFavorite(product),
                                   child: Container(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: EdgeInsets.all(8.r),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(
                                         alpha: 0.9,
@@ -956,7 +957,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       isFav
                                           ? Icons.favorite_rounded
                                           : Icons.favorite_border_rounded,
-                                      size: 16,
+                                      size: 16.sp,
                                       color: isFav
                                           ? Colors.redAccent
                                           : Colors.black54,
@@ -973,7 +974,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 20, 20, 20),
+                    padding: EdgeInsets.fromLTRB(12, 20, 20, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -983,12 +984,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
-                                fontSize: 17,
+                                fontSize: 17.sp,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
                               ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6.h),
                         Text(
                           product.description ??
                               "Handcrafted with passion and care",
@@ -996,11 +997,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
                             color: Colors.black38,
-                            fontSize: 12,
-                            height: 1.3,
+                            fontSize: 12.sp,
+                            height: 1.3.h,
                           ),
                         ),
-                        const Spacer(),
+                        Spacer(),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1008,18 +1009,18 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               "₹${product.displayPrice}",
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: 18.sp,
                                 color: Colors.black87,
                               ),
                             ),
                             if (cartQty > 0)
                               Container(
-                                height: 32,
+                                height: 32.h,
                                 decoration: BoxDecoration(
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(10.r),
                                 ),
                                 child: Row(
                                   children: [
@@ -1043,9 +1044,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           }
                                         }
                                       },
-                                      icon: const Icon(Icons.remove, size: 14),
+                                      icon: Icon(Icons.remove, size: 14.sp),
                                       padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
+                                      constraints: BoxConstraints(
                                         minWidth: 30,
                                       ),
                                       color: Theme.of(
@@ -1056,7 +1057,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       "$cartQty",
                                       style: GoogleFonts.poppins(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 13,
+                                        fontSize: 13.sp,
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.primary,
@@ -1073,9 +1074,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                               );
                                         }
                                       },
-                                      icon: const Icon(Icons.add, size: 14),
+                                      icon: Icon(Icons.add, size: 14.sp),
                                       padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
+                                      constraints: BoxConstraints(
                                         minWidth: 30,
                                       ),
                                       color: Theme.of(
@@ -1089,8 +1090,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               TactileButton(
                                 onTap: () => _handleQuickAdd(product),
                                 child: Container(
-                                  height: 42,
-                                  width: 42,
+                                  height: 42.h,
+                                  width: 42.w,
                                   decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
@@ -1103,14 +1104,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                             .primary
                                             .withValues(alpha: 0.3),
                                         blurRadius: 10,
-                                        offset: const Offset(0, 4),
+                                        offset: Offset(0, 4),
                                       ),
                                     ],
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.add_rounded,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: 24.sp,
                                   ),
                                 ),
                               ),
@@ -1216,10 +1217,10 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
     final isLittleH = widget.product.brand == 'littleh';
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24.r),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1236,32 +1237,32 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(
+                icon: Icon(
                   Icons.close_rounded,
                   color: Colors.black26,
-                  size: 24,
+                  size: 24.sp,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           Row(
             children: [
               Container(
-                height: 80,
-                width: 80,
+                height: 80.h,
+                width: 80.w,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   color: Colors.white,
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   child: widget.product.image != null
                       ? Image.network(widget.product.image!, fit: BoxFit.cover)
-                      : const Icon(Icons.fastfood),
+                      : Icon(Icons.fastfood),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1270,7 +1271,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                       widget.product.name,
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                       ),
                     ),
                     Text(
@@ -1278,7 +1279,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                       style: GoogleFonts.poppins(
                         color: themeColor,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 18.sp,
                       ),
                     ),
                   ],
@@ -1288,15 +1289,15 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
           ),
 
           if (widget.product.sizeOptions.isNotEmpty) ...[
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Text(
               "Select Size",
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: 14.sp,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Wrap(
               spacing: 10,
               children: widget.product.sizeOptions.map((opt) {
@@ -1304,13 +1305,13 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                 return TactileButton(
                   onTap: () => setState(() => _selectedSize = opt.size),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 8.h,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected ? themeColor : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                       border: Border.all(
                         color: isSelected ? themeColor : Colors.grey.shade200,
                       ),
@@ -1319,7 +1320,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                       opt.size,
                       style: GoogleFonts.poppins(
                         color: isSelected ? Colors.white : Colors.black87,
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1331,7 +1332,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
 
           if (isLittleH &&
               widget.product.cakePricing?.egglessAvailable == true) ...[
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1339,7 +1340,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                   "Eggless Option (+₹${widget.product.cakePricing!.egglessExtraCharge})",
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                   ),
                 ),
                 Switch.adaptive(
@@ -1351,7 +1352,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
             ),
           ],
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1359,13 +1360,13 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                 "Quantity",
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: 14.sp,
                 ),
               ),
               Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Row(
                   children: [
@@ -1373,9 +1374,9 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                       onPressed: () {
                         if (_quantity > 1) setState(() => _quantity--);
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.remove_rounded,
-                        size: 18,
+                        size: 18.sp,
                         color: Colors.black87,
                       ),
                     ),
@@ -1385,9 +1386,9 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                     ),
                     IconButton(
                       onPressed: () => setState(() => _quantity++),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.add_rounded,
-                        size: 18,
+                        size: 18.sp,
                         color: Colors.black87,
                       ),
                     ),
@@ -1397,20 +1398,20 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
             ],
           ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: 32.h),
           TactileButton(
             onTap: _addToCart,
             child: Container(
-              height: 56,
+              height: 56.h,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18.r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    offset: Offset(0, 6),
                   ),
                 ],
               ),
@@ -1420,12 +1421,12 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 16.sp,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
         ],
       ),
     );

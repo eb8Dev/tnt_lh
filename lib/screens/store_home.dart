@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
@@ -39,8 +40,8 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     
     // Determine target color and logo
     final targetColor = targetBrand == 'teasntrees' 
-        ? const Color(0xFF57733C) 
-        : const Color(0xFF8C3414);
+        ? Color(0xFF57733C) 
+        : Color(0xFF8C3414);
     
     final targetLogo = targetBrand == 'teasntrees'
         ? "assets/images/teas_n_trees_no_bg.png"
@@ -62,9 +63,9 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     
     final List<Widget> pages = [
       BrandHomeContent(brand: brand),
-      const CartScreen(),
-      const OrdersScreen(),
-      const CafeProfileScreen(),
+      CartScreen(),
+      OrdersScreen(),
+      CafeProfileScreen(),
     ];
 
     // Map _selectedIndex to page index since we have 4 pages but 5 slots (1 is FAB)
@@ -80,8 +81,8 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       floatingActionButton: TactileButton(
         onTap: _handleStoreSwitch,
         child: Container(
-          width: 64,
-          height: 64,
+          width: 64.w,
+          height: 64.h,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
@@ -96,12 +97,12 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               BoxShadow(
                 color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
                 blurRadius: 15,
-                offset: const Offset(0, 6),
+                offset: Offset(0, 6),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: EdgeInsets.all(12.0.r),
             child: Image.asset(
               brand == 'teasntrees'
                   ? "assets/images/little_h_logo_no_bg.png"
@@ -119,17 +120,17 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
-              offset: const Offset(0, -5),
+              offset: Offset(0, -5),
             ),
           ],
         ),
         child: BottomAppBar(
-          shape: const CircularNotchedRectangle(),
+          shape: CircularNotchedRectangle(),
           notchMargin: 10,
           color: Colors.white,
           elevation: 0,
           child: SizedBox(
-            height: 60,
+            height: 60.h,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -147,7 +148,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                     );
                   },
                 ),
-                const SizedBox(width: 48), // Space for FAB
+                SizedBox(width: 48.w), // Space for FAB
                 _buildNavItem(
                   3,
                   Icons.receipt,
@@ -187,28 +188,28 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                 Icon(
                   isSelected ? activeIcon : inactiveIcon,
                   color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black26,
-                  size: 26,
+                  size: 26.sp,
                 ),
                 if (badgeCount > 0)
                   Positioned(
                     top: -4,
                     right: -6,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(4.r),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: Colors.white, width: 1.5.w),
                       ),
-                      constraints: const BoxConstraints(
+                      constraints: BoxConstraints(
                         minWidth: 18,
                         minHeight: 18,
                       ),
                       child: Text(
                         '$badgeCount',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 9,
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.bold,
                         ),
                         textAlign: TextAlign.center,
@@ -217,11 +218,11 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.h),
             Text(
               label,
               style: GoogleFonts.poppins(
-                fontSize: 10,
+                fontSize: 10.sp,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black26,
               ),

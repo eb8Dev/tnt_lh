@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/order_model.dart';
@@ -38,12 +39,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           "My Orders",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Colors.black87,
-                fontSize: 20,
+                fontSize: 20.sp,
               ),
         ),
       ),
       body: ordersState.when(
-        loading: () => const Center(child: HouseOfFlavorsLoader(size: 160)),
+        loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
         error: (err, stack) => Center(child: Text("Error: $err")),
         data: (orders) {
           if (orders.isEmpty) {
@@ -53,9 +54,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             onRefresh: () => ref.read(orderProvider.notifier).fetchOrders(),
             color: Theme.of(context).colorScheme.primary,
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+              padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
               itemCount: orders.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 16),
+              separatorBuilder: (_, _) => SizedBox(height: 16.h),
               itemBuilder: (context, index) {
                 return _buildOrderCard(orders[index]);
               },
@@ -80,15 +81,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(28.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 15,
-              offset: const Offset(0, 6),
+              offset: Offset(0, 6),
             ),
           ],
           border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
@@ -100,31 +101,31 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    color: (isTeas ? const Color(0xFF57733C) : const Color(0xFF8C3414))
+                    color: (isTeas ? Color(0xFF57733C) : Color(0xFF8C3414))
                         .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(
                     isTeas ? "Teas N Trees" : "Little H",
                     style: GoogleFonts.poppins(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
-                      color: isTeas ? const Color(0xFF57733C) : const Color(0xFF8C3414),
+                      color: isTeas ? Color(0xFF57733C) : Color(0xFF8C3414),
                     ),
                   ),
                 ),
                 Text(
                   AppFormatters.formatDate(order.createdAt),
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: Colors.black38,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Row(
               children: [
                 Expanded(
@@ -135,15 +136,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         "Order #${order.orderNumber}",
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         "${order.items.length} items • ₹${order.total}",
                         style: GoogleFonts.poppins(
-                          fontSize: 14,
+                          fontSize: 14.sp,
                           color: Colors.black54,
                         ),
                       ),
@@ -151,15 +152,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text(
                     order.status.toUpperCase(),
                     style: GoogleFonts.poppins(
-                      fontSize: 11,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
                       color: statusColor,
                     ),
@@ -167,21 +168,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Divider(height: 1, color: Color(0xFFF5F5F5)),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
+            Divider(height: 1.h, color: Color(0xFFF5F5F5)),
+            SizedBox(height: 16.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   "Track Status",
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.black26),
+                Icon(Icons.arrow_forward_ios_rounded, size: 14.sp, color: Colors.black26),
               ],
             ),
           ],
@@ -196,7 +197,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(40),
+            padding: EdgeInsets.all(40.r),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -209,11 +210,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
             child: Icon(
               Icons.receipt_long_rounded,
-              size: 80,
+              size: 80.sp,
               color: Colors.black.withValues(alpha: 0.05),
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32.h),
           Text(
             "No orders yet",
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -221,29 +222,29 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   color: Colors.black87,
                 ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Text(
             "Your delicious history will appear here",
-            style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14),
+            style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14.sp),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: 40.h),
           TactileButton(
             onTap: () => Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => const StoreHomeScreen()),
+              MaterialPageRoute(builder: (_) => StoreHomeScreen()),
               (route) => false,
             ),
             child: Container(
-              width: 220,
-              height: 56,
+              width: 220.w,
+              height: 56.h,
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18.r),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 15,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
@@ -253,7 +254,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 16.sp,
                 ),
               ),
             ),

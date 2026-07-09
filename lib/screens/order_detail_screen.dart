@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/order_model.dart';
 import 'package:tnt_lh/services/order_service.dart';
+import 'package:tnt_lh/components/live_tracking_panel.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
@@ -32,7 +34,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Order Details"),
+        title: Text("Order Details"),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
@@ -42,16 +44,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         future: _orderFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
           if (!snapshot.hasData) {
-            return const Center(child: Text("Order not found"));
+            return Center(child: Text("Order not found"));
           }
 
           final order = snapshot.data!;
+          final trackableStatuses = [
+            'assigned',
+            'out-for-delivery',
+            'in_transit',
+            'arrived',
+          ];
+          final isTrackable = trackableStatuses.contains(
+            order.status.toLowerCase(),
+          );
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {
@@ -63,11 +74,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               await _orderFuture;
             },
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(16.r),
+              physics: AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (isTrackable) LiveTrackingPanel(order: order),
                   /// Order ID & Status
                   _buildSection(
                     child: Row(
@@ -78,38 +90,38 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           children: [
                             Text(
                               order.orderNumber,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: 18.sp,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4.h),
                             Text(
                               AppFormatters.formatDateTimeFull(order.createdAt),
                               style: TextStyle(
                                 color: Colors.grey[600],
-                                fontSize: 12,
+                                fontSize: 12.sp,
                               ),
                             ),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
                             color: AppFormatters.getStatusColor(
                               order.status,
                             ).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8.r),
                           ),
                           child: Text(
                             order.status.toUpperCase().replaceAll('_', ' '),
                             style: TextStyle(
                               color: AppFormatters.getStatusColor(order.status),
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 12.sp,
                             ),
                           ),
                         ),
@@ -117,15 +129,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   /// Status Timeline
                   if (order.timeline.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       "Order Status",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     _buildSection(
                       child: Column(
                         children: order.timeline.reversed.map((t) {
@@ -136,8 +148,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                 Column(
                                   children: [
                                     Container(
-                                      width: 12,
-                                      height: 12,
+                                      width: 12.w,
+                                      height: 12.h,
                                       decoration: BoxDecoration(
                                         color: AppFormatters.getStatusColor(
                                           t.status,
@@ -148,16 +160,16 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                     if (!isLast)
                                       Expanded(
                                         child: Container(
-                                          width: 2,
+                                          width: 2.w,
                                           color: Colors.grey[300],
                                         ),
                                       ),
                                   ],
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: 12.w),
                                 Expanded(
                                   child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
+                                    padding: EdgeInsets.only(bottom: 16),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -167,9 +179,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                             '_',
                                             ' ',
                                           ),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 13,
+                                            fontSize: 13.sp,
                                           ),
                                         ),
                                         if (t.description != null)
@@ -177,7 +189,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                             t.description!,
                                             style: TextStyle(
                                               color: Colors.grey[600],
-                                              fontSize: 12,
+                                              fontSize: 12.sp,
                                             ),
                                           ),
                                         Text(
@@ -186,7 +198,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                           ),
                                           style: TextStyle(
                                             color: Colors.grey[400],
-                                            fontSize: 10,
+                                            fontSize: 10.sp,
                                           ),
                                         ),
                                       ],
@@ -199,43 +211,43 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         }).toList(),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                   ],
 
                   /// Items List
-                  const Text(
+                  Text(
                     "Order Items",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   _buildSection(
                     child: Column(
                       children: order.items.map((item) {
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: EdgeInsets.only(bottom: 12),
                           child: Row(
                             children: [
                               Container(
-                                width: 40,
-                                height: 40,
+                                width: 40.w,
+                                height: 40.h,
                                 decoration: BoxDecoration(
                                   color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(8.r),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.local_cafe_rounded,
-                                  size: 20,
+                                  size: 20.sp,
                                   color: Colors.black,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12.w),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       item.name,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -244,7 +256,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                         item.customization!,
                                         style: TextStyle(
                                           color: Colors.grey[600],
-                                          fontSize: 12,
+                                          fontSize: 12.sp,
                                         ),
                                       ),
                                   ],
@@ -252,7 +264,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               ),
                               Text(
                                 "${item.quantity} x ₹${item.price.toStringAsFixed(0)}",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -263,42 +275,42 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
 
                   /// Delivery Address
                   if (order.deliveryAddress != null) ...[
-                    const Text(
+                    Text(
                       "Delivery Address",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     _buildSection(
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.location_on_outlined,
-                            size: 20,
+                            size: 20.sp,
                             color: Colors.black,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
                               order.deliveryAddress!.address,
-                              style: const TextStyle(fontSize: 13),
+                              style: TextStyle(fontSize: 13.sp),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                   ],
 
                   /// Payment & Summary
-                  const Text(
+                  Text(
                     "Bill Summary",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   _buildSection(
                     child: Column(
                       children: [
@@ -308,11 +320,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           order.deliveryCharge,
                         ),
                         _buildSummaryRow("Tax", order.tax),
-                        const Divider(height: 24),
+                        Divider(height: 24.h),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               "Total Paid",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
@@ -320,29 +332,29 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               "₹${order.total.toStringAsFixed(2)}",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: 18.sp,
                                 color: theme.colorScheme.primary,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12.h),
                         Row(
                           children: [
                             Icon(
                               order.paymentStatus == 'paid'
                                   ? Icons.check_circle_outline_rounded
                                   : Icons.info_outline_rounded,
-                              size: 16,
+                              size: 16.sp,
                               color: order.paymentStatus == 'paid'
                                   ? Colors.green
                                   : Colors.orange,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4.w),
                             Text(
                               "Payment: ${order.paymentMethod} (${order.paymentStatus})",
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: order.paymentStatus == 'paid'
                                     ? Colors.green
                                     : Colors.orange,
@@ -354,7 +366,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32.h),
                 ],
               ),
             ),
@@ -367,15 +379,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget _buildSection({required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -385,7 +397,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   Widget _buildSummaryRow(String label, double value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

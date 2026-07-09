@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
@@ -44,7 +45,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
       _resendSeconds = 30;
       _canResend = false;
     });
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _resendTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (_resendSeconds == 0) {
         if (mounted) setState(() => _canResend = true);
         timer.cancel();
@@ -156,7 +157,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,
           ),
@@ -164,26 +165,26 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
+        padding: EdgeInsets.symmetric(horizontal: 30.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            SizedBox(height: 20.h),
             Text(
               "Verification",
               style: GoogleFonts.poppins(
-                fontSize: 32,
+                fontSize: 32.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               "Enter the code sent to ${widget.phone}",
-              style: GoogleFonts.poppins(fontSize: 16, color: Colors.black54),
+              style: GoogleFonts.poppins(fontSize: 16.sp, color: Colors.black54),
             ),
-            const SizedBox(height: 50),
+            SizedBox(height: 50.h),
 
             PinCodeTextField(
               appContext: context,
@@ -193,20 +194,20 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
               autoDisposeControllers: false,
               animationType: AnimationType.fade,
               textStyle: GoogleFonts.poppins(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
               ),
               pinTheme: PinTheme(
                 shape: PinCodeFieldShape.box,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
                 fieldHeight: 56,
                 fieldWidth: 46,
                 activeFillColor: Colors.grey.shade50,
                 inactiveFillColor: Colors.grey.shade50,
                 selectedFillColor: Colors.white,
-                activeColor: const Color(0xFFA9BCA4),
+                activeColor: Color(0xFFA9BCA4),
                 inactiveColor: Colors.black12,
-                selectedColor: const Color(0xFFA9BCA4),
+                selectedColor: Color(0xFFA9BCA4),
                 borderWidth: 1.5,
               ),
               cursorColor: Colors.black,
@@ -217,7 +218,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
               },
             ),
 
-            const SizedBox(height: 30),
+            SizedBox(height: 30.h),
 
             Center(
               child: TextButton(
@@ -225,7 +226,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                 child: Text(
                   resendText,
                   style: GoogleFonts.poppins(
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: _canResend ? Colors.black : Colors.black26,
                   ),
@@ -233,27 +234,27 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
               ),
             ),
 
-            const SizedBox(height: 40),
+            SizedBox(height: 40.h),
 
             SizedBox(
               width: double.infinity,
-              height: 58,
+              height: 58.h,
               child: ElevatedButton(
                 onPressed: _isVerifying ? null : _verifyOtp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(18.r),
                   ),
                   elevation: 0,
                 ),
                 child: _isVerifying
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? CircularProgressIndicator(color: Colors.white)
                     : Text(
                         "Verify & Continue",
                         style: GoogleFonts.poppins(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

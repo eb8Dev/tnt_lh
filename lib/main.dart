@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tnt_lh/firebase_options.dart';
 import 'package:tnt_lh/onboarding/onboarding_screen.dart';
 import 'package:tnt_lh/onboarding/login_screen.dart';
@@ -10,13 +11,17 @@ import 'package:tnt_lh/onboarding/register_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
+import 'package:tnt_lh/providers/rider_tracking_provider.dart';
+import 'package:tnt_lh/services/notification_service.dart';
 import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/loading_indicator.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+@pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint("Handling a background message: ${message.messageId}");
 }
 
@@ -80,6 +85,9 @@ void main() async {
   await AppConfig.initializeRemoteConfig();
 
   // FCM Setup
+  // Foreground + tap notification handling (local notifications, routing).
+  await NotificationService.initialize();
+
   FirebaseMessaging messaging = FirebaseMessaging.instance;
   await messaging.requestPermission(alert: true, badge: true, sound: true);
 
@@ -97,12 +105,29 @@ class MyApp extends ConsumerWidget {
     final brand = ref.watch(brandProvider);
     final theme = brand == 'teasntrees' ? teasNTreesTheme : littleHTheme;
 
-    return MaterialApp(
-      title: 'Teas n Trees & Little H',
-      debugShowCheckedModeBanner: false,
-      theme: theme,
-      builder: (context, child) => GlobalListener(child: child!),
-      home: const AuthWrapper(),
+    return ScreenUtilInit(
+      designSize: const Size(390, 844),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, _) => MaterialApp(
+        title: 'Teas n Trees & Little H',
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        builder: (context, child) {
+          // Clamp system font scaling so accessibility large-fonts can't
+          // overflow layouts (a common source of RenderFlex overflow errors).
+          final mq = MediaQuery.of(context);
+          final scaler = mq.textScaler.clamp(
+            minScaleFactor: 0.9,
+            maxScaleFactor: 1.25,
+          );
+          return MediaQuery(
+            data: mq.copyWith(textScaler: scaler),
+            child: GlobalListener(child: child!),
+          );
+        },
+        home: const AuthWrapper(),
+      ),
     );
   }
 }
@@ -122,6 +147,10 @@ class GlobalListener extends ConsumerWidget {
             context: context,
             message: "Order Update: Order is $status",
           );
+        }
+
+        if (next.name == 'rider:location-update') {
+          ref.read(riderTrackingProvider.notifier).updateWithEvent(next);
         }
       }
     });

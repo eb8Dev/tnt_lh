@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/product_model.dart';
@@ -64,25 +65,25 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             leading: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8.0.r),
               child: TactileButton(
                 onTap: () => Navigator.pop(context),
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.arrow_back_ios_new_rounded,
                     color: Colors.black,
-                    size: 24,
+                    size: 24.sp,
                   ),
                 ),
               ),
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(8.0.r),
                 child: Consumer(
                   builder: (context, ref, child) {
                     final isFav = ref.watch(wishlistProvider).maybeWhen(
@@ -95,22 +96,22 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           .read(wishlistProvider.notifier)
                           .toggleFavorite(widget.product),
                       child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
+                        padding: EdgeInsets.all(10.r),
+                        decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                           color: isFav ? Colors.redAccent : Colors.black,
-                          size: 24,
+                          size: 24.sp,
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: widget.product.image != null &&
@@ -123,7 +124,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           isLittleH
                               ? Icons.cake_rounded
                               : Icons.local_cafe_rounded,
-                          size: 80,
+                          size: 80.sp,
                           color: Colors.black12,
                         ),
                       ),
@@ -132,11 +133,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
           ),
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(36)),
+                    BorderRadius.vertical(top: Radius.circular(36.r)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,16 +146,16 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 12.w, vertical: 6.h),
                         decoration: BoxDecoration(
                           color: themeColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10.r),
                         ),
                         child: Text(
                           isLittleH ? "Little H" : "Teas N Trees",
                           style: GoogleFonts.poppins(
-                            fontSize: 11,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.bold,
                             color: themeColor,
                           ),
@@ -162,24 +163,24 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                       ),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.star_rounded,
                             color: Colors.amber,
-                            size: 18,
+                            size: 18.sp,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4.w),
                           Text(
                             widget.product.averageRating.toStringAsFixed(1),
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   Text(
                     widget.product.name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -187,43 +188,43 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           color: Colors.black87,
                         ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     "₹$_currentPrice",
                     style: GoogleFonts.poppins(
-                      fontSize: 24,
+                      fontSize: 24.sp,
                       fontWeight: FontWeight.bold,
                       color: themeColor,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   Text(
                     "Description",
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.h),
                   Text(
                     widget.product.description ??
                         "A premium handcrafted experience made with the finest ingredients and passion.",
                     style: GoogleFonts.poppins(
                       color: Colors.black54,
-                      height: 1.6,
-                      fontSize: 14,
+                      height: 1.6.h,
+                      fontSize: 14.sp,
                     ),
                   ),
                   if (widget.product.sizeOptions.isNotEmpty) ...[
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     Text(
                       "Select Size",
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     Wrap(
                       spacing: 12,
                       children: widget.product.sizeOptions.map((opt) {
@@ -231,12 +232,12 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                         return TactileButton(
                           onTap: () => setState(() => _selectedSize = opt.size),
                           child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 10),
+                            duration: Duration(milliseconds: 200),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20.w, vertical: 10.h),
                             decoration: BoxDecoration(
                               color: isSelected ? themeColor : Colors.white,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(14.r),
                               border: Border.all(
                                 color: isSelected
                                     ? themeColor
@@ -247,7 +248,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                                       BoxShadow(
                                         color: themeColor.withValues(alpha: 0.3),
                                         blurRadius: 8,
-                                        offset: const Offset(0, 4),
+                                        offset: Offset(0, 4),
                                       )
                                     ]
                                   : [],
@@ -258,7 +259,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                                 color:
                                     isSelected ? Colors.white : Colors.black87,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 13.sp,
                               ),
                             ),
                           ),
@@ -268,7 +269,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   ],
                   if (isLittleH &&
                       widget.product.cakePricing?.egglessAvailable == true) ...[
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -279,13 +280,13 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                               "Eggless Option",
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: 16.sp,
                               ),
                             ),
                             Text(
                               "+ ₹${widget.product.cakePricing!.egglessExtraCharge}",
                               style: GoogleFonts.poppins(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: Colors.black38,
                               ),
                             ),
@@ -299,31 +300,31 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                       ],
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   Text(
                     "Special Instructions",
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   TextField(
                     controller: _customizationController,
                     decoration: InputDecoration(
                       hintText: "Add any special requests...",
                       hintStyle: GoogleFonts.poppins(
-                          fontSize: 13, color: Colors.black26),
+                          fontSize: 13.sp, color: Colors.black26),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                         borderSide: BorderSide.none,
                       ),
                     ),
                     maxLines: 2,
                   ),
-                  const SizedBox(height: 120), // Space for bottom bar
+                  SizedBox(height: 120.h), // Space for bottom bar
                 ],
               ),
             ),
@@ -336,25 +337,25 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
 
   Widget _buildBottomAction(Color themeColor) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
-            offset: const Offset(0, -10),
+            offset: Offset(0, -10),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            height: 56,
+            height: 56.h,
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(18.r),
             ),
             child: Row(
               children: [
@@ -362,29 +363,29 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   onPressed: () {
                     if (_quantity > 1) setState(() => _quantity--);
                   },
-                  icon: const Icon(
+                  icon: Icon(
                       Icons.remove_rounded,
-                      size: 20,
+                      size: 20.sp,
                       color: Colors.black87),
                 ),
                 Text(
                   "$_quantity",
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                   ),
                 ),
                 IconButton(
                   onPressed: () => setState(() => _quantity++),
-                  icon: const Icon(
+                  icon: Icon(
                       Icons.add_rounded,
-                      size: 20,
+                      size: 20.sp,
                       color: Colors.black87),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: TactileButton(
               onTap: () {
@@ -412,15 +413,15 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 Navigator.pop(context);
               },
               child: Container(
-                height: 56,
+                height: 56.h,
                 decoration: BoxDecoration(
                   color: Colors.black,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(18.r),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 15,
-                      offset: const Offset(0, 8),
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
@@ -430,7 +431,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                   ),
                 ),
               ),
