@@ -285,14 +285,27 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       if (!contactFormKey.currentState!.validate()) return;
                       final user = ref.read(authProvider).user;
                       try {
+                        // The backend Contact model restricts `subject` to a
+                        // fixed enum and requires a non-empty lastName, so a
+                        // free-text subject or a single-word name used to 500.
+                        // Send the enum value 'Support' and fold the user's
+                        // typed subject into the message so nothing is lost.
+                        final typedSubject = subjectController.text.trim();
+                        final composedMessage = typedSubject.isEmpty
+                            ? messageController.text.trim()
+                            : '$typedSubject\n\n${messageController.text.trim()}';
+                        final nameParts =
+                            (user?.name ?? 'Customer').trim().split(' ');
                         await ContactService.submitContactForm(
-                          firstName: user?.name?.split(' ').first ?? 'Customer',
-                          lastName: user?.name?.contains(' ') == true
-                              ? user?.name?.split(' ').last
-                              : '',
+                          firstName: nameParts.first.isEmpty
+                              ? 'Customer'
+                              : nameParts.first,
+                          lastName: nameParts.length > 1
+                              ? nameParts.sublist(1).join(' ')
+                              : '-',
                           email: user?.email ?? 'anonymous@example.com',
-                          subject: subjectController.text.trim(),
-                          message: messageController.text.trim(),
+                          subject: 'Support',
+                          message: composedMessage,
                         );
                         if (context.mounted) {
                           Navigator.pop(context);

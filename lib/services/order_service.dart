@@ -91,6 +91,7 @@ class OrderService {
     double? longitude,
     String? brand,
     List<Map<String, dynamic>>? items,
+    String? couponCode,
   }) async {
     // If specific items are provided, use the general orders endpoint.
     // This allows brand-specific checkout without clearing the entire cart.
@@ -122,6 +123,8 @@ class OrderService {
           "deliveryInstructions": deliveryInstructions,
         if (point != null) "location": point,
         if (items != null) "items": items,
+        if (couponCode != null && couponCode.isNotEmpty)
+          "couponCode": couponCode,
       };
 
       final response = await http.post(
@@ -139,6 +142,39 @@ class OrderService {
     } catch (e) {
       throw Exception('Network error: $e');
     }
+  }
+
+  /// Re-place a past order (same items + address, COD). The backend creates a
+  /// brand-new order and returns it.
+  static Future<Map<String, dynamic>> reorder({
+    required String orderId,
+    String? brand,
+  }) async {
+    final url = AppConfig.buildUrl(
+      '/customer/orders/$orderId/reorder',
+      brand: brand,
+    );
+    final headers = await _getHeaders();
+    final response = await http.post(url, headers: headers);
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 201) return data;
+    throw Exception(data['message'] ?? 'Could not re-place this order');
+  }
+
+  /// Fetch the invoice PDF bytes (endpoint is auth-protected, so we can't just
+  /// open the URL in a browser).
+  static Future<List<int>> fetchInvoice({
+    required String orderId,
+    String? brand,
+  }) async {
+    final url = AppConfig.buildUrl(
+      '/customer/orders/$orderId/invoice',
+      brand: brand,
+    );
+    final headers = await _getHeaders();
+    final response = await http.get(url, headers: headers);
+    if (response.statusCode == 200) return response.bodyBytes;
+    throw Exception('Could not download the invoice');
   }
 
   /// Raise an issue against an order after a rider is assigned.

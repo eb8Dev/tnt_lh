@@ -11,6 +11,9 @@ import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
 import 'package:tnt_lh/services/auth_service.dart';
 import 'package:tnt_lh/services/order_service.dart';
+import 'package:tnt_lh/services/coupon_service.dart';
+import 'package:tnt_lh/services/address_service.dart';
+import 'package:tnt_lh/models/address_model.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
 
@@ -41,6 +44,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   double _deliveryCharge = 50;
   double _gstRate = 5;
 
+  // Coupon
+  final TextEditingController _couponController = TextEditingController();
+  String? _appliedCoupon;
+  double _couponDiscount = 0;
+  bool _validatingCoupon = false;
+  String? _couponError;
+
+  // Saved addresses
+  List<SavedAddress> _savedAddresses = [];
+  String? _selectedAddressId;
+  bool _loadingAddresses = true;
+
   @override
   void initState() {
     super.initState();
@@ -48,8 +63,93 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _fetchData();
   }
 
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _instructionsController.dispose();
+    _couponController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchData() async {
-    await Future.wait([_fetchUserAddress(), _fetchSettings()]);
+    await Future.wait([
+      _fetchUserAddress(),
+      _fetchSettings(),
+      _fetchSavedAddresses(),
+    ]);
+  }
+
+  Future<void> _fetchSavedAddresses() async {
+    try {
+      final brand = widget.specificBrand ?? ref.read(brandProvider);
+      final list = await AddressService.getAddresses(brand: brand);
+      if (!mounted) return;
+      setState(() {
+        _savedAddresses = list;
+        _loadingAddresses = false;
+        // Preselect the default (or first) saved address.
+        if (list.isNotEmpty) {
+          final def = list.firstWhere(
+            (a) => a.isDefault,
+            orElse: () => list.first,
+          );
+          _selectAddress(def);
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingAddresses = false);
+    }
+  }
+
+  void _selectAddress(SavedAddress a) {
+    _selectedAddressId = a.id;
+    _addressController.text = a.label.isEmpty
+        ? a.addressLine
+        : '${a.label}, ${a.addressLine}';
+    _latitude = a.latitude;
+    _longitude = a.longitude;
+  }
+
+  Future<void> _addNewAddress() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddressPickerScreen(
+          initialLocation: _latitude != null && _longitude != null
+              ? LatLng(_latitude!, _longitude!)
+              : null,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    final label = (result['name'] as String?)?.trim() ?? '';
+    final line = (result['address'] as String?)?.trim() ?? '';
+    final lat = result['lat'] as double?;
+    final lng = result['lng'] as double?;
+    try {
+      final brand = widget.specificBrand ?? ref.read(brandProvider);
+      final saved = await AddressService.addAddress(
+        label: label.isEmpty ? 'Home' : label,
+        addressLine: line,
+        latitude: lat,
+        longitude: lng,
+        isDefault: _savedAddresses.isEmpty,
+        brand: brand,
+      );
+      if (!mounted) return;
+      await _fetchSavedAddresses();
+      if (saved != null && mounted) setState(() => _selectAddress(saved));
+    } catch (e) {
+      if (!mounted) return;
+      // Saving failed, but let the order proceed with the picked address.
+      setState(() {
+        _addressController.text = label.isEmpty ? line : '$label, $line';
+        _latitude = lat;
+        _longitude = lng;
+        _selectedAddressId = null;
+      });
+    }
   }
 
   Future<void> _fetchUserAddress() async {
@@ -90,88 +190,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  Future<void> _openAddressPicker() async {
-    final result = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddressPickerScreen(
-          initialLocation: _latitude != null && _longitude != null
-              ? LatLng(_latitude!, _longitude!)
-              : null,
-        ),
-      ),
-    );
-    if (result == null || !mounted) return;
+  /// Saved-address book: a list of the customer's saved addresses (radio-style)
+  /// plus "Add new address". Falls back to just the map-picker card when there
+  /// are none. Wrapped in a FormField so "Address is required" still validates.
+  Widget _buildAddressSection() {
+    if (_loadingAddresses) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-    setState(() {
-      final label = (result['name'] as String?)?.trim() ?? '';
-      final address = (result['address'] as String?)?.trim() ?? '';
-      _addressController.text = label.isEmpty ? address : "$label, $address";
-      _latitude = result['lat'] as double?;
-      _longitude = result['lng'] as double?;
-    });
-  }
-
-  /// A tappable card standing in for the old free-text box. It still lives in
-  /// the Form (via FormField) so "Address is required" validates as before.
-  Widget _buildAddressPickerField() {
     return FormField<String>(
       validator: (_) =>
           _addressController.text.trim().isEmpty ? "Address is required" : null,
       builder: (field) {
-        final hasAddress = _addressController.text.trim().isNotEmpty;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TactileButton(
-              onTap: () async {
-                await _openAddressPicker();
-                field.didChange(_addressController.text);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(16.r),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(
-                    color: field.hasError
-                        ? Colors.redAccent
-                        : Colors.black.withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      hasAddress
-                          ? Icons.location_on_rounded
-                          : Icons.add_location_alt_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22.sp,
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Text(
-                        hasAddress
-                            ? _addressController.text
-                            : "Pick your delivery location on the map",
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14.sp,
-                          color: hasAddress ? Colors.black87 : Colors.black45,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.black38,
-                      size: 22.sp,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            ..._savedAddresses.map((a) => _buildSavedAddressTile(a, field)),
+            SizedBox(height: _savedAddresses.isEmpty ? 0 : 8.h),
+            // The picker card (also the "add new" path).
+            _buildAddressPickerField(field),
             if (field.hasError)
               Padding(
                 padding: EdgeInsets.only(top: 8.h, left: 4.w),
@@ -187,6 +227,186 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         );
       },
     );
+  }
+
+  Widget _buildSavedAddressTile(SavedAddress a, FormFieldState<String> field) {
+    final selected = _selectedAddressId == a.id;
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: TactileButton(
+        onTap: () {
+          setState(() => _selectAddress(a));
+          field.didChange(_addressController.text);
+        },
+        child: Container(
+          padding: EdgeInsets.all(14.r),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.black.withValues(alpha: 0.08),
+              width: selected ? 1.8 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.black38,
+                size: 20.sp,
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          a.label.isEmpty ? 'Address' : a.label,
+                          style: GoogleFonts.poppins(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (a.isDefault)
+                          Padding(
+                            padding: EdgeInsets.only(left: 8.w),
+                            child: Text(
+                              'Default',
+                              style: GoogleFonts.poppins(
+                                fontSize: 10.sp,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      a.addressLine,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.sp,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The "add new address" / pick-on-map card.
+  Widget _buildAddressPickerField(FormFieldState<String> field) {
+    {
+      final hasAddress =
+          _selectedAddressId == null && _addressController.text.trim().isNotEmpty;
+      // When no saved address is picked but a one-off map address is set, show
+      // it here; otherwise this is the "add new" prompt.
+      return TactileButton(
+        onTap: () async {
+          await _addNewAddress();
+          field.didChange(_addressController.text);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: field.hasError
+                  ? Colors.redAccent
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add_location_alt_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22.sp,
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Text(
+                  hasAddress
+                      ? _addressController.text
+                      : (_savedAddresses.isEmpty
+                            ? "Pick your delivery location on the map"
+                            : "Add a new address"),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    color: hasAddress ? Colors.black87 : Colors.black45,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.black38,
+                size: 22.sp,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _validatingCoupon = true;
+      _couponError = null;
+    });
+    try {
+      final brand =
+          widget.specificBrand ?? ref.read(brandProvider) ?? 'teasntrees';
+      final result = await CouponService.validate(
+        code: code,
+        orderValue: widget.cart.subtotal,
+        brand: brand,
+      );
+      if (!mounted) return;
+      setState(() {
+        _appliedCoupon = result.code;
+        _couponDiscount = result.discountAmount;
+        _validatingCoupon = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _validatingCoupon = false;
+        _couponError = e.toString().replaceFirst('Exception: ', '');
+        _appliedCoupon = null;
+        _couponDiscount = 0;
+      });
+    }
+  }
+
+  void _removeCoupon() {
+    setState(() {
+      _appliedCoupon = null;
+      _couponDiscount = 0;
+      _couponError = null;
+      _couponController.clear();
+    });
   }
 
   Future<void> _placeOrder() async {
@@ -218,6 +438,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         longitude: _longitude,
         brand: currentBrand,
         items: _isGlobal ? null : itemsPayload,
+        couponCode: _appliedCoupon,
       );
 
       if (result['success'] == true) {
@@ -390,7 +611,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final subtotal = widget.cart.subtotal;
     final tax = subtotal * (_gstRate / 100);
-    final total = subtotal + _deliveryCharge + tax;
+    final total = subtotal + _deliveryCharge + tax - _couponDiscount;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -455,7 +676,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 _buildSectionTitle("Delivery Address"),
                 SizedBox(height: 16.h),
-                _buildAddressPickerField(),
+                _buildAddressSection(),
 
                 SizedBox(height: 36.h),
 
@@ -574,6 +795,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   child: Column(
                     children: [
+                      _buildCouponField(),
+                      SizedBox(height: 20.h),
                       _buildSummaryRow(
                         "Item Total",
                         "₹${subtotal.toStringAsFixed(2)}",
@@ -588,6 +811,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         "GST ($_gstRate%)",
                         "₹${tax.toStringAsFixed(2)}",
                       ),
+                      if (_couponDiscount > 0) ...[
+                        SizedBox(height: 14.h),
+                        _buildSummaryRow(
+                          "Coupon ($_appliedCoupon)",
+                          "- ₹${_couponDiscount.toStringAsFixed(2)}",
+                          valueColor: Colors.green.shade700,
+                        ),
+                      ],
                       Padding(
                         padding: EdgeInsets.symmetric(vertical: 20.h),
                         child: Divider(color: Color(0xFFF0F0F0)),
@@ -699,7 +930,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String amount) {
+  Widget _buildSummaryRow(String label, String amount, {Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -715,10 +946,117 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           amount,
           style: GoogleFonts.poppins(
             fontSize: 15.sp,
-            color: Colors.black87,
+            color: valueColor ?? Colors.black87,
             fontWeight: FontWeight.w600,
           ),
         ),
+      ],
+    );
+  }
+
+  /// Coupon entry: type a code → Apply → validated against the order value.
+  /// Once applied it collapses to a removable chip and the discount shows in the
+  /// summary above.
+  Widget _buildCouponField() {
+    if (_appliedCoupon != null) {
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.local_offer_rounded,
+              color: Colors.green.shade700,
+              size: 18.sp,
+            ),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                "'$_appliedCoupon' applied — you save ₹${_couponDiscount.toStringAsFixed(2)}",
+                style: GoogleFonts.poppins(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green.shade800,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: _removeCoupon,
+              child: Text(
+                'Remove',
+                style: GoogleFonts.poppins(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _couponController,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  hintText: 'Coupon code',
+                  prefixIcon: Icon(
+                    Icons.local_offer_outlined,
+                    size: 18.sp,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 4.h),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 10.w),
+            ElevatedButton(
+              onPressed: _validatingCoupon ? null : _applyCoupon,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+              ),
+              child: _validatingCoupon
+                  ? SizedBox(
+                      height: 16.h,
+                      width: 16.h,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Apply'),
+            ),
+          ],
+        ),
+        if (_couponError != null)
+          Padding(
+            padding: EdgeInsets.only(top: 8.h, left: 4.w),
+            child: Text(
+              _couponError!,
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                color: Colors.redAccent,
+              ),
+            ),
+          ),
       ],
     );
   }

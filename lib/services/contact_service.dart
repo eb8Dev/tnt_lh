@@ -11,7 +11,9 @@ class ContactService {
     required String message,
     String? brand,
   }) async {
-    final url = AppConfig.buildUrl('/v1/contact', brand: brand);
+    // Was '/v1/contact' → resolved to /api/<brand>/v1/contact which 404s. The
+    // customer contact route is mounted at /api/<brand>/customer/contact.
+    final url = AppConfig.buildUrl('/customer/contact', brand: brand);
     try {
       final response = await http.post(
         url,

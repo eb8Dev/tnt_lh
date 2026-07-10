@@ -1,9 +1,12 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/order_model.dart';
 import 'package:tnt_lh/services/order_service.dart';
+import 'package:tnt_lh/services/review_service.dart';
 import 'package:tnt_lh/components/live_tracking_panel.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
@@ -51,45 +54,69 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     };
     final canEditAddress = !addressLocked.contains(status);
     final canReport = dispatched.contains(status);
+    final isDelivered = status == 'delivered' || status == 'completed';
+    final isCancelled = status == 'cancelled';
+    final canReorder = isDelivered || isCancelled;
 
-    if (!canEditAddress && !canReport) return const SizedBox.shrink();
+    final buttons = <Widget>[
+      if (canEditAddress)
+        _actionButton(
+          label: 'Edit address',
+          icon: Icons.edit_location_alt_outlined,
+          color: Theme.of(context).colorScheme.primary,
+          onPressed: () => _editAddress(order),
+        ),
+      if (canReport)
+        _actionButton(
+          label: 'Report issue',
+          icon: Icons.report_gmailerrorred_outlined,
+          color: Colors.redAccent.shade400,
+          onPressed: () => _reportIssue(order),
+        ),
+      if (canReorder)
+        _actionButton(
+          label: 'Order again',
+          icon: Icons.replay_rounded,
+          color: Theme.of(context).colorScheme.primary,
+          onPressed: () => _reorder(order),
+        ),
+      if (isDelivered)
+        _actionButton(
+          label: 'Invoice',
+          icon: Icons.receipt_long_outlined,
+          color: Colors.black87,
+          onPressed: () => _downloadInvoice(order),
+        ),
+    ];
+
+    if (buttons.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.only(bottom: 16.h),
-      child: Row(
-        children: [
-          if (canEditAddress)
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _editAddress(order),
-                icon: Icon(Icons.edit_location_alt_outlined, size: 18.sp),
-                label: const Text('Edit address'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-            ),
-          if (canEditAddress && canReport) SizedBox(width: 12.w),
-          if (canReport)
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _reportIssue(order),
-                icon: Icon(Icons.report_gmailerrorred_outlined, size: 18.sp),
-                label: const Text('Report issue'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent.shade400,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-            ),
-        ],
+      child: Wrap(
+        spacing: 12.w,
+        runSpacing: 8.h,
+        children: buttons.map((b) => SizedBox(width: 160.w, child: b)).toList(),
+      ),
+    );
+  }
+
+  Widget _actionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18.sp),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        padding: EdgeInsets.symmetric(vertical: 12.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
       ),
     );
   }
@@ -119,6 +146,95 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         message: 'Delivery address updated.',
       );
       _reload();
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _reorder(Order order) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Order again?'),
+        content: const Text(
+          'We\'ll place a new order with the same items to your last delivery '
+          'address, paid Cash on Delivery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Place order'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    try {
+      final result = await OrderService.reorder(
+        orderId: order.id,
+        brand: order.brand,
+      );
+      if (!mounted) return;
+      final newId = result['data']?['_id'] ?? result['data']?['id'];
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: 'Order placed!',
+      );
+      if (newId != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                OrderDetailScreen(orderId: newId.toString(), brand: order.brand),
+          ),
+        );
+      } else {
+        _reload();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _downloadInvoice(Order order) async {
+    SnackBarUtils.showThemedSnackBar(
+      context: context,
+      message: 'Preparing invoice…',
+    );
+    try {
+      final bytes = await OrderService.fetchInvoice(
+        orderId: order.id,
+        brand: order.brand,
+      );
+      if (!mounted) return;
+      // Hand the PDF to the OS share/save sheet (no path_provider needed).
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              Uint8List.fromList(bytes),
+              mimeType: 'application/pdf',
+              name: 'invoice-${order.orderNumber}.pdf',
+            ),
+          ],
+          fileNameOverrides: ['invoice-${order.orderNumber}.pdf'],
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       SnackBarUtils.showThemedSnackBar(
@@ -207,6 +323,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (isTrackable) LiveTrackingPanel(order: order),
+
+                  if (order.status.toLowerCase() == 'delivered' ||
+                      order.status.toLowerCase() == 'completed')
+                    _RateOrderSection(order: order),
 
                   _buildOrderActions(order),
 
@@ -688,6 +808,173 @@ class _ReportIssueSheetState extends State<_ReportIssueSheet> {
                   : const Text('Submit'),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rate a delivered order — food + rider stars + an optional note. Collapses to
+/// a "thanks" state once submitted (or if the order already carries a rating).
+class _RateOrderSection extends StatefulWidget {
+  final Order order;
+  const _RateOrderSection({required this.order});
+
+  @override
+  State<_RateOrderSection> createState() => _RateOrderSectionState();
+}
+
+class _RateOrderSectionState extends State<_RateOrderSection> {
+  int _foodRating = 0;
+  int _riderRating = 0;
+  final _commentController = TextEditingController();
+  bool _busy = false;
+  bool _done = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // If the order already has a rating, show the submitted state.
+    if ((widget.order.foodRating ?? 0) > 0) {
+      _done = true;
+      _foodRating = (widget.order.foodRating ?? 0).round();
+      _riderRating = (widget.order.riderRating ?? 0).round();
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_foodRating == 0 || _riderRating == 0) {
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: 'Please rate both the food and the rider.',
+        isError: true,
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await ReviewService.submitOrderReview(
+        orderId: widget.order.id,
+        foodRating: _foodRating,
+        riderRating: _riderRating,
+        review: _commentController.text.trim(),
+        brand: widget.order.brand,
+      );
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _done = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
+  Widget _stars(int value, ValueChanged<int> onChanged) {
+    return Row(
+      children: List.generate(5, (i) {
+        final filled = i < value;
+        return GestureDetector(
+          onTap: _done || _busy ? null : () => onChanged(i + 1),
+          child: Padding(
+            padding: EdgeInsets.only(right: 6.w),
+            child: Icon(
+              filled ? Icons.star_rounded : Icons.star_outline_rounded,
+              color: filled ? const Color(0xFFF5A623) : Colors.black26,
+              size: 30.sp,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 16.h),
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _done ? 'Thanks for your feedback!' : 'Rate your order',
+            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Food', style: TextStyle(fontSize: 13.sp)),
+              _stars(_foodRating, (v) => setState(() => _foodRating = v)),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Rider', style: TextStyle(fontSize: 13.sp)),
+              _stars(_riderRating, (v) => setState(() => _riderRating = v)),
+            ],
+          ),
+          if (!_done) ...[
+            SizedBox(height: 12.h),
+            TextField(
+              controller: _commentController,
+              enabled: !_busy,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'Add a comment (optional)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                contentPadding: EdgeInsets.all(12.r),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _busy ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                child: _busy
+                    ? SizedBox(
+                        height: 18.h,
+                        width: 18.h,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Submit rating'),
+              ),
+            ),
+          ],
         ],
       ),
     );
