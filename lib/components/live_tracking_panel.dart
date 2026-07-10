@@ -4,8 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
 import 'package:tnt_lh/services/auth_service.dart';
@@ -19,9 +19,12 @@ class LiveTrackingPanel extends ConsumerStatefulWidget {
 }
 
 class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
+  static const LatLng _defaultLoc = LatLng(16.3142, 80.4187); // Guntur
+  static const Color _accent = Color(0xFF5D9ECC);
+
   bool _isLoading = true;
   bool _hasDelivery = false;
-  final MapController _mapController = MapController();
+  GoogleMapController? _mapController;
 
   LatLng? _riderLoc;
   LatLng? _pickupLoc;
@@ -30,6 +33,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
 
   String _riderName = "Rider Assigned";
   String _deliveryStatus = "Rider is heading to pickup...";
+  String? _deliveryOtp; // shown persistently so a swiped notification isn't lost
 
   DateTime? _lastRouteFetch;
   double _apiDurationMinutes = 0.0;
@@ -39,6 +43,15 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     super.initState();
     _fetchActiveDelivery();
   }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  double _metersBetween(LatLng a, LatLng b) =>
+      Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
 
   Future<void> _fetchActiveDelivery() async {
     try {
@@ -53,68 +66,45 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      if (response.statusCode == 200) {
-        final resData = json.decode(response.body);
-        if (resData['success'] == true && resData['data'] != null) {
-          final data = resData['data'];
-          final riderData = data['rider'];
-          final pickup = data['pickupLocation'];
-          final delivery = data['deliveryLocation'];
-
-          double? rLat, rLng;
-          if (riderData != null && riderData['currentLocation'] != null) {
-            final coords = riderData['currentLocation']['coordinates'];
-            if (coords is List && coords.length >= 2) {
-              rLng = (coords[0]).toDouble();
-              rLat = (coords[1]).toDouble();
-            }
-          }
-
-          double? pLat, pLng;
-          if (pickup != null && pickup['coordinates'] != null) {
-            final coords = pickup['coordinates'];
-            if (coords is List && coords.length >= 2) {
-              pLng = (coords[0]).toDouble();
-              pLat = (coords[1]).toDouble();
-            }
-          }
-
-          double? dLat, dLng;
-          if (delivery != null && delivery['coordinates'] != null) {
-            final coords = delivery['coordinates'];
-            if (coords is List && coords.length >= 2) {
-              dLng = (coords[0]).toDouble();
-              dLat = (coords[1]).toDouble();
-            }
-          }
-
-          if (mounted) {
-            setState(() {
-              _hasDelivery = true;
-              _riderName = riderData?['name'] ?? 'Cafe Rider';
-
-              _pickupLoc = pLat != null && pLng != null
-                  ? LatLng(pLat, pLng)
-                  : LatLng(16.3142, 80.4187);
-              _deliveryLoc = dLat != null && dLng != null
-                  ? LatLng(dLat, dLng)
-                  : LatLng(16.3090, 80.4309);
-
-              _riderLoc = rLat != null && rLng != null
-                  ? LatLng(rLat, rLng)
-                  : _pickupLoc;
-
-              _updateStatusText();
-              _isLoading = false;
-            });
-
-            _fetchRoadRoute();
-          }
-        } else {
-          if (mounted) setState(() => _isLoading = false);
-        }
-      } else {
+      if (response.statusCode != 200) {
         if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final resData = json.decode(response.body);
+      if (resData['success'] != true || resData['data'] == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final data = resData['data'];
+      final riderData = data['rider'];
+      final pickup = data['pickupLocation'];
+      final delivery = data['deliveryLocation'];
+
+      LatLng? parse(dynamic node) {
+        final coords = node?['coordinates'];
+        if (coords is List && coords.length >= 2) {
+          return LatLng((coords[1]).toDouble(), (coords[0]).toDouble());
+        }
+        return null;
+      }
+
+      if (mounted) {
+        setState(() {
+          _hasDelivery = true;
+          _riderName = riderData?['name'] ?? 'Cafe Rider';
+          final otp = data['deliveryOtp'];
+          _deliveryOtp = (otp != null && otp.toString().isNotEmpty)
+              ? otp.toString()
+              : null;
+          _pickupLoc = parse(pickup) ?? _defaultLoc;
+          _deliveryLoc = parse(delivery) ?? const LatLng(16.3090, 80.4309);
+          _riderLoc = parse(riderData?['currentLocation']) ?? _pickupLoc;
+          _updateStatusText();
+          _isLoading = false;
+        });
+        _fetchRoadRoute();
       }
     } catch (e) {
       debugPrint("Error fetching active delivery: $e");
@@ -126,60 +116,82 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     if (_riderLoc == null || _pickupLoc == null || _deliveryLoc == null) return;
 
     try {
-      final waypoints = [
-        '${_riderLoc!.longitude},${_riderLoc!.latitude}',
-        '${_pickupLoc!.longitude},${_pickupLoc!.latitude}',
-        '${_deliveryLoc!.longitude},${_deliveryLoc!.latitude}',
-      ].join(';');
-
+      final origin = '${_riderLoc!.latitude},${_riderLoc!.longitude}';
+      final dest = '${_deliveryLoc!.latitude},${_deliveryLoc!.longitude}';
+      final waypoint = '${_pickupLoc!.latitude},${_pickupLoc!.longitude}';
       final url = Uri.parse(
-        'https://router.project-osrm.org/route/v1/driving/$waypoints?overview=full&geometries=geojson',
+        'https://maps.googleapis.com/maps/api/directions/json'
+        '?origin=$origin&destination=$dest&waypoints=$waypoint'
+        '&mode=driving&key=${AppConfig.googleMapsApiKey}',
       );
       final response = await http.get(url);
+      if (response.statusCode != 200) return;
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['routes'] != null && data['routes'].isNotEmpty) {
-          final route = data['routes'][0];
-          final List coords = route['geometry']['coordinates'];
-          final double durSeconds = (route['duration'] ?? 0.0).toDouble();
+      final data = json.decode(response.body);
+      if (data['status'] != 'OK' || (data['routes'] as List).isEmpty) {
+        debugPrint("Directions API: ${data['status']}");
+        return;
+      }
 
-          if (mounted) {
-            setState(() {
-              _routeCoords = coords
-                  .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
-                  .toList();
-              _apiDurationMinutes = durSeconds / 60.0;
-              _lastRouteFetch = DateTime.now();
-              _updateStatusText();
-            });
-          }
-        }
+      final route = data['routes'][0];
+      final encoded = route['overview_polyline']?['points'] as String?;
+      double durSeconds = 0;
+      for (final leg in (route['legs'] as List? ?? [])) {
+        durSeconds += (leg['duration']?['value'] ?? 0).toDouble();
+      }
+
+      if (encoded != null && mounted) {
+        setState(() {
+          _routeCoords = _decodePolyline(encoded);
+          _apiDurationMinutes = durSeconds / 60.0;
+          _lastRouteFetch = DateTime.now();
+          _updateStatusText();
+        });
       }
     } catch (e) {
       debugPrint("Route fetch error: $e");
     }
   }
 
+  // Decode a Google "encoded polyline" string into coordinates.
+  List<LatLng> _decodePolyline(String encoded) {
+    final List<LatLng> points = [];
+    int index = 0, lat = 0, lng = 0;
+    while (index < encoded.length) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      lat += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      lng += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+
+      points.add(LatLng(lat / 1e5, lng / 1e5));
+    }
+    return points;
+  }
+
   void _checkDeviation(LatLng currentPos) {
     if (_routeCoords.isEmpty) return;
-
     double minD = double.infinity;
-    final distHelper = Distance();
-    int limit = _routeCoords.length > 20 ? 20 : _routeCoords.length;
-
+    final limit = _routeCoords.length > 20 ? 20 : _routeCoords.length;
     for (int i = 0; i < limit; i++) {
-      final d = distHelper.as(LengthUnit.Meter, currentPos, _routeCoords[i]);
+      final d = _metersBetween(currentPos, _routeCoords[i]);
       if (d < minD) minD = d;
     }
-
     if (minD > 150) {
       final now = DateTime.now();
       if (_lastRouteFetch == null ||
           now.difference(_lastRouteFetch!).inSeconds > 20) {
-        debugPrint(
-          "📡 Rider deviated (${minD.round()}m). Recalculating customer view...",
-        );
         _fetchRoadRoute();
       }
     }
@@ -187,50 +199,32 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
 
   void _pruneRoute(LatLng currentPos) {
     if (_routeCoords.isEmpty) return;
-
     int nearestIdx = -1;
     double minDistance = double.infinity;
-    final distanceHelper = Distance();
-
-    int searchLimit = _routeCoords.length > 40 ? 40 : _routeCoords.length;
-
+    final searchLimit = _routeCoords.length > 40 ? 40 : _routeCoords.length;
     for (int i = 0; i < searchLimit; i++) {
-      final dist = distanceHelper.as(
-        LengthUnit.Meter,
-        currentPos,
-        _routeCoords[i],
-      );
+      final dist = _metersBetween(currentPos, _routeCoords[i]);
       if (dist < minDistance) {
         minDistance = dist;
         nearestIdx = i;
       }
     }
-
     if (nearestIdx != -1 && minDistance < 40) {
-      setState(() {
-        _routeCoords.removeRange(0, nearestIdx);
-      });
+      setState(() => _routeCoords.removeRange(0, nearestIdx));
     }
   }
 
   void _updateStatusText() {
     if (_riderLoc == null || _deliveryLoc == null) {
-      if (mounted)
+      if (mounted) {
         setState(() => _deliveryStatus = "Rider is preparing for trip...");
+      }
       return;
     }
-
-    final double dist =
-        Distance().as(LengthUnit.Meter, _riderLoc!, _deliveryLoc!) /
-        1000.0;
-
-    int mins = 0;
-    if (_apiDurationMinutes > 0 && _routeCoords.isNotEmpty) {
-      mins = (dist * 2.1).ceil() + 1;
-    } else {
-      mins = (dist * 2.5).ceil() + 2;
-    }
-
+    final double dist = _metersBetween(_riderLoc!, _deliveryLoc!) / 1000.0;
+    final int mins = (_apiDurationMinutes > 0 && _routeCoords.isNotEmpty)
+        ? (dist * 2.1).ceil() + 1
+        : (dist * 2.5).ceil() + 2;
     if (mounted) {
       setState(() {
         _deliveryStatus = dist < 0.1
@@ -238,6 +232,103 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
             : "Rider is ${dist.toStringAsFixed(1)}km away • $mins mins away";
       });
     }
+  }
+
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
+    if (_riderLoc != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('rider'),
+        position: _riderLoc!,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: InfoWindow(title: _riderName),
+      ));
+    }
+    if (_pickupLoc != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: _pickupLoc!,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: const InfoWindow(title: 'Pickup'),
+      ));
+    }
+    if (_deliveryLoc != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('delivery'),
+        position: _deliveryLoc!,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: const InfoWindow(title: 'Delivery'),
+      ));
+    }
+    return markers;
+  }
+
+  Set<Polyline> _buildPolylines() {
+    if (_routeCoords.isNotEmpty) {
+      return {
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: _routeCoords,
+          width: 5,
+          color: _accent,
+        ),
+      };
+    }
+    if (_pickupLoc != null && _deliveryLoc != null) {
+      return {
+        Polyline(
+          polylineId: const PolylineId('route'),
+          points: [_pickupLoc!, _deliveryLoc!],
+          width: 4,
+          color: _accent.withValues(alpha: 0.3),
+        ),
+      };
+    }
+    return {};
+  }
+
+  /// The delivery OTP, always on screen — a swiped SMS/push used to be lost with
+  /// no way to see it again. Give it to the rider on handoff.
+  Widget _buildOtpCard(String otp) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: _accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: _accent.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_outline_rounded, color: _accent, size: 18.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Delivery OTP — share with the rider",
+                  style: GoogleFonts.poppins(
+                    fontSize: 10.sp,
+                    color: Colors.black54,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  otp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 6,
+                    color: const Color(0xFF267CB9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -254,7 +345,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
             _pruneRoute(_riderLoc!);
             _checkDeviation(_riderLoc!);
           });
-          _mapController.move(_riderLoc!, _mapController.camera.zoom);
+          _mapController?.animateCamera(CameraUpdate.newLatLng(_riderLoc!));
         }
       });
     }
@@ -262,31 +353,31 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     if (_isLoading) {
       return Container(
         height: 150.h,
-        margin: EdgeInsets.only(bottom: 16),
+        margin: EdgeInsets.only(bottom: 16.h),
         decoration: BoxDecoration(
           color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(32.r),
           border: Border.all(color: Colors.blue.shade100, width: 2.5.w),
         ),
         child: Center(
-          child: CircularProgressIndicator(color: Color(0xFFA9BCA4)),
+          child: CircularProgressIndicator(color: const Color(0xFFA9BCA4)),
         ),
       );
     }
 
-    if (!_hasDelivery) return SizedBox.shrink();
+    if (!_hasDelivery) return const SizedBox.shrink();
 
     return Container(
-      margin: EdgeInsets.only(bottom: 24),
+      margin: EdgeInsets.only(bottom: 24.h),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32.r),
-        border: Border.all(color: Color(0xFF5D9ECC), width: 2.5.w),
+        border: Border.all(color: _accent, width: 2.5.w),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -303,121 +394,32 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
               width: double.infinity,
               child: Stack(
                 children: [
-                  FlutterMap(
-                    mapController: _mapController,
-                    options: MapOptions(
-                      initialCenter:
-                          _riderLoc ?? LatLng(16.3142, 80.4187),
-                      initialZoom: 15.0,
+                  GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: _riderLoc ?? _pickupLoc ?? _defaultLoc,
+                      zoom: 15,
                     ),
-                    children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.teasntrees.tnt_lh',
-                      ),
-                      if (_routeCoords.isNotEmpty)
-                        PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: _routeCoords,
-                              strokeWidth: 4.5,
-                              color: Color(0xFF5D9ECC),
-                            ),
-                          ],
-                        )
-                      else if (_pickupLoc != null && _deliveryLoc != null)
-                        PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: [_pickupLoc!, _deliveryLoc!],
-                              strokeWidth: 4.5,
-                              color: Color(0xFF5D9ECC).withOpacity(0.3),
-                            ),
-                          ],
-                        ),
-                      MarkerLayer(
-                        markers: [
-                          if (_riderLoc != null)
-                            Marker(
-                              point: _riderLoc!,
-                              width: 32.w,
-                              height: 32.h,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF5D9ECC,
-                                  ).withOpacity(0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Container(
-                                    width: 14.w,
-                                    height: 14.h,
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF267CB9),
-                                      shape: BoxShape.circle,
-                                      border: Border.fromBorderSide(
-                                        BorderSide(
-                                          color: Colors.white,
-                                          width: 2.0.w,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (_pickupLoc != null)
-                            Marker(
-                              point: _pickupLoc!,
-                              width: 30.w,
-                              height: 30.h,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFA9BCA4),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.coffee,
-                                  color: Colors.white,
-                                  size: 16.sp,
-                                ),
-                              ),
-                            ),
-                          if (_deliveryLoc != null)
-                            Marker(
-                              point: _deliveryLoc!,
-                              width: 30.w,
-                              height: 30.h,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFC76B6B),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.home,
-                                  color: Colors.white,
-                                  size: 16.sp,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
+                    onMapCreated: (c) => _mapController = c,
+                    markers: _buildMarkers(),
+                    polylines: _buildPolylines(),
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
                   ),
                   Positioned(
-                    bottom: 12,
-                    right: 12,
+                    bottom: 12.h,
+                    right: 12.w,
                     child: FloatingActionButton.small(
                       heroTag: "locate_rider_${widget.order.id}",
                       onPressed: () {
                         if (_riderLoc != null) {
-                          _mapController.move(_riderLoc!, 15.0);
+                          _mapController?.animateCamera(
+                            CameraUpdate.newLatLngZoom(_riderLoc!, 15),
+                          );
                         }
                       },
                       backgroundColor: Colors.white,
-                      foregroundColor: Color(0xFF267CB9),
+                      foregroundColor: const Color(0xFF267CB9),
                       child: Icon(Icons.my_location),
                     ),
                   ),
@@ -433,27 +435,30 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "Tracking Order #${widget.order.orderNumber}",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.sp,
-                        color: Colors.black87,
+                    Expanded(
+                      child: Text(
+                        "Tracking Order #${widget.order.orderNumber}",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14.sp,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
+                    SizedBox(width: 8.w),
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: 8.w,
                         vertical: 4.h,
                       ),
                       decoration: BoxDecoration(
-                        color: Color(0xFF5D9ECC).withOpacity(0.1),
+                        color: _accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       child: Text(
                         _riderName,
                         style: GoogleFonts.poppins(
-                          color: Color(0xFF267CB9),
+                          color: const Color(0xFF267CB9),
                           fontWeight: FontWeight.bold,
                           fontSize: 10.sp,
                         ),
@@ -470,6 +475,10 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (_deliveryOtp != null) ...[
+                  SizedBox(height: 12.h),
+                  _buildOtpCard(_deliveryOtp!),
+                ],
               ],
             ),
           ),

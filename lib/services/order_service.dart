@@ -87,7 +87,8 @@ class OrderService {
     required String deliveryAddress,
     String? deliveryInstructions,
     String paymentMethod = "COD",
-    Map<String, dynamic>? location,
+    double? latitude,
+    double? longitude,
     String? brand,
     List<Map<String, dynamic>>? items,
   }) async {
@@ -100,12 +101,26 @@ class OrderService {
     final url = AppConfig.buildUrl(path, brand: brand);
     try {
       final headers = await _getHeaders();
+
+      final bool hasCoords = latitude != null && longitude != null;
+      // The two endpoints disagree on where the point lives: /cart/checkout
+      // reads deliveryAddress.location, /orders reads the top-level location.
+      // Send both so the rider gets coordinates either way. GeoJSON is [lng,lat].
+      final Map<String, dynamic>? point = hasCoords
+          ? {
+              "type": "Point",
+              "coordinates": [longitude, latitude],
+            }
+          : null;
+
       final body = {
-        "deliveryAddress": deliveryAddress,
+        "deliveryAddress": hasCoords
+            ? {"address": deliveryAddress, "location": point}
+            : deliveryAddress,
         "paymentMethod": paymentMethod,
         if (deliveryInstructions != null)
           "deliveryInstructions": deliveryInstructions,
-        if (location != null) "location": location,
+        if (point != null) "location": point,
         if (items != null) "items": items,
       };
 
@@ -124,5 +139,59 @@ class OrderService {
     } catch (e) {
       throw Exception('Network error: $e');
     }
+  }
+
+  /// Raise an issue against an order after a rider is assigned.
+  static Future<Map<String, dynamic>> raiseComplaint({
+    required String orderId,
+    required String reason,
+    String? notes,
+    String? brand,
+  }) async {
+    final url = AppConfig.buildUrl(
+      '/customer/orders/$orderId/complaint',
+      brand: brand,
+    );
+    final headers = await _getHeaders();
+    final response = await http.post(
+      url,
+      headers: headers,
+      body: jsonEncode({'reason': reason, if (notes != null) 'notes': notes}),
+    );
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200 || response.statusCode == 201) return data;
+    throw Exception(data['message'] ?? 'Could not submit your issue');
+  }
+
+  /// Edit the delivery address. The backend rejects this once the rider has
+  /// picked up the order (409).
+  static Future<Map<String, dynamic>> updateAddress({
+    required String orderId,
+    required String address,
+    double? latitude,
+    double? longitude,
+    String? brand,
+  }) async {
+    final url = AppConfig.buildUrl(
+      '/customer/orders/$orderId/address',
+      brand: brand,
+    );
+    final headers = await _getHeaders();
+    final hasCoords = latitude != null && longitude != null;
+    final response = await http.patch(
+      url,
+      headers: headers,
+      body: jsonEncode({
+        'address': address,
+        if (hasCoords)
+          'location': {
+            'type': 'Point',
+            'coordinates': [longitude, latitude],
+          },
+      }),
+    );
+    final data = jsonDecode(response.body);
+    if (response.statusCode == 200) return data;
+    throw Exception(data['message'] ?? 'Could not update the address');
   }
 }

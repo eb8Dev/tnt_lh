@@ -219,6 +219,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
       );
     }
 
+    // Surface a post-Firebase-login backend failure with retry/logout.
     if (authState.firebaseUser != null && authState.error != null) {
       return Scaffold(
         body: Center(
@@ -254,6 +255,23 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
           ),
         ),
       );
+    }
+
+    // A Google/social failure BEFORE Firebase sign-in (no firebaseUser) used to
+    // bounce silently back to onboarding, reading as "redirected to splash".
+    // Show the onboarding flow but with the error surfaced so it isn't silent.
+    if (authState.error != null && !authState.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(authState.error!),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        ref.read(authProvider.notifier).clearError();
+      });
     }
 
     return const AuthFlow();

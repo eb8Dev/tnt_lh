@@ -27,7 +27,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     final id = AppFormatters.parseId(json['_id'] ?? json['id']);
-    
+
     // Handle nested preferences for activeBrand
     String? activeBrand = json['activeBrand'];
     if (activeBrand == null && json['preferences'] != null) {
@@ -89,12 +89,7 @@ class NotificationPreferences {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'email': email,
-      'sms': sms,
-      'push': push,
-      'offers': offers,
-    };
+    return {'email': email, 'sms': sms, 'push': push, 'offers': offers};
   }
 
   NotificationPreferences copyWith({

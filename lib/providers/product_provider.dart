@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/services/auth_service.dart';
@@ -27,38 +26,22 @@ final categoriesProvider = FutureProvider.family<List<Category>, String>((
   ref,
   brand,
 ) async {
-  debugPrint("Fetching categories for brand: $brand");
+  // The request is already brand-scoped (/api/:brand/...), so the backend
+  // returns only this brand's categories. Re-filtering client-side risked
+  // showing an empty screen whenever a brand field didn't match exactly.
   final raw = await AuthService.getCategories(brand: brand);
-  final allCategories = raw.map((e) => Category.fromJson(e)).toList();
-
-  final filtered = allCategories.where((c) {
-    return c.brand.toLowerCase().trim() == brand.toLowerCase().trim();
-  }).toList();
-
-  debugPrint("Found ${filtered.length} categories for $brand");
-  return filtered;
+  return raw.map((e) => Category.fromJson(e)).toList();
 });
 
 final productsProvider = FutureProvider.family<List<Product>, ProductParams>((
   ref,
   params,
 ) async {
-  debugPrint(
-    "Fetching products for brand: ${params.brand}, category: ${params.categoryId}",
-  );
+  // Brand-scoped endpoint already filters by brand — see categoriesProvider.
   final raw = await AuthService.getProducts(
     categoryId: params.categoryId,
     search: params.search,
     brand: params.brand,
   );
-
-  final products = raw.map((e) => Product.fromJson(e)).toList();
-
-  // Resilient filtering
-  final filtered = products.where((p) {
-    return p.brand.toLowerCase().trim() == params.brand.toLowerCase().trim();
-  }).toList();
-
-  debugPrint("Found ${filtered.length} products for ${params.brand}");
-  return filtered;
+  return raw.map((e) => Product.fromJson(e)).toList();
 });

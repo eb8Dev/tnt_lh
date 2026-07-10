@@ -19,24 +19,19 @@ class TactileButton extends StatefulWidget {
   State<TactileButton> createState() => _TactileButtonState();
 }
 
-class _TactileButtonState extends State<TactileButton> with SingleTickerProviderStateMixin {
+class _TactileButtonState extends State<TactileButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: widget.scaleOnTap,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -72,10 +67,7 @@ class _TactileButtonState extends State<TactileButton> with SingleTickerProvider
       onTapCancel: _handleTapCancel,
       onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: widget.child,
-      ),
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }

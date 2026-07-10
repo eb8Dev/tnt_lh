@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,14 +39,17 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         title: Text(
           "My Orders",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.black87,
-                fontSize: 20.sp,
-              ),
+            color: Colors.black87,
+            fontSize: 20.sp,
+          ),
         ),
       ),
       body: ordersState.when(
         loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
-        error: (err, stack) => Center(child: Text("Error: $err")),
+        error: (err, stack) => ErrorRetryView(
+          error: err,
+          onRetry: () => ref.invalidate(orderProvider),
+        ),
         data: (orders) {
           if (orders.isEmpty) {
             return _buildEmptyState();
@@ -101,7 +105,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 6.h,
+                  ),
                   decoration: BoxDecoration(
                     color: (isTeas ? Color(0xFF57733C) : Color(0xFF8C3414))
                         .withValues(alpha: 0.1),
@@ -152,7 +159,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 8.h,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12.r),
@@ -182,7 +192,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     color: Colors.black87,
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, size: 14.sp, color: Colors.black26),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14.sp,
+                  color: Colors.black26,
+                ),
               ],
             ),
           ],
@@ -218,9 +232,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           Text(
             "No orders yet",
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
           SizedBox(height: 12.h),
           Text(

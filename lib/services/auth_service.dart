@@ -173,7 +173,8 @@ class AuthService {
         if (name != null) "name": name,
         if (email != null) "email": email,
         if (address != null) "address": address,
-        if (notificationPreferences != null) "notificationPreferences": notificationPreferences,
+        if (notificationPreferences != null)
+          "notificationPreferences": notificationPreferences,
       };
 
       final response = await http.put(

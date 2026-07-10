@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
+import 'package:tnt_lh/screens/address_picker_screen.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
@@ -30,6 +32,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _isLoading = false;
   bool _isGlobal = true;
 
+  /// Set once the user confirms a pin on the map. Without these the order
+  /// reaches the backend with no point, and the rider has nothing to navigate to.
+  double? _latitude;
+  double? _longitude;
+
   // Pricing
   double _deliveryCharge = 50;
   double _gstRate = 5;
@@ -55,7 +62,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _addressController.text = address;
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      // Prefilling is a convenience — the user can still pick on the map.
+    }
   }
 
   Future<void> _fetchSettings() async {
@@ -68,7 +77,116 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _gstRate = (settings['gstRate'] ?? 5).toDouble();
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      // Falling back to hardcoded charges would quietly show the wrong total,
+      // so tell the user the figures below may not be current.
+      if (mounted) {
+        SnackBarUtils.showThemedSnackBar(
+          context: context,
+          message: "Couldn't load delivery charges. Pull back and retry.",
+          isError: true,
+        );
+      }
+    }
+  }
+
+  Future<void> _openAddressPicker() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddressPickerScreen(
+          initialLocation: _latitude != null && _longitude != null
+              ? LatLng(_latitude!, _longitude!)
+              : null,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() {
+      final label = (result['name'] as String?)?.trim() ?? '';
+      final address = (result['address'] as String?)?.trim() ?? '';
+      _addressController.text = label.isEmpty ? address : "$label, $address";
+      _latitude = result['lat'] as double?;
+      _longitude = result['lng'] as double?;
+    });
+  }
+
+  /// A tappable card standing in for the old free-text box. It still lives in
+  /// the Form (via FormField) so "Address is required" validates as before.
+  Widget _buildAddressPickerField() {
+    return FormField<String>(
+      validator: (_) =>
+          _addressController.text.trim().isEmpty ? "Address is required" : null,
+      builder: (field) {
+        final hasAddress = _addressController.text.trim().isNotEmpty;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TactileButton(
+              onTap: () async {
+                await _openAddressPicker();
+                field.didChange(_addressController.text);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(16.r),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(
+                    color: field.hasError
+                        ? Colors.redAccent
+                        : Colors.black.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      hasAddress
+                          ? Icons.location_on_rounded
+                          : Icons.add_location_alt_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 22.sp,
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Text(
+                        hasAddress
+                            ? _addressController.text
+                            : "Pick your delivery location on the map",
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14.sp,
+                          color: hasAddress ? Colors.black87 : Colors.black45,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.black38,
+                      size: 22.sp,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: EdgeInsets.only(top: 8.h, left: 4.w),
+                child: Text(
+                  field.errorText!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.sp,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _placeOrder() async {
@@ -96,6 +214,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         deliveryAddress: _addressController.text.trim(),
         deliveryInstructions: _instructionsController.text.trim(),
         paymentMethod: _paymentMethod,
+        latitude: _latitude,
+        longitude: _longitude,
         brand: currentBrand,
         items: _isGlobal ? null : itemsPayload,
       );
@@ -107,7 +227,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               await ref
                   .read(cartProvider.notifier)
                   .removeItem(item.id, brand: item.brand);
-            } catch (_) {}
+            } catch (_) {
+              // The order is already placed; a failed cleanup is corrected by
+              // the fetchCart below, which takes the server's cart as truth.
+            }
           }
         }
 
@@ -143,11 +266,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(32.r),
+        ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         title: Text(
           "Order Placed!",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -157,7 +284,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               isMultiOrder
                   ? "Your orders have been placed successfully."
                   : "Your order #${orderData['orderNumber'] ?? ''} has been placed successfully.",
-              style: GoogleFonts.poppins(fontSize: 14.sp, color: Colors.black87),
+              style: GoogleFonts.poppins(
+                fontSize: 14.sp,
+                color: Colors.black87,
+              ),
             ),
             if (isMultiOrder) ...[
               SizedBox(height: 16.h),
@@ -170,8 +300,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         width: 8.w,
                         height: 8.h,
                         decoration: BoxDecoration(
-                          color: o['brand'] == 'teasntrees' 
-                              ? Color(0xFF57733C) 
+                          color: o['brand'] == 'teasntrees'
+                              ? Color(0xFF57733C)
                               : Color(0xFF8C3414),
                           shape: BoxShape.circle,
                         ),
@@ -244,7 +374,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               child: Text(
                 "Track Order",
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -269,9 +402,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         title: Text(
           _isGlobal ? "Checkout All" : "Checkout Store",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.black87,
-                fontSize: 20.sp,
-              ),
+            color: Colors.black87,
+            fontSize: 20.sp,
+          ),
         ),
       ),
       body: SafeArea(
@@ -287,10 +420,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     margin: EdgeInsets.only(bottom: 32),
                     padding: EdgeInsets.all(20.r),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(24.r),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
@@ -318,16 +455,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 _buildSectionTitle("Delivery Address"),
                 SizedBox(height: 16.h),
-                TextFormField(
-                  controller: _addressController,
-                  maxLines: 3,
-                  style: GoogleFonts.poppins(fontSize: 14.sp),
-                  decoration: _inputDecoration(
-                    "Where should we deliver?",
-                  ),
-                  validator: (val) =>
-                      val!.isEmpty ? "Address is required" : null,
-                ),
+                _buildAddressPickerField(),
 
                 SizedBox(height: 36.h),
 
@@ -356,7 +484,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         offset: Offset(0, 5),
                       ),
                     ],
-                    border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.02),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -374,34 +504,50 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                         subtitle: Text(
                           "Pay when your order arrives",
-                          style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black38),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
+                            color: Colors.black38,
+                          ),
                         ),
                         activeColor: Theme.of(context).colorScheme.primary,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 4.h,
+                        ),
                       ),
-                      Divider(height: 1.h, indent: 20, endIndent: 20, color: Color(0xFFF0F0F0)),
+                      Divider(
+                        height: 1.h,
+                        indent: 20,
+                        endIndent: 20,
+                        color: Color(0xFFF0F0F0),
+                      ),
+                      // No payment gateway is wired up yet, so this is shown as
+                      // a disabled row rather than a radio that looks selectable
+                      // and only ever answers with a "coming soon" snackbar.
                       RadioListTile<String>(
                         value: "Online",
                         groupValue: _paymentMethod,
-                        onChanged: (val) {
-                          SnackBarUtils.showThemedSnackBar(
-                            context: context,
-                            message: "Online payment coming soon!",
-                          );
-                        },
+                        onChanged: null,
                         title: Text(
                           "Online Payment",
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w600,
                             fontSize: 15.sp,
+                            color: Colors.black38,
                           ),
                         ),
                         subtitle: Text(
-                          "UPI, Cards, Netbanking",
-                          style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black38),
+                          "UPI, Cards, Netbanking — coming soon",
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
+                            color: Colors.black26,
+                          ),
                         ),
                         activeColor: Theme.of(context).colorScheme.primary,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 4.h,
+                        ),
                       ),
                     ],
                   ),
@@ -422,7 +568,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         offset: Offset(0, 10),
                       ),
                     ],
-                    border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.02),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -520,10 +668,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 17.sp,
-            color: Colors.black87,
-          ),
+        fontWeight: FontWeight.bold,
+        fontSize: 17.sp,
+        color: Colors.black87,
+      ),
     );
   }
 
@@ -543,7 +691,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20.r),
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+        ),
       ),
       contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
     );

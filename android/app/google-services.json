@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "138992055382-rdq66lfnk90u0u4cmko780ti4vqii220.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.manuen.tnt_lh",
+            "certificate_hash": "e3edf516c9ccd0c21123c295a258a5245e31019a"
+          }
+        },
+        {
           "client_id": "138992055382-mqqiupgfm3qv1ihoi4e1oq2r6k65f12o.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -31,10 +39,54 @@
               "client_type": 3
             },
             {
-              "client_id": "138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r.apps.googleusercontent.com",
+              "client_id": "138992055382-8jb79gqgum68k4shtha50c20otuun3v3.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.manuen.tntLh"
+                "bundle_id": "com.teasntrees.tntRider"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:138992055382:android:ffd8ae9a893fca0f61b7f7",
+        "android_client_info": {
+          "package_name": "com.teasntrees.tnt_rider"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "138992055382-nsb52fa3pvkto7a27jjtcb4vl9pkvnq4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.teasntrees.tnt_rider",
+            "certificate_hash": "e3edf516c9ccd0c21123c295a258a5245e31019a"
+          }
+        },
+        {
+          "client_id": "138992055382-mqqiupgfm3qv1ihoi4e1oq2r6k65f12o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZwpsf2Uta3ElRFpxFBUHeH0UjcxNoFgU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "138992055382-mqqiupgfm3qv1ihoi4e1oq2r6k65f12o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "138992055382-8jb79gqgum68k4shtha50c20otuun3v3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.teasntrees.tntRider"
               }
             }
           ]

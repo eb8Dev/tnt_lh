@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/providers/product_provider.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
+import 'package:tnt_lh/utils/cart_error_listener.dart';
 import 'package:tnt_lh/providers/wishlist_provider.dart';
 import 'package:tnt_lh/screens/cafe/cafe_item_details_screen.dart';
 import 'package:tnt_lh/screens/wishlist_screen.dart';
@@ -115,13 +116,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                     child: GridView.builder(
                       controller: scrollController,
                       padding: EdgeInsets.symmetric(horizontal: 24.w),
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 20,
-                            childAspectRatio: 0.8,
-                          ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 20,
+                        childAspectRatio: 0.8,
+                      ),
                       itemCount: categories.length,
                       itemBuilder: (context, index) {
                         final cat = categories[index];
@@ -223,29 +223,58 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
   }
 
   void _handleQuickAdd(Product product) {
-    // If product has options, show the sheet
+    // Open the options sheet only when there is a real choice to make — any
+    // choice that changes the price must be explicit before it hits the cart.
     final bool hasSizeOptions = product.sizeOptions.isNotEmpty;
-    final bool hasEgglessOption =
-        product.brand == 'littleh' &&
-        product.cakePricing != null &&
-        product.cakePricing!.egglessAvailable;
 
-    if (hasSizeOptions || hasEgglessOption) {
+    final cake = product.cakePricing;
+
+    // A real cake is priced per kilogram, so weight (and often customization)
+    // must be chosen. Every product carries a default `cakePricing` sub-doc,
+    // so its mere presence proves nothing — basePricePerKg does.
+    final bool isCake = cake != null && cake.basePricePerKg > 0;
+
+    // Eggless only makes sense for bakery items. NOTE: `egglessAvailable`
+    // defaults to true on EVERY product in the backend schema (drinks
+    // included), so it cannot be trusted alone — the brand check is what
+    // actually gates this. See the schema TODO: eggless should be an explicit
+    // per-product flag with its own surcharge.
+    final bool offersEggless =
+        product.brand == 'littleh' && cake != null && cake.egglessAvailable;
+
+    if (hasSizeOptions || isCake || offersEggless) {
       _openAddToCartSheet(context, product);
-    } else {
-      // Direct add to cart
-      ref
+      return;
+    }
+
+    // Direct add. The cart provider updates optimistically, so the bag badge
+    // and this confirmation land immediately; a failure rolls back and tells
+    // the user rather than silently leaving a phantom item.
+    SnackBarUtils.showThemedSnackBar(
+      context: context,
+      message: "${product.name} added to bag!",
+    );
+    _addDirectly(product);
+  }
+
+  Future<void> _addDirectly(Product product) async {
+    try {
+      await ref
           .read(cartProvider.notifier)
-          .addToCart(productId: product.id, quantity: 1, brand: product.brand);
+          .addToCart(product: product, quantity: 1);
+    } catch (_) {
+      if (!mounted) return;
       SnackBarUtils.showThemedSnackBar(
         context: context,
-        message: "${product.name} added to bag!",
+        message: "Couldn't add ${product.name}. Please try again.",
+        isError: true,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    listenForCartErrors(ref, context);
     final categoriesAsync = ref.watch(categoriesProvider(widget.brand));
     final productsAsync = ref.watch(
       productsProvider(
@@ -296,16 +325,27 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        // The Little H wordmark was crammed into the default ~56px leading slot,
+        // so it rendered tiny and clipped. Give it real width + a fixed height.
+        leadingWidth: isLittleH ? 132.w : 72.w,
         leading: Padding(
-          padding: EdgeInsets.only(left: 16.0),
-          child: Image.asset(logoAsset, fit: BoxFit.contain),
+          padding: EdgeInsets.only(left: 16.0, top: 10.h, bottom: 10.h),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Image.asset(
+              logoAsset,
+              height: 40.h,
+              fit: BoxFit.contain,
+            ),
+          ),
         ),
         centerTitle: true,
         title: Text(
           brandTitle,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(color: Colors.black87, fontSize: 20.sp),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: Colors.black87,
+            fontSize: 20.sp,
+          ),
         ),
         actions: [
           TactileButton(
@@ -317,10 +357,52 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
             },
             child: Padding(
               padding: EdgeInsets.all(8.0.r),
-              child: Icon(
-                Icons.favorite_border_rounded,
-                color: Colors.black87,
-                size: 24.sp,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  // Count of saved items so the heart carries a live badge,
+                  // matching the bag. Reads the same wishlistProvider the
+                  // product cards toggle, so it updates instantly.
+                  final count = ref
+                      .watch(wishlistProvider)
+                      .maybeWhen(data: (list) => list.length, orElse: () => 0);
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        count > 0
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: count > 0 ? const Color(0xFFE5484D) : Colors.black87,
+                        size: 24.sp,
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: -6,
+                          top: -6,
+                          child: Container(
+                            padding: EdgeInsets.all(4.r),
+                            constraints: BoxConstraints(
+                              minWidth: 16.w,
+                              minHeight: 16.w,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE5484D),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '$count',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -336,7 +418,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                   return [
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.all(20.0.r),
+                        padding: EdgeInsets.all(16.0.r),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -356,7 +438,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               },
                               child: Container(
                                 width: double.infinity,
-                                height: 190.h,
+                                // Min-height rather than a fixed height: the
+                                // hero stays compact but grows instead of
+                                // overflowing when text (or the user's font
+                                // scale) needs more room.
+                                constraints: BoxConstraints(minHeight: 150.h),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(36.r),
                                   gradient: LinearGradient(
@@ -400,7 +486,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       ),
 
                                       Padding(
-                                        padding: EdgeInsets.all(28.0.r),
+                                        padding: EdgeInsets.all(16.0.r),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -414,16 +500,17 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                 end: 1.05,
                                               ).animate(_pulseController),
                                               child: Container(
-                                                padding:
-                                                    EdgeInsets.symmetric(
-                                                      horizontal: 12.w,
-                                                      vertical: 6.h,
-                                                    ),
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12.w,
+                                                  vertical: 6.h,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.white
                                                       .withValues(alpha: 0.2),
                                                   borderRadius:
-                                                      BorderRadius.circular(20.r),
+                                                      BorderRadius.circular(
+                                                        20.r,
+                                                      ),
                                                 ),
                                                 child: Row(
                                                   mainAxisSize:
@@ -509,7 +596,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               ),
                             ),
 
-                            SizedBox(height: 32.h),
+                            SizedBox(height: 20.h),
 
                             /// Redesigned Search Bar
                             Container(
@@ -565,7 +652,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               ),
                             ),
 
-                            SizedBox(height: 36.h),
+                            SizedBox(height: 20.h),
 
                             /// Categories Section
                             Row(
@@ -681,62 +768,102 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                     ),
                   ];
                 },
-                body: productsAsync.when(
-                  loading: () => Center(
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.primary,
-                      strokeWidth: 3,
+                body: RefreshIndicator(
+                  onRefresh: _refresh,
+                  color: Theme.of(context).colorScheme.primary,
+                  child: productsAsync.when(
+                    loading: () => Center(
+                      child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                        strokeWidth: 3,
+                      ),
                     ),
-                  ),
-                  error: (err, _) => Center(child: Text("Error: $err")),
-                  data: (products) {
-                    if (products.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.fastfood_rounded,
-                              size: 64.sp,
-                              color: Colors.black12,
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              "No items found in this section",
-                              style: GoogleFonts.poppins(color: Colors.black38),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
-                      itemCount: products.length,
-                      separatorBuilder: (_, _) => SizedBox(height: 20.h),
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return TweenAnimationBuilder<double>(
-                          duration: Duration(milliseconds: 400 + (index * 100)),
-                          tween: Tween<double>(begin: 0, end: 1),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, child) {
-                            return Opacity(
-                              opacity: value,
-                              child: Transform.translate(
-                                offset: Offset(0, 30 * (1 - value)),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: _buildProductCard(product),
+                    error: (err, _) => _pullableMessage(
+                      icon: Icons.wifi_off_rounded,
+                      message: "Couldn't load items.\nPull down to try again.",
+                    ),
+                    data: (products) {
+                      if (products.isEmpty) {
+                        return _pullableMessage(
+                          icon: Icons.fastfood_rounded,
+                          message:
+                              "No items found in this section.\nPull down to refresh.",
                         );
-                      },
-                    );
-                  },
+                      }
+                      return ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
+                        itemCount: products.length,
+                        separatorBuilder: (_, _) => SizedBox(height: 14.h),
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return TweenAnimationBuilder<double>(
+                            duration: Duration(
+                              milliseconds: 400 + (index * 100),
+                            ),
+                            tween: Tween<double>(begin: 0, end: 1),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 30 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: _buildProductCard(product),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Re-fetches categories and products for the current selection. Invalidating
+  /// the providers is what makes the screen recoverable — a FutureProvider
+  /// otherwise caches an empty/failed result until the app is restarted.
+  Future<void> _refresh() async {
+    final params = ProductParams(
+      categoryId: _selectedCategoryId,
+      search: _searchQuery.isEmpty ? null : _searchQuery,
+      brand: widget.brand,
+    );
+    ref.invalidate(categoriesProvider(widget.brand));
+    ref.invalidate(productsProvider(params));
+    // Await the new fetch so the refresh spinner tracks real work.
+    await ref.read(productsProvider(params).future);
+  }
+
+  /// An empty/error state that is still scrollable, so pull-to-refresh works
+  /// even when there is nothing to scroll.
+  Widget _pullableMessage({required IconData icon, required String message}) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 64.sp, color: Colors.black12),
+                SizedBox(height: 16.h),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(color: Colors.black38),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1046,9 +1173,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       },
                                       icon: Icon(Icons.remove, size: 14.sp),
                                       padding: EdgeInsets.zero,
-                                      constraints: BoxConstraints(
-                                        minWidth: 30,
-                                      ),
+                                      constraints: BoxConstraints(minWidth: 30),
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.primary,
@@ -1076,9 +1201,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                       },
                                       icon: Icon(Icons.add, size: 14.sp),
                                       padding: EdgeInsets.zero,
-                                      constraints: BoxConstraints(
-                                        minWidth: 30,
-                                      ),
+                                      constraints: BoxConstraints(minWidth: 30),
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.primary,
@@ -1173,42 +1296,51 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
     return base;
   }
 
-  Future<void> _addToCart() async {
-    try {
-      final List<String> customizations = [];
-      if (_selectedSize != null) customizations.add("Size: $_selectedSize");
-      if (_isEggless) customizations.add("Eggless");
-      if (_customizationController.text.isNotEmpty) {
-        customizations.add(_customizationController.text.trim());
-      }
-
-      await ref
-          .read(cartProvider.notifier)
-          .addToCart(
-            productId: widget.product.id,
-            quantity: _quantity,
-            brand: widget.product.brand,
-            customization: customizations.isNotEmpty
-                ? customizations.join(", ")
-                : null,
-          );
-
-      if (mounted) {
-        Navigator.pop(context);
-        SnackBarUtils.showThemedSnackBar(
-          context: context,
-          message: "${widget.product.name} has been added to your bag!",
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarUtils.showThemedSnackBar(
-          context: context,
-          message: "Error: $e",
-          isError: true,
-        );
-      }
+  void _addToCart() {
+    final List<String> customizations = [];
+    if (_selectedSize != null) customizations.add("Size: $_selectedSize");
+    if (_isEggless) customizations.add("Eggless");
+    if (_customizationController.text.isNotEmpty) {
+      customizations.add(_customizationController.text.trim());
     }
+    final customization = customizations.isNotEmpty
+        ? customizations.join(", ")
+        : null;
+
+    // Captured before popping — the sheet's context is gone afterwards.
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(cartProvider.notifier);
+    final productName = widget.product.name;
+
+    // Confirm and close immediately. The cart updates optimistically, so
+    // awaiting the network here just froze the sheet for a couple of seconds.
+    SnackBarUtils.showThemedSnackBar(
+      context: context,
+      message: "$productName has been added to your bag!",
+    );
+    Navigator.pop(context);
+
+    // Reconcile in the background; surface a failure instead of swallowing it.
+    notifier
+        .addToCart(
+          product: widget.product,
+          quantity: _quantity,
+          customization: customization,
+        )
+        .catchError((_) {
+          messenger.removeCurrentSnackBar();
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text("Couldn't add $productName. Please try again."),
+              backgroundColor: Colors.redAccent.shade400,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              margin: const EdgeInsets.all(20),
+            ),
+          );
+        });
   }
 
   @override
@@ -1289,7 +1421,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
           ),
 
           if (widget.product.sizeOptions.isNotEmpty) ...[
-            SizedBox(height: 24.h),
+            SizedBox(height: 16.h),
             Text(
               "Select Size",
               style: GoogleFonts.poppins(
@@ -1352,7 +1484,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
             ),
           ],
 
-          SizedBox(height: 24.h),
+          SizedBox(height: 16.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1398,7 +1530,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
             ],
           ),
 
-          SizedBox(height: 32.h),
+          SizedBox(height: 20.h),
           TactileButton(
             onTap: _addToCart,
             child: Container(

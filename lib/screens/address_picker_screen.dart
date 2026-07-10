@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,9 +14,10 @@ class AddressPickerScreen extends StatefulWidget {
 }
 
 class _AddressPickerScreenState extends State<AddressPickerScreen> {
+  static const LatLng _defaultLoc = LatLng(16.3142, 80.4187); // Guntur
+
   late LatLng _selectedLoc;
-  LatLng? _realGPSLoc;
-  final MapController _mapController = MapController();
+  GoogleMapController? _mapController;
   String _addressText = "Loading address...";
   final TextEditingController _nameController = TextEditingController(
     text: "Home",
@@ -27,98 +27,59 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
   @override
   void initState() {
     super.initState();
-    // Default to Guntur if no initial location
-    _selectedLoc = widget.initialLocation ?? LatLng(16.3142, 80.4187);
+    _selectedLoc = widget.initialLocation ?? _defaultLoc;
     _reverseGeocode(_selectedLoc);
-    _fetchRealLocation();
   }
 
   @override
   void dispose() {
-    _mapController.dispose();
+    _mapController?.dispose();
     _nameController.dispose();
     super.dispose();
-  }
-
-  void _fetchRealLocation() async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.always ||
-          permission == LocationPermission.whileInUse) {
-        final pos = await Geolocator.getCurrentPosition();
-        if (mounted) {
-          setState(() {
-            _realGPSLoc = LatLng(pos.latitude, pos.longitude);
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint("Initial GPS fetch failed: $e");
-    }
   }
 
   Future<void> _reverseGeocode(LatLng loc) async {
     setState(() => _isLoading = true);
     try {
-      List<geo.Placemark> placemarks = await geo.placemarkFromCoordinates(
+      final placemarks = await geo.placemarkFromCoordinates(
         loc.latitude,
         loc.longitude,
       );
-      if (placemarks.isNotEmpty) {
+      if (placemarks.isNotEmpty && mounted) {
         final p = placemarks.first;
         setState(() {
           _addressText =
               "${p.street}, ${p.subLocality}, ${p.locality}, ${p.postalCode}";
         });
       }
-    } catch (e) {
-      setState(() {
-        _addressText =
-            "Address not found (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})";
-      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _addressText =
+              "Address not found (${loc.latitude.toStringAsFixed(4)}, ${loc.longitude.toStringAsFixed(4)})";
+        });
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _goToCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Location services are disabled.")),
-        );
-      }
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      _snack("Location services are disabled.");
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Location permissions denied.")),
-          );
-        }
+        _snack("Location permissions denied.");
         return;
       }
     }
-
     if (permission == LocationPermission.deniedForever) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Location permissions permanently denied."),
-          ),
-        );
+      _snack("Location permissions permanently denied.");
       return;
     }
 
@@ -126,11 +87,10 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
     try {
       final position = await Geolocator.getCurrentPosition();
       final newLoc = LatLng(position.latitude, position.longitude);
-      setState(() {
-        _realGPSLoc = newLoc;
-        _selectedLoc = newLoc;
-      });
-      _mapController.move(newLoc, 16);
+      _selectedLoc = newLoc;
+      await _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(newLoc, 16),
+      );
       _reverseGeocode(newLoc);
     } catch (e) {
       debugPrint("Error getting current location: $e");
@@ -139,13 +99,12 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
     }
   }
 
-  void _zoomMap(double delta) {
-    final newZoom = _mapController.camera.zoom + delta;
-    _mapController.move(_mapController.camera.center, newZoom);
-  }
-
-  void _resetNorth() {
-    _mapController.rotate(0.0);
+  void _snack(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(msg)));
+    }
   }
 
   @override
@@ -154,7 +113,10 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       appBar: AppBar(
         title: Text(
           "Select Delivery Location",
-          style: GoogleFonts.poppins(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -162,41 +124,30 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
         elevation: 0,
       ),
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 280.0), // Above the address card
+        padding: EdgeInsets.only(bottom: 280.h), // Above the address card
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Zoom In
             FloatingActionButton(
               heroTag: "zoom_in",
-              onPressed: () => _zoomMap(1.0),
+              onPressed: () =>
+                  _mapController?.animateCamera(CameraUpdate.zoomIn()),
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               mini: true,
               child: Icon(Icons.add),
             ),
             SizedBox(height: 8.h),
-            // Zoom Out
             FloatingActionButton(
               heroTag: "zoom_out",
-              onPressed: () => _zoomMap(-1.0),
+              onPressed: () =>
+                  _mapController?.animateCamera(CameraUpdate.zoomOut()),
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               mini: true,
               child: Icon(Icons.remove),
             ),
             SizedBox(height: 16.h),
-            // Reset North
-            FloatingActionButton(
-              heroTag: "reset_north",
-              onPressed: _resetNorth,
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              mini: true,
-              child: Icon(Icons.explore_outlined),
-            ),
-            SizedBox(height: 8.h),
-            // Locate Me
             FloatingActionButton(
               heroTag: "locate_me",
               onPressed: _isLoading ? null : _goToCurrentLocation,
@@ -219,54 +170,26 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       ),
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _selectedLoc,
-              initialZoom: 16,
-              onMapEvent: (event) {
-                if (event is MapEventMove) {
-                  setState(() {
-                    _selectedLoc = event.camera.center;
-                  });
-                }
-                if (event is MapEventMoveEnd) {
-                  _reverseGeocode(_selectedLoc);
-                }
-              },
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: _selectedLoc,
+              zoom: 16,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.teasntrees.tnt_lh',
-              ),
-              if (_realGPSLoc != null)
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _realGPSLoc!,
-                      width: 20.w,
-                      height: 20.h,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2.w),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black26, blurRadius: 4),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-            ],
+            onMapCreated: (c) => _mapController = c,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            // Track the map centre as the user pans (no setState per frame),
+            // then reverse-geocode once the camera settles.
+            onCameraMove: (pos) => _selectedLoc = pos.target,
+            onCameraIdle: () => _reverseGeocode(_selectedLoc),
           ),
 
-          // Center Marker (Selection)
+          // Fixed centre marker — the point the map is centred on is the
+          // selected delivery location.
           Center(
-            child: Container(
-              margin: EdgeInsets.all(0.r),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 45.h), // tip points at centre
               child: Icon(Icons.location_on, color: Colors.red, size: 45.sp),
             ),
           ),

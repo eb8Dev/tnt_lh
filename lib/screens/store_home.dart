@@ -37,12 +37,12 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   void _handleStoreSwitch() {
     final currentBrand = ref.read(brandProvider);
     final targetBrand = currentBrand == 'teasntrees' ? 'littleh' : 'teasntrees';
-    
+
     // Determine target color and logo
-    final targetColor = targetBrand == 'teasntrees' 
-        ? Color(0xFF57733C) 
+    final targetColor = targetBrand == 'teasntrees'
+        ? Color(0xFF57733C)
         : Color(0xFF8C3414);
-    
+
     final targetLogo = targetBrand == 'teasntrees'
         ? "assets/images/teas_n_trees_no_bg.png"
         : "assets/images/little_h_logo_no_bg.png";
@@ -60,7 +60,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final brand = ref.watch(brandProvider);
-    
+
     final List<Widget> pages = [
       BrandHomeContent(brand: brand),
       CartScreen(),
@@ -74,10 +74,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: IndexedStack(
-        index: pageIndex,
-        children: pages,
-      ),
+      body: IndexedStack(index: pageIndex, children: pages),
       floatingActionButton: TactileButton(
         onTap: _handleStoreSwitch,
         child: Container(
@@ -95,7 +92,9 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.4),
                 blurRadius: 15,
                 offset: Offset(0, 6),
               ),
@@ -141,8 +140,12 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                     final count = cart?.itemCount ?? 0;
                     return _buildNavItem(
                       1,
-                      brand == 'teasntrees' ? Icons.shopping_bag_rounded : Icons.shopping_basket_rounded,
-                      brand == 'teasntrees' ? Icons.shopping_bag_outlined : Icons.shopping_basket_outlined,
+                      brand == 'teasntrees'
+                          ? Icons.shopping_bag_rounded
+                          : Icons.shopping_basket_rounded,
+                      brand == 'teasntrees'
+                          ? Icons.shopping_bag_outlined
+                          : Icons.shopping_basket_outlined,
                       "Bag",
                       badgeCount: count,
                     );
@@ -156,7 +159,8 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                   "Orders",
                 ),
                 _buildNavItem(
-                  4, Icons.person_rounded,
+                  4,
+                  Icons.person_rounded,
                   Icons.person_2_outlined,
                   "Profile",
                 ),
@@ -187,7 +191,9 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               children: [
                 Icon(
                   isSelected ? activeIcon : inactiveIcon,
-                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black26,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.black26,
                   size: 26.sp,
                 ),
                 if (badgeCount > 0)
@@ -201,10 +207,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 1.5.w),
                       ),
-                      constraints: BoxConstraints(
-                        minWidth: 18,
-                        minHeight: 18,
-                      ),
+                      constraints: BoxConstraints(minWidth: 18, minHeight: 18),
                       child: Text(
                         '$badgeCount',
                         style: TextStyle(
@@ -224,7 +227,9 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 10.sp,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black26,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.black26,
               ),
             ),
           ],

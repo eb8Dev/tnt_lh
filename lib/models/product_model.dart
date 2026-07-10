@@ -170,7 +170,8 @@ class CakePricing {
     return CakePricing(
       basePricePerKg: (json['basePricePerKg'] ?? 0).toDouble(),
       customizationAvailable: json['customizationAvailable'] ?? false,
-      customizationPricePerKg: (json['customizationPricePerKg'] ?? 0).toDouble(),
+      customizationPricePerKg: (json['customizationPricePerKg'] ?? 0)
+          .toDouble(),
       egglessAvailable: json['egglessAvailable'] ?? true,
       egglessExtraCharge: (json['egglessExtraCharge'] ?? 100).toDouble(),
     );

@@ -129,7 +129,7 @@ class CartService {
     // Backend requires a brand identifier in the URL even for global cart operations
     final targetBrand = brand ?? AppConfig.defaultBrand;
     final url = AppConfig.buildUrl('/customer/cart', brand: targetBrand);
-    
+
     debugPrint("CartService.clearCart: calling DELETE $url");
     try {
       final headers = await _getHeaders();

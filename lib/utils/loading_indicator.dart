@@ -53,7 +53,11 @@ class _HouseOfFlavorsLoaderState extends State<HouseOfFlavorsLoader>
       width: widget.size,
       height: widget.size,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_steamController, _pulseController, _switchController]),
+        animation: Listenable.merge([
+          _steamController,
+          _pulseController,
+          _switchController,
+        ]),
         builder: (context, child) {
           final isCafePhase = _switchController.value < 0.5;
           final Color activeColor = Color.lerp(
@@ -73,7 +77,9 @@ class _HouseOfFlavorsLoaderState extends State<HouseOfFlavorsLoader>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      activeColor.withValues(alpha: 0.2 * _pulseController.value),
+                      activeColor.withValues(
+                        alpha: 0.2 * _pulseController.value,
+                      ),
                       activeColor.withValues(alpha: 0),
                     ],
                   ),
@@ -95,7 +101,9 @@ class _HouseOfFlavorsLoaderState extends State<HouseOfFlavorsLoader>
                 final double t = (_steamController.value + seed) % 1.0;
                 return Positioned(
                   bottom: widget.size * (0.2 + (0.6 * t)),
-                  left: widget.size * (0.3 + (0.4 * math.sin(t * 2 * math.pi + index))),
+                  left:
+                      widget.size *
+                      (0.3 + (0.4 * math.sin(t * 2 * math.pi + index))),
                   child: Opacity(
                     opacity: (1.0 - t) * 0.5,
                     child: Container(
@@ -157,11 +165,16 @@ class _HouseOfFlavorsLoaderState extends State<HouseOfFlavorsLoader>
                   const SizedBox(height: 12),
                   // The "Vapor" Base (Shadow)
                   Container(
-                    width: widget.size * 0.2 * (0.8 + 0.2 * _pulseController.value),
+                    width:
+                        widget.size *
+                        0.2 *
+                        (0.8 + 0.2 * _pulseController.value),
                     height: 4,
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.05),
-                      borderRadius: const BorderRadius.all(Radius.elliptical(20, 4)),
+                      borderRadius: const BorderRadius.all(
+                        Radius.elliptical(20, 4),
+                      ),
                     ),
                   ),
                 ],
@@ -194,16 +207,16 @@ class _SteamPainter extends CustomPainter {
     for (int i = -1; i <= 1; i++) {
       final double xOffset = i * 25.0;
       final double individualProgress = (progress + (i * 0.2)) % 1.0;
-      
+
       final path = Path();
-      final double currentY = startY - (individualProgress * 80);
-      
+
       // Wavy steam line
       path.moveTo(centerX + xOffset, startY);
-      
+
       for (double j = 0; j < individualProgress; j += 0.05) {
         final double y = startY - (j * 80);
-        final double x = centerX + xOffset + math.sin(j * 10 + progress * 5) * 8;
+        final double x =
+            centerX + xOffset + math.sin(j * 10 + progress * 5) * 8;
         if (j == 0) {
           path.moveTo(x, y);
         } else {
@@ -219,7 +232,6 @@ class _SteamPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_SteamPainter oldDelegate) => 
+  bool shouldRepaint(_SteamPainter oldDelegate) =>
       oldDelegate.progress != progress || oldDelegate.color != color;
 }
-

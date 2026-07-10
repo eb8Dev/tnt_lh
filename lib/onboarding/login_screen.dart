@@ -43,6 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: '+91$phone',
+        // Firebase caps repeated requests. Testers hit this fast on emulators.
+        timeout: const Duration(seconds: 60),
         verificationCompleted: (PhoneAuthCredential credential) async {
           // This only happens on Android auto-verification
           await FirebaseAuth.instance.signInWithCredential(credential);
@@ -50,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         verificationFailed: (FirebaseAuthException e) {
           SnackBarUtils.showThemedSnackBar(
             context: context,
-            message: e.message ?? "Verification failed",
+            message: _friendlyPhoneAuthError(e),
             isError: true,
           );
           setState(() => _isLoading = false);
@@ -68,6 +70,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         isError: true,
       );
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// Firebase phone auth speaks in raw codes. Testers repeatedly requesting OTP
+  /// from one device trip Firebase's abuse guard ("unusual activity"), which is
+  /// device-side and clears after a wait — say so instead of parroting the code.
+  String _friendlyPhoneAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'too-many-requests':
+        return "Too many attempts from this device. Please wait a while and "
+            "try again, or use a different sign-in method.";
+      case 'invalid-phone-number':
+        return "That phone number doesn't look right. Check and try again.";
+      case 'quota-exceeded':
+        return "SMS limit reached for now. Please try again later.";
+      case 'network-request-failed':
+        return "Network error. Check your connection and try again.";
+      default:
+        final msg = e.message ?? '';
+        if (msg.toLowerCase().contains('unusual activity')) {
+          return "Too many attempts from this device. Please wait a while "
+              "before trying again.";
+        }
+        return msg.isNotEmpty ? msg : "Verification failed. Please try again.";
     }
   }
 
@@ -146,7 +172,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
-                            )
+                            ),
                           ],
                         ),
                         child: Image.asset(
@@ -157,7 +183,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       SizedBox(height: 20.h),
                       Text(
                         "Welcome Back",
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -187,13 +214,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       "Login with Mobile",
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 8.h),
                     Text(
                       "We'll send you a verification code",
-                      style: GoogleFonts.poppins(color: Colors.black38, fontSize: 14.sp),
+                      style: GoogleFonts.poppins(
+                        color: Colors.black38,
+                        fontSize: 14.sp,
+                      ),
                     ),
                     SizedBox(height: 32.h),
 
@@ -204,7 +234,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         borderRadius: BorderRadius.circular(20.r),
                         border: Border.all(color: Colors.grey.shade100),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 4.h,
+                      ),
                       child: Row(
                         children: [
                           Text(
@@ -215,7 +248,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                           SizedBox(width: 12.w),
-                          Container(width: 1.w, height: 24.h, color: Colors.black12),
+                          Container(
+                            width: 1.w,
+                            height: 24.h,
+                            color: Colors.black12,
+                          ),
                           SizedBox(width: 12.w),
                           Expanded(
                             child: TextField(
@@ -314,7 +351,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset("assets/images/google_logo.png", height: 24.h),
+                            Image.asset(
+                              "assets/images/google_logo.png",
+                              height: 24.h,
+                            ),
                             SizedBox(width: 12.w),
                             Text(
                               "Sign in with Google",

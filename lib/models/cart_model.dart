@@ -13,9 +13,9 @@ class Cart {
     return Cart(
       items: rawItems is List
           ? rawItems
-              .whereType<Map<String, dynamic>>()
-              .map((i) => CartItem.fromJson(i))
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map((i) => CartItem.fromJson(i))
+                .toList()
           : [],
       subtotal: (json['subtotal'] ?? 0).toDouble(),
       itemCount: json['itemCount'] ?? 0,
@@ -40,15 +40,26 @@ class CartItem {
     required this.brand,
   });
 
+  CartItem copyWith({String? id, int? quantity}) => CartItem(
+    id: id ?? this.id,
+    product: product,
+    quantity: quantity ?? this.quantity,
+    price: price,
+    customization: customization,
+    brand: brand,
+  );
+
   factory CartItem.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> productData;
     final rawProduct = json['product'];
     final itemName = json['name'] as String?;
-    
+
     if (rawProduct is Map<String, dynamic>) {
       productData = rawProduct;
       // If product data is missing name but cart item has it, use that
-      if ((productData['name'] == null || productData['name'].toString().isEmpty) && itemName != null) {
+      if ((productData['name'] == null ||
+              productData['name'].toString().isEmpty) &&
+          itemName != null) {
         productData['name'] = itemName;
       }
     } else {

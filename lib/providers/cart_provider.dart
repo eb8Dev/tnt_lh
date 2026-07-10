@@ -1,23 +1,64 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/cart_model.dart';
+import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/services/cart_service.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 
+/// Carries the message from a cart write that failed *after* the UI had already
+/// moved optimistically. Screens listen to this and show a snackbar, so a failed
+/// write is never silent even though the call itself returned immediately.
+class CartErrorNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void report(String? message) => state = message;
+}
+
+final cartErrorProvider = NotifierProvider<CartErrorNotifier, String?>(
+  CartErrorNotifier.new,
+);
+
 class CartNotifier extends AsyncNotifier<Cart> {
+  /// Prefix for the temporary id given to an item that exists on screen but has
+  /// not come back from the server yet. Encodes the product id so a follow-up
+  /// tap on +/- can be re-pointed at the real cart-item id once it lands.
+  static const String _optimisticPrefix = '__optimistic__';
+
+  final Map<String, Timer> _writeTimers = {};
+  final Map<String, Future<void>> _inFlightAdds = {};
+  Timer? _reconcileTimer;
+
   @override
   FutureOr<Cart> build() async {
     final auth = ref.watch(authProvider);
-    // Note: We still watch brandProvider to trigger rebuilds if needed,
-    // but the cart state will now be global.
     ref.watch(brandProvider);
+
+    ref.onDispose(() {
+      for (final t in _writeTimers.values) {
+        t.cancel();
+      }
+      _writeTimers.clear();
+      _reconcileTimer?.cancel();
+    });
 
     if (auth.isAuthenticated) {
       return _fetchCartInternal();
     }
     return Cart(items: [], subtotal: 0, itemCount: 0);
+  }
+
+  Cart _recalculate(List<CartItem> items) => Cart(
+    items: items,
+    subtotal: items.fold(0.0, (sum, i) => sum + i.price * i.quantity),
+    itemCount: items.fold(0, (sum, i) => sum + i.quantity),
+  );
+
+  void _reportError(Object error) {
+    ref
+        .read(cartErrorProvider.notifier)
+        .report(error.toString().replaceFirst('Exception: ', ''));
   }
 
   Future<Cart> _fetchCartInternal() async {
@@ -42,6 +83,46 @@ class CartNotifier extends AsyncNotifier<Cart> {
     state = result;
   }
 
+  /// Pulls the server's cart back in once the taps stop, so prices and item ids
+  /// settle without a round-trip sitting in front of every button press.
+  void _scheduleReconcile() {
+    _reconcileTimer?.cancel();
+    _reconcileTimer = Timer(
+      const Duration(milliseconds: 500),
+      () => fetchCart(background: true),
+    );
+  }
+
+  /// Holding "+" should send one request, not one per tap.
+  void _debounceWrite(String key, Future<void> Function() write) {
+    _writeTimers[key]?.cancel();
+    _writeTimers[key] = Timer(const Duration(milliseconds: 350), () async {
+      _writeTimers.remove(key);
+      final rollback = state.value;
+      try {
+        await write();
+        _scheduleReconcile();
+      } catch (e) {
+        _reportError(e);
+        // The optimistic state is now a lie; take the server's word for it.
+        if (rollback != null) await fetchCart(background: true);
+      }
+    });
+  }
+
+  /// An item added moments ago has a placeholder id. Wait for its POST to land,
+  /// refetch, and hand back the id the server actually assigned.
+  Future<String?> _resolveItemId(String itemId) async {
+    if (!itemId.startsWith(_optimisticPrefix)) return itemId;
+    final productId = itemId.substring(_optimisticPrefix.length);
+    await _inFlightAdds[productId];
+    await fetchCart(background: true);
+    final matches =
+        state.value?.items.where((i) => i.product.id == productId).toList() ??
+        [];
+    return matches.isEmpty ? null : matches.first.id;
+  }
+
   /// Helper to get items for a specific brand
   List<CartItem> getItemsForBrand(String brand) {
     final cart = state.value;
@@ -57,62 +138,132 @@ class CartNotifier extends AsyncNotifier<Cart> {
   }
 
   Future<void> addToCart({
-    required String productId,
+    required Product product,
     required int quantity,
-    required String brand,
     String? customization,
   }) async {
-    await CartService.addToCart(
-      productId: productId,
+    final previous = state.value;
+
+    // Put the item on screen now. The badge, the stepper and the subtotal all
+    // read `items`, so bumping only `itemCount` left the card looking dead
+    // until the refetch returned.
+    if (previous != null) {
+      final items = [...previous.items];
+      final index = items.indexWhere(
+        (i) => i.product.id == product.id && i.customization == customization,
+      );
+      if (index >= 0) {
+        items[index] = items[index].copyWith(
+          quantity: items[index].quantity + quantity,
+        );
+      } else {
+        items.add(
+          CartItem(
+            id: '$_optimisticPrefix${product.id}',
+            product: product,
+            quantity: quantity,
+            price: product.price,
+            customization: customization,
+            brand: product.brand,
+          ),
+        );
+      }
+      state = AsyncData(_recalculate(items));
+    }
+
+    final request = CartService.addToCart(
+      productId: product.id,
       quantity: quantity,
-      brand: brand,
+      brand: product.brand,
       customization: customization,
     );
-    await fetchCart(background: true);
+    _inFlightAdds[product.id] = request.then((_) {}).catchError((_) {});
+
+    try {
+      await request;
+    } catch (e) {
+      if (previous != null) state = AsyncData(previous); // roll back
+      rethrow;
+    } finally {
+      _inFlightAdds.remove(product.id);
+    }
+
+    _scheduleReconcile();
   }
 
   Future<void> updateQuantity(String itemId, int quantity) async {
-    final brand = ref.read(brandProvider);
-    await CartService.updateItemQuantity(itemId, quantity, brand: brand);
-    await fetchCart(background: true);
+    if (quantity < 1) return removeItem(itemId);
+
+    final previous = state.value;
+    if (previous == null) return;
+
+    final items = previous.items
+        .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
+        .toList();
+    state = AsyncData(_recalculate(items));
+
+    final brand = previous.items
+        .firstWhere(
+          (i) => i.id == itemId,
+          orElse: () => previous.items.first,
+        )
+        .brand;
+
+    _debounceWrite(itemId, () async {
+      final realId = await _resolveItemId(itemId);
+      if (realId == null) throw Exception('That item is no longer in your bag');
+      await CartService.updateItemQuantity(realId, quantity, brand: brand);
+    });
   }
 
   Future<void> removeItem(String itemId, {String? brand}) async {
-    final targetBrand = brand ?? ref.read(brandProvider);
-    await CartService.removeItem(itemId, brand: targetBrand);
-    await fetchCart(background: true);
+    final previous = state.value;
+    if (previous == null) return;
+
+    final target = previous.items.where((i) => i.id == itemId).firstOrNull;
+    final targetBrand = brand ?? target?.brand ?? ref.read(brandProvider);
+
+    state = AsyncData(
+      _recalculate(previous.items.where((i) => i.id != itemId).toList()),
+    );
+
+    // A pending debounced quantity write for this item is now meaningless.
+    _writeTimers.remove(itemId)?.cancel();
+
+    try {
+      final realId = await _resolveItemId(itemId);
+      if (realId != null) {
+        await CartService.removeItem(realId, brand: targetBrand);
+      }
+    } catch (e) {
+      state = AsyncData(previous); // put it back
+      _reportError(e);
+      rethrow;
+    }
+
+    _scheduleReconcile();
   }
 
   Future<void> clearCart({String? brand}) async {
-    try {
-      // If the backend is returning "Catched" for the global clear, we should do a client-side sequential clear
-      // This is more reliable if the backend DELETE endpoint is broken.
-      
-      final currentCart = state.value;
-      if (currentCart == null || currentCart.items.isEmpty) return;
+    final currentCart = state.value;
+    if (currentCart == null || currentCart.items.isEmpty) return;
 
-      final itemsToClear = brand == null
-          ? currentCart.items
-          : currentCart.items.where((i) => i.brand == brand).toList();
-
+    if (brand == null) {
+      // DELETE /cart clears the whole cart atomically in one request.
+      await CartService.clearCart();
+    } else {
+      // There is no per-brand clear endpoint, so remove that brand's items
+      // individually. Errors propagate so the UI can report a failed clear.
+      final itemsToClear = currentCart.items
+          .where((i) => i.brand == brand)
+          .toList();
       if (itemsToClear.isEmpty) return;
-
-      // Sequential clear (Reliable fallback)
       for (final item in itemsToClear) {
-        try {
-          await CartService.removeItem(item.id, brand: item.brand);
-        } catch (e) {
-          debugPrint("Failed to remove item ${item.id} during clear: $e");
-        }
+        await CartService.removeItem(item.id, brand: item.brand);
       }
-
-      // Final re-fetch to ensure everything is in sync
-      await fetchCart(background: true);
-      
-    } catch (e) {
-      debugPrint("CartNotifier.clearCart error: $e");
-      rethrow;
     }
+
+    await fetchCart(background: true);
   }
 }
 

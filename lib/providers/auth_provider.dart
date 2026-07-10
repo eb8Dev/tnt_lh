@@ -166,6 +166,12 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Clears a surfaced auth error once a screen has shown it, so it doesn't
+  /// replay on the next rebuild.
+  void clearError() {
+    if (state.error != null) state = state.copyWith(error: null);
+  }
+
   Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -178,11 +184,31 @@ class AuthNotifier extends Notifier<AuthState> {
           .authenticate();
       final GoogleSignInAuthentication googleAuth =
           googleAccount.authentication;
+
+      if (googleAuth.idToken == null) {
+        // No idToken almost always means the Android signing SHA-1 or the
+        // serverClientId isn't registered in Firebase for this build.
+        throw 'Google sign-in is not configured for this build. '
+            'Please try phone login.';
+      }
+
       final fb.AuthCredential credential = fb.GoogleAuthProvider.credential(
         accessToken: null,
         idToken: googleAuth.idToken,
       );
+      // The authStateChanges listener takes over from here and flips isLoading
+      // off once the backend exchange resolves.
       await fb.FirebaseAuth.instance.signInWithCredential(credential);
+    } on GoogleSignInException catch (e) {
+      // A user backing out of the Google sheet is not an error — just stop.
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        state = state.copyWith(isLoading: false, error: null);
+        return;
+      }
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Google sign-in failed. Please try phone login.',
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

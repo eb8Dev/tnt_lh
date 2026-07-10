@@ -63,5 +63,7 @@
 	<string>com.googleusercontent.apps</string>
 	</array>
 
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to set your delivery address and show your order on the map.</string>
 </dict>
 </plist>

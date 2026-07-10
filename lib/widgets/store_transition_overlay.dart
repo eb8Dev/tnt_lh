@@ -91,7 +91,8 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final maxRadius = math.sqrt(size.width * size.width + size.height * size.height) * 1.2;
+    final maxRadius =
+        math.sqrt(size.width * size.width + size.height * size.height) * 1.2;
     // FAB is centerDocked, roughly at (width/2, height - 60)
     final fabCenter = Offset(size.width / 2, size.height - 60);
 
@@ -111,7 +112,7 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
                   color: widget.color,
                 ),
               ),
-              
+
               // Logo transition
               if (_controller.value > 0.2)
                 Center(

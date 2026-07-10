@@ -157,10 +157,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: widget.onBack,
         ),
       ),
@@ -182,7 +179,10 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
             SizedBox(height: 8.h),
             Text(
               "Enter the code sent to ${widget.phone}",
-              style: GoogleFonts.poppins(fontSize: 16.sp, color: Colors.black54),
+              style: GoogleFonts.poppins(
+                fontSize: 16.sp,
+                color: Colors.black54,
+              ),
             ),
             SizedBox(height: 50.h),
 

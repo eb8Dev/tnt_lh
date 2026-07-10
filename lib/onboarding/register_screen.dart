@@ -49,7 +49,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _completeProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
-    await ref.read(authProvider.notifier).completeProfile(
+    await ref
+        .read(authProvider.notifier)
+        .completeProfile(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           address: _addressController.text.trim(),
@@ -79,10 +81,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -114,7 +113,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               SizedBox(height: 8.h),
               Text(
                 "Complete your profile to get the most of your premium experience.",
-                style: GoogleFonts.poppins(fontSize: 15.sp, color: Colors.black54),
+                style: GoogleFonts.poppins(
+                  fontSize: 15.sp,
+                  color: Colors.black54,
+                ),
               ),
               SizedBox(height: 40.h),
 
@@ -239,10 +241,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           readOnly: readOnly,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: GoogleFonts.poppins(fontSize: 15.sp, fontWeight: FontWeight.w500),
+          style: GoogleFonts.poppins(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(color: Colors.black26, fontSize: 14.sp),
+            hintStyle: GoogleFonts.poppins(
+              color: Colors.black26,
+              fontSize: 14.sp,
+            ),
             filled: true,
             fillColor: Colors.grey.shade50,
             prefixIcon: Icon(

@@ -57,7 +57,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await ref.read(authProvider.notifier).updateProfile(
+      await ref
+          .read(authProvider.notifier)
+          .updateProfile(
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
             address: _addressController.text.trim(),
@@ -98,13 +100,16 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     final user = ref.read(authProvider).user;
     if (user == null) return;
 
-    final currentPrefs = user.notificationPreferences?.toJson() ??
+    final currentPrefs =
+        user.notificationPreferences?.toJson() ??
         NotificationPreferences().toJson();
     final updatedPrefs = Map<String, bool>.from(currentPrefs);
     updatedPrefs[key] = value;
 
     try {
-      await ref.read(authProvider.notifier).updateProfile(
+      await ref
+          .read(authProvider.notifier)
+          .updateProfile(
             notificationPreferences: updatedPrefs,
             isBackground: true,
           );
@@ -152,12 +157,13 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 10.h),Text(
-  "We'll save your preferences now and use them to reach you in future updates.",
-  style: TextStyle(
-    color: Colors.black.withValues(alpha: 0.5), // 50% opacity
-  ),
-),
+                  SizedBox(height: 10.h),
+                  Text(
+                    "We'll save your preferences now and use them to reach you in future updates.",
+                    style: TextStyle(
+                      color: Colors.black.withValues(alpha: 0.5), // 50% opacity
+                    ),
+                  ),
                   SizedBox(height: 10.h),
                   SizedBox(height: 20.h),
                   _buildPreferenceTile(
@@ -202,7 +208,10 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     return SwitchListTile(
       title: Text(
         title,
-        style: GoogleFonts.poppins(fontSize: 15.sp, fontWeight: FontWeight.w500),
+        style: GoogleFonts.poppins(
+          fontSize: 15.sp,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       value: value,
       activeThumbColor: Theme.of(context).colorScheme.primary,
@@ -247,7 +256,10 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                 SizedBox(height: 8.h),
                 Text(
                   "Have a question or feedback? Send us a message.",
-                  style: GoogleFonts.poppins(fontSize: 13.sp, color: Colors.black54),
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.sp,
+                    color: Colors.black54,
+                  ),
                 ),
                 SizedBox(height: 24.h),
                 TextFormField(
@@ -413,7 +425,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3),
                           width: 2.w,
                         ),
                       ),
@@ -624,7 +638,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
             label,
             prefixIcon: Icon(
               icon,
-              color: enabled ? Theme.of(context).colorScheme.primary : Colors.black26,
+              color: enabled
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.black26,
               size: 20.sp,
             ),
             enabled: enabled,
@@ -656,7 +672,10 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16.r),
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5.w),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.primary,
+          width: 1.5.w,
+        ),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16.r),
@@ -701,7 +720,11 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                 ),
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.black26, size: 20.sp),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.black26,
+              size: 20.sp,
+            ),
           ],
         ),
       ),

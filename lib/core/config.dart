@@ -10,6 +10,11 @@ class AppConfig {
   static String _baseUrl = kDebugMode ? _devBaseUrl : _prodBaseUrl;
   static const String defaultBrand = "teasntrees";
 
+  // Google Maps / Directions API key (dev; rotate + restrict for prod).
+  // Matches the key in AndroidManifest.xml and ios/Runner/AppDelegate.swift.
+  static const String googleMapsApiKey =
+      "AIzaSyDHqos-W9V4xEohQJUmViexhuZ1eSX_vls";
+
   static String get baseUrl => _baseUrl;
 
   static String get socketUrl {

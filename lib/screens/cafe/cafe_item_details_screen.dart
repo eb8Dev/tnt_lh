@@ -40,8 +40,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
   double get _currentPrice {
     double base = widget.product.displayPrice;
     if (_selectedSize != null) {
-      final opt =
-          widget.product.sizeOptions.firstWhere((e) => e.size == _selectedSize);
+      final opt = widget.product.sizeOptions.firstWhere(
+        (e) => e.size == _selectedSize,
+      );
       base = opt.price;
     }
     if (_isEggless && widget.product.cakePricing != null) {
@@ -86,7 +87,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 padding: EdgeInsets.all(8.0.r),
                 child: Consumer(
                   builder: (context, ref, child) {
-                    final isFav = ref.watch(wishlistProvider).maybeWhen(
+                    final isFav = ref
+                        .watch(wishlistProvider)
+                        .maybeWhen(
                           data: (list) =>
                               list.any((p) => p.id == widget.product.id),
                           orElse: () => false,
@@ -102,7 +105,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          isFav
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
                           color: isFav ? Colors.redAccent : Colors.black,
                           size: 24.sp,
                         ),
@@ -114,7 +119,8 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               SizedBox(width: 8.w),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: widget.product.image != null &&
+              background:
+                  widget.product.image != null &&
                       widget.product.image!.isNotEmpty
                   ? Image.network(widget.product.image!, fit: BoxFit.cover)
                   : Container(
@@ -136,8 +142,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               padding: EdgeInsets.all(24.r),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(36.r)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(36.r)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +152,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     children: [
                       Container(
                         padding: EdgeInsets.symmetric(
-                            horizontal: 12.w, vertical: 6.h),
+                          horizontal: 12.w,
+                          vertical: 6.h,
+                        ),
                         decoration: BoxDecoration(
                           color: themeColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10.r),
@@ -184,9 +191,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   Text(
                     widget.product.name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                   SizedBox(height: 8.h),
                   Text(
@@ -234,7 +241,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           child: AnimatedContainer(
                             duration: Duration(milliseconds: 200),
                             padding: EdgeInsets.symmetric(
-                                horizontal: 20.w, vertical: 10.h),
+                              horizontal: 20.w,
+                              vertical: 10.h,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected ? themeColor : Colors.white,
                               borderRadius: BorderRadius.circular(14.r),
@@ -246,18 +255,21 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color: themeColor.withValues(alpha: 0.3),
+                                        color: themeColor.withValues(
+                                          alpha: 0.3,
+                                        ),
                                         blurRadius: 8,
                                         offset: Offset(0, 4),
-                                      )
+                                      ),
                                     ]
                                   : [],
                             ),
                             child: Text(
                               opt.size,
                               style: GoogleFonts.poppins(
-                                color:
-                                    isSelected ? Colors.white : Colors.black87,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black87,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13.sp,
                               ),
@@ -314,7 +326,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     decoration: InputDecoration(
                       hintText: "Add any special requests...",
                       hintStyle: GoogleFonts.poppins(
-                          fontSize: 13.sp, color: Colors.black26),
+                        fontSize: 13.sp,
+                        color: Colors.black26,
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                       border: OutlineInputBorder(
@@ -364,9 +378,10 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     if (_quantity > 1) setState(() => _quantity--);
                   },
                   icon: Icon(
-                      Icons.remove_rounded,
-                      size: 20.sp,
-                      color: Colors.black87),
+                    Icons.remove_rounded,
+                    size: 20.sp,
+                    color: Colors.black87,
+                  ),
                 ),
                 Text(
                   "$_quantity",
@@ -378,9 +393,10 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 IconButton(
                   onPressed: () => setState(() => _quantity++),
                   icon: Icon(
-                      Icons.add_rounded,
-                      size: 20.sp,
-                      color: Colors.black87),
+                    Icons.add_rounded,
+                    size: 20.sp,
+                    color: Colors.black87,
+                  ),
                 ),
               ],
             ),
@@ -398,14 +414,37 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                   customizations.add(_customizationController.text.trim());
                 }
 
-                ref.read(cartProvider.notifier).addToCart(
-                      productId: widget.product.id,
+                final messenger = ScaffoldMessenger.of(context);
+                final productName = widget.product.name;
+
+                // Fire-and-reconcile: the cart updates optimistically, so don't
+                // make the user watch a spinner for a round-trip.
+                ref
+                    .read(cartProvider.notifier)
+                    .addToCart(
+                      product: widget.product,
                       quantity: _quantity,
-                      brand: widget.product.brand,
                       customization: customizations.isNotEmpty
                           ? customizations.join(", ")
                           : null,
-                    );
+                    )
+                    .catchError((_) {
+                      messenger.removeCurrentSnackBar();
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Couldn't add $productName. Please try again.",
+                          ),
+                          backgroundColor: Colors.redAccent.shade400,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          margin: const EdgeInsets.all(20),
+                        ),
+                      );
+                    });
+
                 SnackBarUtils.showThemedSnackBar(
                   context: context,
                   message: "Added to your bag!",

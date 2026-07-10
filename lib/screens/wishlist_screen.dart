@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,8 +40,10 @@ class WishlistScreen extends ConsumerWidget {
       ),
       body: wishlistAsync.when(
         loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
-        error: (err, _) =>
-            Center(child: Text("Error: $err", style: GoogleFonts.poppins())),
+        error: (err, _) => ErrorRetryView(
+          error: err,
+          onRetry: () => ref.invalidate(wishlistProvider),
+        ),
         data: (items) {
           if (items.isEmpty) {
             return Center(
@@ -229,7 +232,9 @@ class WishlistScreen extends ConsumerWidget {
                           vertical: 2.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(

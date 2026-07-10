@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
+import 'package:tnt_lh/utils/cart_error_listener.dart';
 import 'package:tnt_lh/screens/checkout_screen.dart';
 import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
@@ -53,75 +55,72 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     }
   }
 
-  Future<void> _clearCart() async {
-    final confirmed = await showDialog<bool>(
+  /// Shows a confirmation bottom sheet that switches to a loading state while
+  /// the action runs, so the user never sees an unresponsive UI.
+  Future<bool> _confirmAndRun({
+    required String title,
+    required String message,
+    required String actionLabel,
+    required String busyLabel,
+    required Future<void> Function() action,
+  }) async {
+    final done = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Clear All Bags?", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text("This will remove ALL items from both Cafe and Bakery.", style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text("Cancel", style: GoogleFonts.poppins(color: Colors.black54)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text("Clear Everything", style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-          ),
-        ],
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+      ),
+      builder: (_) => _ConfirmActionSheet(
+        title: title,
+        message: message,
+        actionLabel: actionLabel,
+        busyLabel: busyLabel,
+        action: action,
       ),
     );
+    return done ?? false;
+  }
 
-    if (confirmed == true) {
-      try {
-        await ref.read(cartProvider.notifier).clearCart();
-        if (mounted) {
-          SnackBarUtils.showThemedSnackBar(context: context, message: "All bags cleared");
-        }
-      } catch (e) {
-        if (mounted) {
-          SnackBarUtils.showThemedSnackBar(context: context, message: "Failed to clear: $e", isError: true);
-        }
-      }
+  Future<void> _clearCart() async {
+    final cleared = await _confirmAndRun(
+      title: "Clear All Bags?",
+      message: "This will remove ALL items from both Cafe and Bakery.",
+      actionLabel: "Clear Everything",
+      busyLabel: "Clearing your bags…",
+      action: () => ref.read(cartProvider.notifier).clearCart(),
+    );
+
+    if (cleared && mounted) {
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: "All bags cleared",
+      );
     }
   }
 
   Future<void> _clearBrandCart(String brand) async {
     final brandName = brand == 'teasntrees' ? 'Cafe' : 'Bakery';
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Clear $brandName Bag?", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text("Remove all items from your $brandName bag?", style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text("Cancel", style: GoogleFonts.poppins(color: Colors.black54)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text("Clear Bag", style: GoogleFonts.poppins(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+    final cleared = await _confirmAndRun(
+      title: "Clear $brandName Bag?",
+      message: "Remove all items from your $brandName bag?",
+      actionLabel: "Clear Bag",
+      busyLabel: "Clearing your $brandName bag…",
+      action: () => ref.read(cartProvider.notifier).clearCart(brand: brand),
     );
 
-    if (confirmed == true) {
-      try {
-        await ref.read(cartProvider.notifier).clearCart(brand: brand);
-        if (mounted) {
-          SnackBarUtils.showThemedSnackBar(context: context, message: "$brandName bag cleared");
-        }
-      } catch (e) {
-        if (mounted) {
-          SnackBarUtils.showThemedSnackBar(context: context, message: "Failed: $e", isError: true);
-        }
-      }
+    if (cleared && mounted) {
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: "$brandName bag cleared",
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    listenForCartErrors(ref, context);
     final cartState = ref.watch(cartProvider);
 
     return Scaffold(
@@ -134,9 +133,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         title: Text(
           "My Bags",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.black87,
-                fontSize: 20.sp,
-              ),
+            color: Colors.black87,
+            fontSize: 20.sp,
+          ),
         ),
         actions: [
           TactileButton(
@@ -155,8 +154,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       ),
       body: cartState.when(
         loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
-        error: (err, stack) =>
-            Center(child: Text("Error: $err", style: GoogleFonts.poppins())),
+        error: (err, stack) => ErrorRetryView(
+          error: err,
+          onRetry: () => ref.read(cartProvider.notifier).fetchCart(),
+        ),
         data: (cart) {
           if (cart.items.isEmpty) {
             return _buildEmptyState();
@@ -239,10 +240,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
               ],
             ),
@@ -274,13 +275,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            CheckoutScreen(cart: brandCart, specificBrand: brand),
+                        builder: (_) => CheckoutScreen(
+                          cart: brandCart,
+                          specificBrand: brand,
+                        ),
                       ),
                     );
                   },
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 6.h,
+                    ),
                     decoration: BoxDecoration(
                       color: themeColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12.r),
@@ -381,10 +387,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15.sp,
-                          color: Colors.black87,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.sp,
+                      color: Colors.black87,
+                    ),
                   ),
                   if (item.customization != null)
                     Text(
@@ -448,13 +454,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     ),
                   ),
                   TactileButton(
-                    onTap: () =>
-                        _updateQuantity(item.id, item.quantity + 1),
+                    onTap: () => _updateQuantity(item.id, item.quantity + 1),
                     child: Container(
                       width: 32.w,
                       height: 32.h,
                       alignment: Alignment.center,
-                      child: Icon(Icons.add_rounded, size: 18.sp, color: Colors.black87),
+                      child: Icon(
+                        Icons.add_rounded,
+                        size: 18.sp,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
                 ],
@@ -493,9 +502,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           Text(
             "Your bags are empty",
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
           SizedBox(height: 12.h),
           Text(
@@ -609,12 +618,179 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     ),
                   ),
                   SizedBox(width: 8.w),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 20.sp, color: Colors.white),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 20.sp,
+                    color: Colors.white,
+                  ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Confirmation bottom sheet that swaps to an inline loading state while the
+/// action runs, then pops `true` on success. Replaces the old AlertDialogs.
+class _ConfirmActionSheet extends StatefulWidget {
+  final String title;
+  final String message;
+  final String actionLabel;
+  final String busyLabel;
+  final Future<void> Function() action;
+
+  const _ConfirmActionSheet({
+    required this.title,
+    required this.message,
+    required this.actionLabel,
+    required this.busyLabel,
+    required this.action,
+  });
+
+  @override
+  State<_ConfirmActionSheet> createState() => _ConfirmActionSheetState();
+}
+
+class _ConfirmActionSheetState extends State<_ConfirmActionSheet> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _run() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.action();
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = "Couldn't clear your bag. Please try again.";
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Block back-dismissal while the action is in flight.
+    return PopScope(
+      canPop: !_busy,
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 24.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20.h),
+              if (_busy) ...[
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 22.w,
+                      height: 22.h,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: const Color(0xFFA9BCA4),
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Text(
+                        widget.busyLabel,
+                        style: GoogleFonts.poppins(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+              ] else ...[
+                Text(
+                  widget.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  widget.message,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.sp,
+                    color: Colors.black54,
+                  ),
+                ),
+                if (_error != null) ...[
+                  SizedBox(height: 12.h),
+                  Text(
+                    _error!,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 24.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(
+                          "Cancel",
+                          style: GoogleFonts.poppins(
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _run,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                        ),
+                        child: Text(
+                          widget.actionLabel,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
