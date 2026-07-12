@@ -100,6 +100,12 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/images/
+    # Poppins + Playfair Display, bundled. google_fonts otherwise DOWNLOADS them
+    # from Google's CDN on first launch — so a customer on a poor connection saw
+    # the app in the fallback typeface (and paid for the data). google_fonts
+    # picks these up from the asset manifest automatically; runtime fetching is
+    # switched off in main.dart.
+    - google_fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

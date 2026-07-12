@@ -80,6 +80,15 @@ final ThemeData littleHTheme = ThemeData(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Poppins and Playfair are bundled in google_fonts/ and declared in pubspec,
+  // so google_fonts resolves them from the asset manifest. Runtime fetching is
+  // off: by default the package DOWNLOADS fonts from Google's CDN on first
+  // launch, which meant a customer on a poor connection opened the app in the
+  // fallback typeface — and paid for the data. With this false, a missing font
+  // is a build-time mistake rather than a silent runtime downgrade.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize Remote Config for Base URL
