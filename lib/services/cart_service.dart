@@ -1,24 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:tnt_lh/core/config.dart';
-import 'package:tnt_lh/services/auth_service.dart';
+import 'package:tnt_lh/services/api_client.dart';
 
 class CartService {
-  static Future<Map<String, String>> _getHeaders() async {
-    final token = await AuthService.getToken();
-    if (token == null) throw 'Not authenticated';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-  }
 
   static Future<Map<String, dynamic>> getCart({String? brand}) async {
     final url = AppConfig.buildUrl('/customer/cart', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.get(url, headers: headers);
+      final response = await ApiClient.get(url);
 
       final dynamic data = jsonDecode(response.body);
 
@@ -58,7 +48,6 @@ class CartService {
   }) async {
     final url = AppConfig.buildUrl('/customer/cart/add', brand: brand);
     try {
-      final headers = await _getHeaders();
       final body = {
         "productId": productId,
         "quantity": quantity,
@@ -66,11 +55,7 @@ class CartService {
         if (customization != null) "customization": customization,
       };
 
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode(body),
-      );
+      final response = await ApiClient.post(url, body: body);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -90,12 +75,7 @@ class CartService {
   }) async {
     final url = AppConfig.buildUrl('/customer/cart/item/$itemId', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: jsonEncode({"quantity": quantity}),
-      );
+      final response = await ApiClient.put(url, body: {"quantity": quantity});
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -111,8 +91,7 @@ class CartService {
   static Future<void> removeItem(String itemId, {String? brand}) async {
     final url = AppConfig.buildUrl('/customer/cart/item/$itemId', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.delete(url, headers: headers);
+      final response = await ApiClient.delete(url);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -132,8 +111,7 @@ class CartService {
 
     debugPrint("CartService.clearCart: calling DELETE $url");
     try {
-      final headers = await _getHeaders();
-      final response = await http.delete(url, headers: headers);
+      final response = await ApiClient.delete(url);
 
       debugPrint(
         "CartService.clearCart: response status: ${response.statusCode}",

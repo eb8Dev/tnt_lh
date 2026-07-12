@@ -1,23 +1,13 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:tnt_lh/core/config.dart';
-import 'package:tnt_lh/services/auth_service.dart';
+import 'package:tnt_lh/services/api_client.dart';
 
 class WishlistService {
-  static Future<Map<String, String>> _getHeaders() async {
-    final token = await AuthService.getToken();
-    if (token == null) throw 'Not authenticated';
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-  }
 
   static Future<List<dynamic>> getWishlist({String? brand}) async {
     final url = AppConfig.buildUrl('/customer/wishlist', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.get(url, headers: headers);
+      final response = await ApiClient.get(url);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -33,12 +23,7 @@ class WishlistService {
   static Future<void> addToWishlist(String productId, {String? brand}) async {
     final url = AppConfig.buildUrl('/customer/wishlist', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode({"productId": productId}),
-      );
+      final response = await ApiClient.post(url, body: {"productId": productId});
 
       final data = jsonDecode(response.body);
       if (response.statusCode != 200 && response.statusCode != 201) {
@@ -58,8 +43,7 @@ class WishlistService {
       brand: brand,
     );
     try {
-      final headers = await _getHeaders();
-      final response = await http.delete(url, headers: headers);
+      final response = await ApiClient.delete(url);
 
       final data = jsonDecode(response.body);
       if (response.statusCode != 200) {

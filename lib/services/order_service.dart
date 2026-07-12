@@ -1,26 +1,16 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:tnt_lh/core/config.dart';
+import 'package:tnt_lh/services/api_client.dart';
 import 'package:tnt_lh/models/order_model.dart';
-import 'package:tnt_lh/services/auth_service.dart';
 
 class OrderService {
   // Helper to get headers
-  static Future<Map<String, String>> _getHeaders() async {
-    final token = await AuthService.getToken();
-    if (token == null) throw Exception('Not authenticated');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-  }
 
   /// Get Settings (Tax, Delivery Charge)
   static Future<Map<String, dynamic>> getSettings({String? brand}) async {
     final url = AppConfig.buildUrl('/customer/settings', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.get(url, headers: headers);
+      final response = await ApiClient.get(url);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -48,8 +38,7 @@ class OrderService {
       queryParameters: queryParams,
     );
     try {
-      final headers = await _getHeaders();
-      final response = await http.get(url, headers: headers);
+      final response = await ApiClient.get(url);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -68,8 +57,7 @@ class OrderService {
   static Future<Order> getOrderById(String id, {String? brand}) async {
     final url = AppConfig.buildUrl('/customer/orders/$id', brand: brand);
     try {
-      final headers = await _getHeaders();
-      final response = await http.get(url, headers: headers);
+      final response = await ApiClient.get(url);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
@@ -101,7 +89,6 @@ class OrderService {
 
     final url = AppConfig.buildUrl(path, brand: brand);
     try {
-      final headers = await _getHeaders();
 
       final bool hasCoords = latitude != null && longitude != null;
       // The two endpoints disagree on where the point lives: /cart/checkout
@@ -127,11 +114,7 @@ class OrderService {
           "couponCode": couponCode,
       };
 
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: jsonEncode(body),
-      );
+      final response = await ApiClient.post(url, body: body);
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -154,8 +137,7 @@ class OrderService {
       '/customer/orders/$orderId/reorder',
       brand: brand,
     );
-    final headers = await _getHeaders();
-    final response = await http.post(url, headers: headers);
+    final response = await ApiClient.post(url);
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) return data;
     throw Exception(data['message'] ?? 'Could not re-place this order');
@@ -171,8 +153,7 @@ class OrderService {
       '/customer/orders/$orderId/invoice',
       brand: brand,
     );
-    final headers = await _getHeaders();
-    final response = await http.get(url, headers: headers);
+    final response = await ApiClient.get(url);
     if (response.statusCode == 200) return response.bodyBytes;
     throw Exception('Could not download the invoice');
   }
@@ -188,12 +169,7 @@ class OrderService {
       '/customer/orders/$orderId/complaint',
       brand: brand,
     );
-    final headers = await _getHeaders();
-    final response = await http.post(
-      url,
-      headers: headers,
-      body: jsonEncode({'reason': reason, if (notes != null) 'notes': notes}),
-    );
+    final response = await ApiClient.post(url, body: {'reason': reason, if (notes != null) 'notes': notes});
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) return data;
     throw Exception(data['message'] ?? 'Could not submit your issue');
@@ -212,20 +188,15 @@ class OrderService {
       '/customer/orders/$orderId/address',
       brand: brand,
     );
-    final headers = await _getHeaders();
     final hasCoords = latitude != null && longitude != null;
-    final response = await http.patch(
-      url,
-      headers: headers,
-      body: jsonEncode({
+    final response = await ApiClient.patch(url, body: {
         'address': address,
         if (hasCoords)
           'location': {
             'type': 'Point',
             'coordinates': [longitude, latitude],
           },
-      }),
-    );
+      });
     final data = jsonDecode(response.body);
     if (response.statusCode == 200) return data;
     throw Exception(data['message'] ?? 'Could not update the address');
