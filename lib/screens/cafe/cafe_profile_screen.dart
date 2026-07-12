@@ -1032,6 +1032,12 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
           ),
         );
       },
-    );
+    ).whenComplete(() {
+      // These are created fresh on every open of the sheet and were never
+      // disposed, so each visit to Help & Support leaked two
+      // TextEditingControllers (and their focus nodes) for the life of the app.
+      subjectController.dispose();
+      messageController.dispose();
+    });
   }
 }

@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -56,15 +53,23 @@ class DefaultFirebaseOptions {
     projectId: 'tnt-lh',
     storageBucket: 'tnt-lh.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA12N9hVC_MQHZOHRfcnUPXPfxXXpuSTEo',
     appId: '1:138992055382:ios:178b423176878d1e61b7f7',
     messagingSenderId: '138992055382',
     projectId: 'tnt-lh',
     storageBucket: 'tnt-lh.firebasestorage.app',
-    iosClientId:
-        '138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r.apps.googleusercontent.com',
+    androidClientId: '138992055382-ikq5kmla957khvbvd8fseotah4g7bnps.apps.googleusercontent.com',
+    iosClientId: '138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r.apps.googleusercontent.com',
     iosBundleId: 'com.manuen.tntLh',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBBv1dG0b1bI-NGQMtJRtCKc1zLkGweiqE',
+    appId: '1:138992055382:web:81cce1c90c589f9961b7f7',
+    messagingSenderId: '138992055382',
+    projectId: 'tnt-lh',
+    authDomain: 'tnt-lh.firebaseapp.com',
+    storageBucket: 'tnt-lh.firebasestorage.app',
+    measurementId: 'G-S4HGC36WPN',
   );
 }
