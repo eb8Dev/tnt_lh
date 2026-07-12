@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -34,7 +35,7 @@ class ErrorRetryView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.cloud_off_rounded,
+              PhosphorIcons.cloudSlash(),
               size: 48.sp,
               color: Colors.black.withValues(alpha: 0.25),
             ),
@@ -51,7 +52,7 @@ class ErrorRetryView extends StatelessWidget {
             SizedBox(height: 24.h),
             ElevatedButton.icon(
               onPressed: onRetry,
-              icon: Icon(Icons.refresh_rounded, size: 18.sp),
+              icon: Icon(PhosphorIcons.arrowClockwise(), size: 18.sp),
               label: Text(
                 "Try again",
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),

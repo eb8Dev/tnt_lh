@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SnackBarUtils {
@@ -25,8 +26,8 @@ class SnackBarUtils {
               ),
               child: Icon(
                 isError
-                    ? Icons.error_outline_rounded
-                    : Icons.check_circle_outline_rounded,
+                    ? PhosphorIcons.warningCircle()
+                    : PhosphorIcons.checkCircle(PhosphorIconsStyle.duotone),
                 color: Colors.white,
                 size: 20,
               ),

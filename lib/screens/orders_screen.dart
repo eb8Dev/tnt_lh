@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/skeleton.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -99,7 +100,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           child: Row(
             children: [
               Icon(
-                Icons.star_rounded,
+                PhosphorIcons.star(PhosphorIconsStyle.fill),
                 color: const Color(0xFFF5A623),
                 size: 26.sp,
               ),
@@ -128,7 +129,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ),
               Icon(
-                Icons.arrow_forward_ios_rounded,
+                PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
                 size: 14.sp,
                 color: Colors.black26,
               ),
@@ -261,7 +262,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   ),
                 ),
                 Icon(
-                  Icons.arrow_forward_ios_rounded,
+                  PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
                   size: 14.sp,
                   color: Colors.black26,
                 ),
@@ -291,7 +292,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               ],
             ),
             child: Icon(
-              Icons.receipt_long_rounded,
+              PhosphorIcons.receipt(PhosphorIconsStyle.fill),
               size: 80.sp,
               color: Colors.black.withValues(alpha: 0.05),
             ),

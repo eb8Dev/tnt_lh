@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -143,7 +144,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             child: Padding(
               padding: EdgeInsets.all(12.0.r),
               child: Icon(
-                Icons.delete_sweep_rounded,
+                PhosphorIcons.trash(),
                 color: Colors.black45,
                 size: 24.sp,
               ),
@@ -258,7 +259,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       borderRadius: BorderRadius.circular(10.r),
                     ),
                     child: Icon(
-                      Icons.delete_outline_rounded,
+                      PhosphorIcons.trash(),
                       size: 18.sp,
                       color: Colors.redAccent,
                     ),
@@ -328,7 +329,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         alignment: Alignment.centerRight,
         padding: EdgeInsets.only(right: 24),
         child: Icon(
-          Icons.delete_sweep_rounded,
+          PhosphorIcons.trash(),
           color: Color(0xFFEF5350), // Colors.red.shade400
           size: 32.sp,
         ),
@@ -365,13 +366,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         item.product.image!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => Icon(
-                          Icons.fastfood_rounded,
+                          PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone),
                           color: Colors.black12,
                           size: 32.sp,
                         ),
                       )
                     : Icon(
-                        Icons.fastfood_rounded,
+                        PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone),
                         color: Colors.black12,
                         size: 32.sp,
                       ),
@@ -434,8 +435,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       alignment: Alignment.center,
                       child: Icon(
                         item.quantity == 1
-                            ? Icons.delete_outline_rounded
-                            : Icons.remove_rounded,
+                            ? PhosphorIcons.trash()
+                            : PhosphorIcons.minus(PhosphorIconsStyle.bold),
                         size: 18.sp,
                         color: item.quantity == 1
                             ? Colors.redAccent
@@ -460,7 +461,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       height: 32.h,
                       alignment: Alignment.center,
                       child: Icon(
-                        Icons.add_rounded,
+                        PhosphorIcons.plus(PhosphorIconsStyle.bold),
                         size: 18.sp,
                         color: Colors.black87,
                       ),
@@ -493,7 +494,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ],
             ),
             child: Icon(
-              Icons.shopping_basket_rounded,
+              PhosphorIcons.basket(PhosphorIconsStyle.fill),
               size: 80.sp,
               color: Colors.black.withValues(alpha: 0.05),
             ),
@@ -619,7 +620,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                   SizedBox(width: 8.w),
                   Icon(
-                    Icons.arrow_forward_ios_rounded,
+                    PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
                     size: 20.sp,
                     color: Colors.white,
                   ),

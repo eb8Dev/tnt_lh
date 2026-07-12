@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -166,7 +167,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                             child: Image.network(
                                               cat.image!,
                                               errorBuilder: (_, _, _) => Icon(
-                                                Icons.grid_view_rounded,
+                                                PhosphorIcons.squaresFour(),
                                                 color: isSelected
                                                     ? Colors.white
                                                     : Colors.black54,
@@ -175,7 +176,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                             ),
                                           )
                                         : Icon(
-                                            Icons.grid_view_rounded,
+                                            PhosphorIcons.squaresFour(),
                                             size: 30.sp,
                                             color: isSelected
                                                 ? Colors.white
@@ -373,8 +374,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                     children: [
                       Icon(
                         count > 0
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
+                            ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
+                            : PhosphorIcons.heart(),
                         color: count > 0 ? const Color(0xFFE5484D) : Colors.black87,
                         size: 24.sp,
                       ),
@@ -533,7 +534,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                                       isLittleH
                                                           ? Icons
                                                                 .favorite_rounded
-                                                          : Icons.spa_rounded,
+                                                          : PhosphorIcons.leaf(PhosphorIconsStyle.duotone),
                                                       color: Colors.white,
                                                       size: 14.sp,
                                                     ),
@@ -594,8 +595,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           ).animate(_pulseController),
                                           child: Icon(
                                             isLittleH
-                                                ? Icons.bakery_dining_rounded
-                                                : Icons.local_cafe_rounded,
+                                                ? PhosphorIcons.bread(PhosphorIconsStyle.duotone)
+                                                : PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
                                             size: 100.sp,
                                             color: Colors.white.withValues(
                                               alpha: 0.15,
@@ -641,14 +642,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                     fontSize: 14.sp,
                                   ),
                                   prefixIcon: Icon(
-                                    Icons.search_rounded,
+                                    PhosphorIcons.magnifyingGlass(),
                                     color: Colors.black45,
                                     size: 20.sp,
                                   ),
                                   suffixIcon: _searchController.text.isNotEmpty
                                       ? IconButton(
                                           icon: Icon(
-                                            Icons.close_rounded,
+                                            PhosphorIcons.x(PhosphorIconsStyle.bold),
                                             size: 18.sp,
                                             color: Colors.black45,
                                           ),
@@ -739,7 +740,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           null,
                                           isSelected,
                                           () => _onCategorySelected(-1, null),
-                                          Icons.grid_view_rounded,
+                                          PhosphorIcons.squaresFour(),
                                         );
                                       }
 
@@ -755,8 +756,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           cat.id,
                                         ),
                                         isLittleH
-                                            ? Icons.cake_rounded
-                                            : Icons.local_cafe_rounded,
+                                            ? PhosphorIcons.cake(PhosphorIconsStyle.duotone)
+                                            : PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
                                       );
                                     },
                                   );
@@ -788,7 +789,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                   child: productsAsync.when(
                     loading: () => const ProductListSkeleton(),
                     error: (err, _) => _pullableMessage(
-                      icon: Icons.wifi_off_rounded,
+                      icon: PhosphorIcons.wifiSlash(),
                       message: "Couldn't load items.\nPull down to try again.",
                     ),
                     data: (products) {
@@ -801,7 +802,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
 
                         if (searching) {
                           return _pullableMessage(
-                            icon: Icons.search_off_rounded,
+                            icon: PhosphorIcons.magnifyingGlass(),
                             message:
                                 "Nothing matches \"$_searchQuery\".\nTry a different spelling or a broader word.",
                             actionLabel: "Clear search",
@@ -813,14 +814,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                         }
                         if (filtered) {
                           return _pullableMessage(
-                            icon: Icons.fastfood_rounded,
+                            icon: PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone),
                             message: "Nothing in this category yet.",
                             actionLabel: "Browse everything",
                             onAction: () => _onCategorySelected(-1, null),
                           );
                         }
                         return _pullableMessage(
-                          icon: Icons.fastfood_rounded,
+                          icon: PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone),
                           message:
                               "No items found in this section.\nPull down to refresh.",
                         );
@@ -1136,8 +1137,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                     ),
                                     child: Icon(
                                       isFav
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
+                                          ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
+                                          : PhosphorIcons.heart(),
                                       size: 16.sp,
                                       color: isFav
                                           ? Colors.redAccent
@@ -1225,7 +1226,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           }
                                         }
                                       },
-                                      icon: Icon(Icons.remove_rounded, size: 14.sp),
+                                      icon: Icon(PhosphorIcons.minus(PhosphorIconsStyle.bold), size: 14.sp),
                                       padding: EdgeInsets.zero,
                                       constraints: BoxConstraints(minWidth: 30),
                                       color: Theme.of(
@@ -1253,7 +1254,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                               );
                                         }
                                       },
-                                      icon: Icon(Icons.add_rounded, size: 14.sp),
+                                      icon: Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold), size: 14.sp),
                                       padding: EdgeInsets.zero,
                                       constraints: BoxConstraints(minWidth: 30),
                                       color: Theme.of(
@@ -1286,7 +1287,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                     ],
                                   ),
                                   child: Icon(
-                                    Icons.add_rounded,
+                                    PhosphorIcons.plus(PhosphorIconsStyle.bold),
                                     color: Colors.white,
                                     size: 24.sp,
                                   ),
@@ -1424,7 +1425,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
               IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(
-                  Icons.close_rounded,
+                  PhosphorIcons.x(PhosphorIconsStyle.bold),
                   color: Colors.black26,
                   size: 24.sp,
                 ),
@@ -1445,7 +1446,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                   borderRadius: BorderRadius.circular(16.r),
                   child: widget.product.image != null
                       ? Image.network(widget.product.image!, fit: BoxFit.cover)
-                      : Icon(Icons.fastfood_rounded),
+                      : Icon(PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone)),
                 ),
               ),
               SizedBox(width: 16.w),
@@ -1561,7 +1562,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                         if (_quantity > 1) setState(() => _quantity--);
                       },
                       icon: Icon(
-                        Icons.remove_rounded,
+                        PhosphorIcons.minus(PhosphorIconsStyle.bold),
                         size: 18.sp,
                         color: Colors.black87,
                       ),
@@ -1573,7 +1574,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                     IconButton(
                       onPressed: () => setState(() => _quantity++),
                       icon: Icon(
-                        Icons.add_rounded,
+                        PhosphorIcons.plus(PhosphorIconsStyle.bold),
                         size: 18.sp,
                         color: Colors.black87,
                       ),

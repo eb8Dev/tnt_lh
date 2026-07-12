@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -300,7 +301,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
       ),
       child: Row(
         children: [
-          Icon(Icons.lock_outline_rounded, color: _accent, size: 18.sp),
+          Icon(PhosphorIcons.lock(), color: _accent, size: 18.sp),
           SizedBox(width: 10.w),
           Expanded(
             child: Column(
@@ -420,7 +421,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
                       },
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF267CB9),
-                      child: Icon(Icons.my_location_rounded),
+                      child: Icon(PhosphorIcons.crosshair()),
                     ),
                   ),
                 ],

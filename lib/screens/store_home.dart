@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -234,7 +235,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_filled, Icons.home_rounded, "Home"),
+                _buildNavItem(0, PhosphorIcons.house(PhosphorIconsStyle.fill), PhosphorIcons.house(), "Home"),
                 Consumer(
                   builder: (context, ref, child) {
                     final cart = ref.watch(cartProvider).value;
@@ -242,11 +243,11 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                     return _buildNavItem(
                       1,
                       brand == 'teasntrees'
-                          ? Icons.shopping_bag_rounded
-                          : Icons.shopping_basket_rounded,
+                          ? PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill)
+                          : PhosphorIcons.basket(PhosphorIconsStyle.fill),
                       brand == 'teasntrees'
-                          ? Icons.shopping_bag_outlined
-                          : Icons.shopping_basket_outlined,
+                          ? PhosphorIcons.shoppingBag()
+                          : PhosphorIcons.basket(),
                       "Bag",
                       badgeCount: count,
                     );
@@ -255,14 +256,14 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                 SizedBox(width: 48.w), // Space for FAB
                 _buildNavItem(
                   3,
-                  Icons.receipt_rounded,
-                  Icons.receipt_long_rounded,
+                  PhosphorIcons.receipt(PhosphorIconsStyle.fill),
+                  PhosphorIcons.receipt(PhosphorIconsStyle.fill),
                   "Orders",
                 ),
                 _buildNavItem(
                   4,
-                  Icons.person_rounded,
-                  Icons.person_2_outlined,
+                  PhosphorIcons.user(PhosphorIconsStyle.fill),
+                  PhosphorIcons.user(),
                   "Profile",
                 ),
               ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -81,7 +82,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon: Icon(PhosphorIcons.caretLeft(PhosphorIconsStyle.bold), color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -128,7 +129,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     widget.initialMobile != null &&
                     widget.initialMobile!.isNotEmpty,
                 keyboardType: TextInputType.phone,
-                icon: Icons.phone_android_rounded,
+                icon: PhosphorIcons.deviceMobile(),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Mobile is required';
@@ -145,7 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: "Full Name",
                 controller: _nameController,
                 hint: "John Doe",
-                icon: Icons.person_rounded,
+                icon: PhosphorIcons.user(PhosphorIconsStyle.fill),
                 validator: (val) => (val == null || val.trim().isEmpty)
                     ? 'Name is required'
                     : null,
@@ -157,7 +158,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: _emailController,
                 hint: "john@example.com",
                 keyboardType: TextInputType.emailAddress,
-                icon: Icons.email_outlined,
+                icon: PhosphorIcons.envelopeSimple(),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Email is required';
@@ -175,7 +176,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: _addressController,
                 hint: "Flat, House no, Building, Street",
                 maxLines: 3,
-                icon: Icons.location_on_outlined,
+                icon: PhosphorIcons.mapPin(),
                 validator: (val) => (val == null || val.trim().isEmpty)
                     ? 'Address is required'
                     : null,

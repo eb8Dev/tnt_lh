@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -256,8 +257,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             children: [
               Icon(
                 selected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_unchecked_rounded,
+                    ? PhosphorIcons.radioButton(PhosphorIconsStyle.fill)
+                    : PhosphorIcons.circle(),
                 color: selected
                     ? Theme.of(context).colorScheme.primary
                     : Colors.black38,
@@ -337,7 +338,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Row(
             children: [
               Icon(
-                Icons.add_location_alt_outlined,
+                PhosphorIcons.mapPinPlus(),
                 color: Theme.of(context).colorScheme.primary,
                 size: 22.sp,
               ),
@@ -358,7 +359,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ),
               Icon(
-                Icons.chevron_right_rounded,
+                PhosphorIcons.caretRight(),
                 color: Colors.black38,
                 size: 22.sp,
               ),
@@ -657,7 +658,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.shopping_bag_rounded,
+                          PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill),
                           color: Theme.of(context).colorScheme.primary,
                           size: 28.sp,
                         ),
@@ -972,7 +973,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         child: Row(
           children: [
             Icon(
-              Icons.local_offer_rounded,
+              PhosphorIcons.tag(PhosphorIconsStyle.fill),
               color: Colors.green.shade700,
               size: 18.sp,
             ),
@@ -1049,7 +1050,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.local_offer_rounded,
+                                PhosphorIcons.tag(PhosphorIconsStyle.fill),
                                 size: 13.sp,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -1081,7 +1082,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 decoration: InputDecoration(
                   hintText: 'Coupon code',
                   prefixIcon: Icon(
-                    Icons.local_offer_outlined,
+                    PhosphorIcons.tag(),
                     size: 18.sp,
                   ),
                   contentPadding: EdgeInsets.symmetric(vertical: 4.h),

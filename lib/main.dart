@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tnt_lh/firebase_options.dart';
@@ -228,7 +229,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline_rounded, size: 64, color: Colors.red),
+                // Not const: Phosphor icons are method calls, so they can't
+                // appear inside a const expression.
+                Icon(PhosphorIcons.warningCircle(), size: 64, color: Colors.red),
                 const SizedBox(height: 16),
                 const Text(
                   "Authentication Failed",

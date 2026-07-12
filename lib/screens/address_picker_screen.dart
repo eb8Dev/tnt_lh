@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -135,7 +136,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               mini: true,
-              child: Icon(Icons.add_rounded),
+              child: Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold)),
             ),
             SizedBox(height: 8.h),
             FloatingActionButton(
@@ -145,7 +146,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               mini: true,
-              child: Icon(Icons.remove_rounded),
+              child: Icon(PhosphorIcons.minus(PhosphorIconsStyle.bold)),
             ),
             SizedBox(height: 16.h),
             FloatingActionButton(
@@ -163,7 +164,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                         color: Colors.black,
                       ),
                     )
-                  : Icon(Icons.my_location_rounded),
+                  : Icon(PhosphorIcons.crosshair()),
             ),
           ],
         ),
@@ -190,7 +191,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
           Center(
             child: Padding(
               padding: EdgeInsets.only(bottom: 45.h), // tip points at centre
-              child: Icon(Icons.location_on_rounded, color: Colors.red, size: 45.sp),
+              child: Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.fill), color: Colors.red, size: 45.sp),
             ),
           ),
 
@@ -258,7 +259,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                   Row(
                     children: [
                       Icon(
-                        Icons.map_outlined,
+                        PhosphorIcons.mapTrifold(),
                         size: 18.sp,
                         color: Colors.black54,
                       ),

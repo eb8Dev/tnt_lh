@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -76,7 +77,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
+                    PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
                     color: Colors.black,
                     size: 24.sp,
                   ),
@@ -107,8 +108,8 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                         ),
                         child: Icon(
                           isFav
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
+                              ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
+                              : PhosphorIcons.heart(),
                           color: isFav ? Colors.redAccent : Colors.black,
                           size: 24.sp,
                         ),
@@ -161,7 +162,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                       Row(
                         children: [
                           Icon(
-                            Icons.star_rounded,
+                            PhosphorIcons.star(PhosphorIconsStyle.fill),
                             color: Colors.amber,
                             size: 18.sp,
                           ),
@@ -377,7 +378,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     if (_quantity > 1) setState(() => _quantity--);
                   },
                   icon: Icon(
-                    Icons.remove_rounded,
+                    PhosphorIcons.minus(PhosphorIconsStyle.bold),
                     size: 20.sp,
                     color: Colors.black87,
                   ),
@@ -392,7 +393,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 IconButton(
                   onPressed: () => setState(() => _quantity++),
                   icon: Icon(
-                    Icons.add_rounded,
+                    PhosphorIcons.plus(PhosphorIconsStyle.bold),
                     size: 20.sp,
                     color: Colors.black87,
                   ),

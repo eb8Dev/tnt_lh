@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
@@ -150,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
+                        PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
                         color: Colors.white,
                         size: 20.sp,
                       ),
@@ -274,7 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 border: InputBorder.none,
                                 counterText: "",
                                 prefixIcon: Icon(
-                                  Icons.phone_android_rounded,
+                                  PhosphorIcons.deviceMobile(),
                                   color: Colors.black45,
                                   size: 20.sp,
                                 ),

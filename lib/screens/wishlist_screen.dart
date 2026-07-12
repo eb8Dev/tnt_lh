@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/product_image.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -32,7 +33,7 @@ class WishlistScreen extends ConsumerWidget {
         ),
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
+            PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
             color: Colors.black,
             size: 24.0.sp,
           ),
@@ -58,7 +59,7 @@ class WishlistScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.favorite_rounded,
+                      PhosphorIcons.heart(PhosphorIconsStyle.fill),
                       size: 80.sp,
                       color: Colors.grey.shade300,
                     ),
@@ -185,7 +186,7 @@ class WishlistScreen extends ConsumerWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          Icons.favorite_rounded,
+                          PhosphorIcons.heart(PhosphorIconsStyle.fill),
                           size: 18.sp,
                           color: Colors.redAccent,
                         ),

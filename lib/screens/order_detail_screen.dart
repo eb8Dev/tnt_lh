@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -62,28 +63,28 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       if (canEditAddress)
         _actionButton(
           label: 'Edit address',
-          icon: Icons.edit_location_alt_outlined,
+          icon: PhosphorIcons.mapPinLine(),
           color: Theme.of(context).colorScheme.primary,
           onPressed: () => _editAddress(order),
         ),
       if (canReport)
         _actionButton(
           label: 'Report issue',
-          icon: Icons.report_gmailerrorred_outlined,
+          icon: PhosphorIcons.warning(),
           color: Colors.redAccent.shade400,
           onPressed: () => _reportIssue(order),
         ),
       if (canReorder)
         _actionButton(
           label: 'Order again',
-          icon: Icons.replay_rounded,
+          icon: PhosphorIcons.arrowCounterClockwise(),
           color: Theme.of(context).colorScheme.primary,
           onPressed: () => _reorder(order),
         ),
       if (isDelivered)
         _actionButton(
           label: 'Invoice',
-          icon: Icons.receipt_long_outlined,
+          icon: PhosphorIcons.receipt(),
           color: Colors.black87,
           onPressed: () => _downloadInvoice(order),
         ),
@@ -485,7 +486,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                   borderRadius: BorderRadius.circular(8.r),
                                 ),
                                 child: Icon(
-                                  Icons.local_cafe_rounded,
+                                  PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
                                   size: 20.sp,
                                   color: Colors.black,
                                 ),
@@ -536,7 +537,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            Icons.location_on_outlined,
+                            PhosphorIcons.mapPin(),
                             size: 20.sp,
                             color: Colors.black,
                           ),
@@ -591,8 +592,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           children: [
                             Icon(
                               order.paymentStatus == 'paid'
-                                  ? Icons.check_circle_outline_rounded
-                                  : Icons.info_outline_rounded,
+                                  ? PhosphorIcons.checkCircle(PhosphorIconsStyle.duotone)
+                                  : PhosphorIcons.info(),
                               size: 16.sp,
                               color: order.paymentStatus == 'paid'
                                   ? Colors.green
@@ -891,7 +892,7 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
           child: Padding(
             padding: EdgeInsets.only(right: 6.w),
             child: Icon(
-              filled ? Icons.star_rounded : Icons.star_outline_rounded,
+              filled ? PhosphorIcons.star(PhosphorIconsStyle.fill) : PhosphorIcons.star(),
               color: filled ? const Color(0xFFF5A623) : Colors.black26,
               size: 30.sp,
             ),

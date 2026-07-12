@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class _OnboardData {
@@ -200,7 +201,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       );
                     },
                     icon: Icon(
-                      Icons.arrow_forward_ios_rounded,
+                      PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
                       color: Colors.black,
                     ),
                   ),
