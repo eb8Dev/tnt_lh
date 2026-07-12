@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:tnt_lh/widgets/product_image.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -360,22 +361,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18.r),
-                child:
-                    item.product.image != null && item.product.image!.isNotEmpty
-                    ? Image.network(
-                        item.product.image!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone),
-                          color: Colors.black12,
-                          size: 32.sp,
-                        ),
-                      )
-                    : Icon(
-                        PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone),
-                        color: Colors.black12,
-                        size: 32.sp,
-                      ),
+                // Per-item brand, not the active one: a cart can hold both.
+                child: ProductImage(
+                  url: item.product.image,
+                  isLittleH: item.brand == 'littleh',
+                  iconSize: 32,
+                ),
               ),
             ),
             SizedBox(width: 16.w),

@@ -164,15 +164,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                     child: cat.image != null
                                         ? Padding(
                                             padding: EdgeInsets.all(12.0.r),
-                                            child: Image.network(
-                                              cat.image!,
-                                              errorBuilder: (_, _, _) => Icon(
-                                                PhosphorIcons.squaresFour(),
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : Colors.black54,
-                                                size: 24.sp,
-                                              ),
+                                            child: RemoteIcon(
+                                              url: cat.image,
+                                              fallback:
+                                                  PhosphorIcons.squaresFour(),
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : Colors.black54,
+                                              size: 24.sp,
                                             ),
                                           )
                                         : Icon(
@@ -1009,14 +1008,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
               child: image != null
                   ? Padding(
                       padding: EdgeInsets.all(16.0.r),
-                      child: Image.network(
-                        image,
+                      child: RemoteIcon(
+                        url: image,
+                        fallback: fallbackIcon,
                         color: isSelected ? Colors.white : Colors.black87,
-                        errorBuilder: (_, _, _) => Icon(
-                          fallbackIcon,
-                          color: isSelected ? Colors.white : Colors.black87,
-                          size: 24.sp,
-                        ),
+                        size: 24.sp,
                       ),
                     )
                   : Icon(
@@ -1444,9 +1440,14 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16.r),
-                  child: widget.product.image != null
-                      ? Image.network(widget.product.image!, fit: BoxFit.cover)
-                      : Icon(PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone)),
+                  // Had no errorBuilder at all: a URL that existed but 404'd
+                  // (the legacy Cloudinary links) rendered Flutter's broken
+                  // image glyph right in the customer's face.
+                  child: ProductImage(
+                    url: widget.product.image,
+                    isLittleH: widget.product.brand == 'littleh',
+                    iconSize: 28,
+                  ),
                 ),
               ),
               SizedBox(width: 16.w),

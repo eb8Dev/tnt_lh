@@ -51,6 +51,9 @@ dependencies:
   google_fonts: ^8.0.2
   firebase_remote_config: ^6.2.0
   phosphor_flutter: ^2.1.0
+  # Image.network keeps only an in-memory cache, so every cold start
+  # re-downloaded the entire menu over the customer's mobile data.
+  cached_network_image: ^3.4.1
   image_picker: ^1.1.2
   share_plus: ^12.0.1
   url_launcher: ^6.3.2
