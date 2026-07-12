@@ -11,11 +11,13 @@ import 'package:tnt_lh/providers/wishlist_provider.dart';
 import 'package:tnt_lh/screens/cafe/cafe_item_details_screen.dart';
 import 'package:tnt_lh/screens/wishlist_screen.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
+import 'package:tnt_lh/widgets/skeleton.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 
 class BrandHomeContent extends ConsumerStatefulWidget {
   final String brand; // 'teasntrees' or 'littleh'
-  const BrandHomeContent({super.key, required this.brand});
+  final VoidCallback? onSwitchStore;
+  const BrandHomeContent({super.key, required this.brand, this.onSwitchStore});
 
   @override
   ConsumerState<BrandHomeContent> createState() => _BrandHomeContentState();
@@ -436,13 +438,23 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                   ),
                                 );
                               },
-                              child: Container(
-                                width: double.infinity,
-                                // Min-height rather than a fixed height: the
-                                // hero stays compact but grows instead of
-                                // overflowing when text (or the user's font
-                                // scale) needs more room.
-                                constraints: BoxConstraints(minHeight: 150.h),
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                // A horizontal fling on the hero is a second,
+                                // discoverable path to switch stores (besides
+                                // the centre button). Safe here — the hero is a
+                                // fixed banner above the scrolling content.
+                                onHorizontalDragEnd: (details) {
+                                  final v = details.primaryVelocity ?? 0;
+                                  if (v.abs() > 250) widget.onSwitchStore?.call();
+                                },
+                                child: Container(
+                                  width: double.infinity,
+                                  // Min-height rather than a fixed height: the
+                                  // hero stays compact but grows instead of
+                                  // overflowing when text (or the user's font
+                                  // scale) needs more room.
+                                  constraints: BoxConstraints(minHeight: 150.h),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(36.r),
                                   gradient: LinearGradient(
@@ -594,6 +606,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                   ),
                                 ),
                               ),
+                            ),
                             ),
 
                             SizedBox(height: 20.h),
@@ -772,18 +785,39 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                   onRefresh: _refresh,
                   color: Theme.of(context).colorScheme.primary,
                   child: productsAsync.when(
-                    loading: () => Center(
-                      child: CircularProgressIndicator(
-                        color: Theme.of(context).colorScheme.primary,
-                        strokeWidth: 3,
-                      ),
-                    ),
+                    loading: () => const ProductListSkeleton(),
                     error: (err, _) => _pullableMessage(
                       icon: Icons.wifi_off_rounded,
                       message: "Couldn't load items.\nPull down to try again.",
                     ),
                     data: (products) {
                       if (products.isEmpty) {
+                        // Say why it's empty and offer the way out, rather than
+                        // a dead end: a search miss can be cleared, a category
+                        // filter can be widened.
+                        final searching = _searchQuery.trim().isNotEmpty;
+                        final filtered = _selectedCategoryId != null;
+
+                        if (searching) {
+                          return _pullableMessage(
+                            icon: Icons.search_off_rounded,
+                            message:
+                                "Nothing matches \"$_searchQuery\".\nTry a different spelling or a broader word.",
+                            actionLabel: "Clear search",
+                            onAction: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = "");
+                            },
+                          );
+                        }
+                        if (filtered) {
+                          return _pullableMessage(
+                            icon: Icons.fastfood_rounded,
+                            message: "Nothing in this category yet.",
+                            actionLabel: "Browse everything",
+                            onAction: () => _onCategorySelected(-1, null),
+                          );
+                        }
                         return _pullableMessage(
                           icon: Icons.fastfood_rounded,
                           message:
@@ -794,7 +828,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
                         itemCount: products.length,
-                        separatorBuilder: (_, _) => SizedBox(height: 14.h),
+                        separatorBuilder: (_, _) => SizedBox(height: 16.h),
                         itemBuilder: (context, index) {
                           final product = products[index];
                           return TweenAnimationBuilder<double>(
@@ -844,7 +878,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
 
   /// An empty/error state that is still scrollable, so pull-to-refresh works
   /// even when there is nothing to scroll.
-  Widget _pullableMessage({required IconData icon, required String message}) {
+  Widget _pullableMessage({
+    required IconData icon,
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -861,6 +900,31 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(color: Colors.black38),
                 ),
+                if (actionLabel != null && onAction != null) ...[
+                  SizedBox(height: 20.h),
+                  TextButton(
+                    onPressed: onAction,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20.w,
+                        vertical: 12.h,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        side: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      actionLabel,
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -960,7 +1024,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                     ),
             ),
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 12.h),
           Text(
             name,
             style: GoogleFonts.poppins(
@@ -1116,7 +1180,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                 color: Colors.black87,
                               ),
                         ),
-                        SizedBox(height: 6.h),
+                        SizedBox(height: 8.h),
                         Text(
                           product.description ??
                               "Handcrafted with passion and care",
@@ -1171,7 +1235,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           }
                                         }
                                       },
-                                      icon: Icon(Icons.remove, size: 14.sp),
+                                      icon: Icon(Icons.remove_rounded, size: 14.sp),
                                       padding: EdgeInsets.zero,
                                       constraints: BoxConstraints(minWidth: 30),
                                       color: Theme.of(
@@ -1199,7 +1263,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                               );
                                         }
                                       },
-                                      icon: Icon(Icons.add, size: 14.sp),
+                                      icon: Icon(Icons.add_rounded, size: 14.sp),
                                       padding: EdgeInsets.zero,
                                       constraints: BoxConstraints(minWidth: 30),
                                       color: Theme.of(
@@ -1391,7 +1455,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                   borderRadius: BorderRadius.circular(16.r),
                   child: widget.product.image != null
                       ? Image.network(widget.product.image!, fit: BoxFit.cover)
-                      : Icon(Icons.fastfood),
+                      : Icon(Icons.fastfood_rounded),
                 ),
               ),
               SizedBox(width: 16.w),

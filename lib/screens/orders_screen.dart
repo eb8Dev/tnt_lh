@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/skeleton.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/order_model.dart';
 import 'package:tnt_lh/providers/order_provider.dart';
+import 'package:tnt_lh/providers/status_provider.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
 import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/utils/formatters.dart';
-import 'package:tnt_lh/utils/loading_indicator.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
@@ -45,7 +46,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         ),
       ),
       body: ordersState.when(
-        loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
+        loading: () => const ProductListSkeleton(count: 4),
         error: (err, stack) => ErrorRetryView(
           error: err,
           onRetry: () => ref.invalidate(orderProvider),
@@ -59,14 +60,81 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             color: Theme.of(context).colorScheme.primary,
             child: ListView.separated(
               padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
-              itemCount: orders.length,
+              // +1 for the "you owe us a rating" nudge, when there is one.
+              itemCount: orders.length + 1,
               separatorBuilder: (_, _) => SizedBox(height: 16.h),
               itemBuilder: (context, index) {
-                return _buildOrderCard(orders[index]);
+                if (index == 0) return _buildRatingNudge();
+                return _buildOrderCard(orders[index - 1]);
               },
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// The backend already knows when a delivered order is still unrated. Nudge
+  /// for it here instead of letting the rating card go unseen.
+  Widget _buildRatingNudge() {
+    final pending = ref
+        .watch(customerStatusProvider)
+        .maybeWhen(data: (s) => s.orderAwaitingRating, orElse: () => null);
+    if (pending == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16.h),
+      child: TactileButton(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: pending)),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF6E5),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: const Color(0xFFF5A623).withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.star_rounded,
+                color: const Color(0xFFF5A623),
+                size: 26.sp,
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "How was your last order?",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14.sp,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      "Rate the food and your rider — it takes a second.",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.sp,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14.sp,
+                color: Colors.black26,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

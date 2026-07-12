@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +9,7 @@ import 'package:tnt_lh/models/user_model.dart';
 import 'package:tnt_lh/onboarding/onboarding_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/services/contact_service.dart';
+import 'package:tnt_lh/services/upload_service.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/loading_indicator.dart';
 
@@ -26,6 +29,40 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
   late TextEditingController _addressController;
 
   bool _isEditing = false;
+  bool _uploadingAvatar = false;
+
+  /// Pick a photo, upload it, and save the returned URL to the profile.
+  Future<void> _pickAndUploadAvatar() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 800,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      final url = await UploadService.uploadImage(
+        File(picked.path),
+        folder: 'profiles',
+      );
+      await ref.read(authProvider.notifier).updateProfile(profileImage: url);
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: 'Profile photo updated.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
 
   @override
   void initState() {
@@ -157,14 +194,14 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 12.h),
                   Text(
                     "We'll save your preferences now and use them to reach you in future updates.",
                     style: TextStyle(
                       color: Colors.black.withValues(alpha: 0.5), // 50% opacity
                     ),
                   ),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 12.h),
                   SizedBox(height: 20.h),
                   _buildPreferenceTile(
                     title: "Push Notifications",
@@ -429,9 +466,15 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Avatar Section
+              // Avatar Section — tappable while editing. The camera badge below
+              // was previously decorative: it hinted at changing the photo but
+              // nothing was wired to it.
               Center(
-                child: Stack(
+                child: GestureDetector(
+                  onTap: _isEditing && !_uploadingAvatar
+                      ? _pickAndUploadAvatar
+                      : null,
+                  child: Stack(
                   children: [
                     Container(
                       padding: EdgeInsets.all(4.r),
@@ -469,14 +512,24 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                             color: Colors.black,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.white,
-                            size: 18.sp,
-                          ),
+                          child: _uploadingAvatar
+                              ? SizedBox(
+                                  height: 18.sp,
+                                  width: 18.sp,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                  size: 18.sp,
+                                ),
                         ),
                       ),
                   ],
+                  ),
                 ),
               ),
               SizedBox(height: 20.h),

@@ -313,7 +313,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
                     color: Colors.black54,
                   ),
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 4.h),
                 Text(
                   otp,
                   style: GoogleFonts.poppins(
@@ -420,7 +420,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
                       },
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF267CB9),
-                      child: Icon(Icons.my_location),
+                      child: Icon(Icons.my_location_rounded),
                     ),
                   ),
                 ],

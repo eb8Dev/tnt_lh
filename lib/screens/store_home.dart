@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,12 +30,15 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   }
 
   void _onItemTapped(int index) {
+    if (index == _selectedIndex) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _selectedIndex = index;
     });
   }
 
   void _handleStoreSwitch() {
+    HapticFeedback.selectionClick();
     final currentBrand = ref.read(brandProvider);
     final targetBrand = currentBrand == 'teasntrees' ? 'littleh' : 'teasntrees';
 
@@ -62,7 +66,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     final brand = ref.watch(brandProvider);
 
     final List<Widget> pages = [
-      BrandHomeContent(brand: brand),
+      BrandHomeContent(brand: brand, onSwitchStore: _handleStoreSwitch),
       CartScreen(),
       OrdersScreen(),
       CafeProfileScreen(),
@@ -74,6 +78,9 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      // IndexedStack keeps every tab's state alive (scroll position, search
+      // text). A keyed cross-fade here would remount and lose all of it, so the
+      // liveness comes from the haptic on tap instead of a page fade.
       body: IndexedStack(index: pageIndex, children: pages),
       floatingActionButton: TactileButton(
         onTap: _handleStoreSwitch,
@@ -133,7 +140,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_filled, Icons.home, "Home"),
+                _buildNavItem(0, Icons.home_filled, Icons.home_rounded, "Home"),
                 Consumer(
                   builder: (context, ref, child) {
                     final cart = ref.watch(cartProvider).value;
@@ -154,7 +161,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                 SizedBox(width: 48.w), // Space for FAB
                 _buildNavItem(
                   3,
-                  Icons.receipt,
+                  Icons.receipt_rounded,
                   Icons.receipt_long_rounded,
                   "Orders",
                 ),

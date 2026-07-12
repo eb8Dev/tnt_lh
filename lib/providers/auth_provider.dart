@@ -261,6 +261,7 @@ class AuthNotifier extends Notifier<AuthState> {
     String? name,
     String? email,
     String? address,
+    String? profileImage,
     Map<String, bool>? notificationPreferences,
     bool isBackground = false,
   }) async {
@@ -272,6 +273,7 @@ class AuthNotifier extends Notifier<AuthState> {
         name: name,
         email: email,
         address: address,
+        profileImage: profileImage,
         notificationPreferences: notificationPreferences,
       );
 

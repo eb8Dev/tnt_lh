@@ -135,7 +135,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               mini: true,
-              child: Icon(Icons.add),
+              child: Icon(Icons.add_rounded),
             ),
             SizedBox(height: 8.h),
             FloatingActionButton(
@@ -145,7 +145,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               mini: true,
-              child: Icon(Icons.remove),
+              child: Icon(Icons.remove_rounded),
             ),
             SizedBox(height: 16.h),
             FloatingActionButton(
@@ -163,7 +163,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                         color: Colors.black,
                       ),
                     )
-                  : Icon(Icons.my_location),
+                  : Icon(Icons.my_location_rounded),
             ),
           ],
         ),
@@ -190,7 +190,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
           Center(
             child: Padding(
               padding: EdgeInsets.only(bottom: 45.h), // tip points at centre
-              child: Icon(Icons.location_on, color: Colors.red, size: 45.sp),
+              child: Icon(Icons.location_on_rounded, color: Colors.red, size: 45.sp),
             ),
           ),
 

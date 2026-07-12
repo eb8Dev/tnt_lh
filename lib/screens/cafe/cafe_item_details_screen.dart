@@ -338,7 +338,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     ),
                     maxLines: 2,
                   ),
-                  SizedBox(height: 120.h), // Space for bottom bar
+                  // The action bar is a bottomSheet, so it overlays the scroll
+                  // content. Reserve exactly its height (top pad + button +
+                  // bottom pad) plus the system inset, rather than a magic 120
+                  // that silently breaks if the bar changes.
+                  SizedBox(height: _bottomActionHeight),
                 ],
               ),
             ),
@@ -348,6 +352,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
       bottomSheet: _buildBottomAction(themeColor),
     );
   }
+
+  /// Height of the bottom action bar: its vertical padding + the 56h button,
+  /// plus whatever the OS reserves at the bottom (gesture bar / nav bar).
+  double get _bottomActionHeight =>
+      16.h + 56.h + 32.h + MediaQuery.of(context).viewPadding.bottom;
 
   Widget _buildBottomAction(Color themeColor) {
     return Container(

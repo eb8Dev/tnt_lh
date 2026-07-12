@@ -1,0 +1,135 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+/// A shimmering placeholder block. A moving highlight sweeps across a muted base
+/// so a loading list reads as "almost there" instead of an anxious spinner.
+/// Honors reduced-motion by falling back to a static block.
+class Skeleton extends StatefulWidget {
+  final double? width;
+  final double? height;
+  final double radius;
+  final EdgeInsetsGeometry? margin;
+
+  const Skeleton({
+    super.key,
+    this.width,
+    this.height,
+    this.radius = 8,
+    this.margin,
+  });
+
+  const Skeleton.circle({super.key, required double size, this.margin})
+    : width = size,
+      height = size,
+      radius = size;
+
+  @override
+  State<Skeleton> createState() => _SkeletonState();
+}
+
+class _SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final base = Colors.black.withValues(alpha: 0.06);
+    final highlight = Colors.black.withValues(alpha: 0.02);
+
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      margin: widget.margin,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(widget.radius.r),
+        color: base,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: reduceMotion
+          ? null
+          : AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                return FractionallySizedBox(
+                  widthFactor: 1,
+                  heightFactor: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [base, highlight, base],
+                        stops: const [0.1, 0.5, 0.9],
+                        begin: Alignment(-1 - 2 * _controller.value, 0),
+                        end: Alignment(1 - 2 * _controller.value, 0),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+/// A placeholder that matches a product row card (image + two text lines).
+class ProductCardSkeleton extends StatelessWidget {
+  const ProductCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 145.h,
+      padding: EdgeInsets.all(8.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32.r),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
+      ),
+      child: Row(
+        children: [
+          Skeleton(width: 129.w, height: 129.h, radius: 26),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Skeleton(width: 140.w, height: 16.h),
+                SizedBox(height: 12.h),
+                Skeleton(width: 90.w, height: 12.h),
+                SizedBox(height: 16.h),
+                Skeleton(width: 70.w, height: 20.h, radius: 10),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A vertical list of product skeletons — drop-in for a loading product list.
+class ProductListSkeleton extends StatelessWidget {
+  final int count;
+  const ProductListSkeleton({super.key, this.count = 5});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: count,
+      separatorBuilder: (_, _) => SizedBox(height: 16.h),
+      itemBuilder: (_, _) => const ProductCardSkeleton(),
+    );
+  }
+}

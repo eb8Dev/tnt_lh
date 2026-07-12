@@ -164,6 +164,7 @@ class AuthService {
     String? email,
     String? address,
     String? brand,
+    String? profileImage,
     Map<String, bool>? notificationPreferences,
   }) async {
     final url = AppConfig.buildUrl('/customer/profile', brand: brand);
@@ -173,6 +174,7 @@ class AuthService {
         if (name != null) "name": name,
         if (email != null) "email": email,
         if (address != null) "address": address,
+        if (profileImage != null) "profileImage": profileImage,
         if (notificationPreferences != null)
           "notificationPreferences": notificationPreferences,
       };

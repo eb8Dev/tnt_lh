@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +8,7 @@ import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
+import 'package:tnt_lh/providers/status_provider.dart';
 import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
 import 'package:tnt_lh/services/auth_service.dart';
@@ -288,7 +290,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                       ],
                     ),
-                    SizedBox(height: 2.h),
+                    SizedBox(height: 4.h),
                     Text(
                       a.addressLine,
                       maxLines: 2,
@@ -459,6 +461,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         await ref.read(cartProvider.notifier).fetchCart();
 
         if (mounted) {
+          HapticFeedback.mediumImpact(); // a satisfying "done" on order placed
           _showSuccessDialog(result['data']);
         }
       } else {
@@ -678,7 +681,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SizedBox(height: 16.h),
                 _buildAddressSection(),
 
-                SizedBox(height: 36.h),
+                SizedBox(height: 40.h),
 
                 _buildSectionTitle("Special Instructions"),
                 SizedBox(height: 16.h),
@@ -690,7 +693,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
 
-                SizedBox(height: 36.h),
+                SizedBox(height: 40.h),
 
                 _buildSectionTitle("Payment Method"),
                 SizedBox(height: 16.h),
@@ -801,18 +804,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         "Item Total",
                         "₹${subtotal.toStringAsFixed(2)}",
                       ),
-                      SizedBox(height: 14.h),
+                      SizedBox(height: 16.h),
                       _buildSummaryRow(
                         "Delivery Fee",
                         "₹${_deliveryCharge.toStringAsFixed(2)}",
                       ),
-                      SizedBox(height: 14.h),
+                      SizedBox(height: 16.h),
                       _buildSummaryRow(
                         "GST ($_gstRate%)",
                         "₹${tax.toStringAsFixed(2)}",
                       ),
                       if (_couponDiscount > 0) ...[
-                        SizedBox(height: 14.h),
+                        SizedBox(height: 16.h),
                         _buildSummaryRow(
                           "Coupon ($_appliedCoupon)",
                           "- ₹${_couponDiscount.toStringAsFixed(2)}",
@@ -886,7 +889,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                   ),
                 ),
-                SizedBox(height: 60.h),
+                SizedBox(height: 48.h),
               ],
             ),
           ),
@@ -1003,6 +1006,72 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Offers the backend says this customer can actually use — tap to fill
+        // the field instead of making them know a code by heart.
+        Consumer(
+          builder: (context, ref, _) {
+            final offers = ref
+                .watch(customerStatusProvider)
+                .maybeWhen(
+                  data: (s) => s.activeOffers,
+                  orElse: () => const <String>[],
+                );
+            if (offers.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: offers
+                    .map(
+                      (code) => TactileButton(
+                        onTap: () {
+                          _couponController.text = code;
+                          _applyCoupon();
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.local_offer_rounded,
+                                size: 13.sp,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              SizedBox(width: 6.w),
+                              Text(
+                                code,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
+          },
+        ),
         Row(
           children: [
             Expanded(

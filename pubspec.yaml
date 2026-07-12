@@ -50,6 +50,7 @@ dependencies:
   flutter_local_notifications: ^20.0.0
   google_fonts: ^8.0.2
   firebase_remote_config: ^6.2.0
+  image_picker: ^1.1.2
   share_plus: ^12.0.1
   url_launcher: ^6.3.2
   geocoding: ^4.0.0

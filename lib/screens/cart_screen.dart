@@ -188,7 +188,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       ),
 
                     if (bakeryItems.isNotEmpty) ...[
-                      SizedBox(height: 36.h),
+                      SizedBox(height: 40.h),
                       _buildBrandSection(
                         "Little H (Bakery)",
                         bakeryItems,
@@ -400,7 +400,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         color: Colors.black38,
                       ),
                     ),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: 8.h),
                   Text(
                     "₹${item.price * item.quantity}",
                     style: GoogleFonts.poppins(
