@@ -62,7 +62,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
 
     final ratio = MediaQuery.of(context).devicePixelRatio;
     final icons = await Future.wait([
-      MapMarkers.rider(accent: _accent, ratio: ratio),
+      MapMarkers.rider(ratio: ratio),
       MapMarkers.store(isBakery: _isBakery, ratio: ratio),
       MapMarkers.destination(accent: _accent, ratio: ratio),
     ]);

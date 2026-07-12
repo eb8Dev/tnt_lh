@@ -24,47 +24,28 @@ class MapMarkers {
 
   static final Map<String, BitmapDescriptor> _cache = {};
 
-  static Future<BitmapDescriptor> rider({
-    required Color accent,
-    double ratio = 3.0,
-  }) async {
-    final key = 'rider_${accent.toARGB32()}';
+  /// The rider's bike, drawn bare on the map — no bubble, no ring, no halo.
+  /// It's a top-down bike on a top-down map, the way Zomato and Swiggy draw it;
+  /// wrapping it in a circle just turned it back into a pin.
+  static Future<BitmapDescriptor> rider({double ratio = 3.0}) async {
+    const key = 'rider';
     final cached = _cache[key];
     if (cached != null) return cached;
 
-    final size = 68 * ratio;
+    final size = 56 * ratio;
     final bytes = await rootBundle.load('assets/images/rider_top_view.png');
     final codec = await ui.instantiateImageCodec(
       bytes.buffer.asUint8List(),
-      targetWidth: (size * 0.72).round(),
+      targetHeight: size.round(),
     );
     final sprite = (await codec.getNextFrame()).image;
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final centre = Offset(size / 2, size / 2);
 
-    canvas.drawCircle(
-      centre,
-      size / 2,
-      Paint()..color = accent.withValues(alpha: 0.16),
-    );
-    canvas.drawCircle(
-      centre,
-      size / 2 * 0.82,
-      Paint()..color = Colors.white.withValues(alpha: 0.94),
-    );
-    canvas.drawCircle(
-      centre,
-      size / 2 * 0.82,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2 * ratio
-        ..color = accent,
-    );
     canvas.drawImage(
       sprite,
-      Offset(centre.dx - sprite.width / 2, centre.dy - sprite.height / 2),
+      Offset((size - sprite.width) / 2, (size - sprite.height) / 2),
       Paint()..filterQuality = FilterQuality.high,
     );
 
