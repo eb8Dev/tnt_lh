@@ -54,6 +54,9 @@ dependencies:
   # Image.network keeps only an in-memory cache, so every cold start
   # re-downloaded the entire menu over the customer's mobile data.
   cached_network_image: ^3.4.1
+  # Lets the app tell the customer their connection dropped, instead of failing
+  # with a generic error they'd naturally respond to by retrying.
+  connectivity_plus: ^7.0.0
   image_picker: ^1.1.2
   share_plus: ^12.0.1
   url_launcher: ^6.3.2

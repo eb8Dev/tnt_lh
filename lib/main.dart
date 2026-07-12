@@ -10,6 +10,7 @@ import 'package:tnt_lh/onboarding/login_screen.dart';
 import 'package:tnt_lh/onboarding/otp_verify.dart';
 import 'package:tnt_lh/onboarding/register_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
+import 'package:tnt_lh/providers/connectivity_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
@@ -165,7 +166,71 @@ class GlobalListener extends ConsumerWidget {
       }
     });
 
-    return child;
+    // A dropped connection used to be completely silent in this app: adding to
+    // the cart, applying a coupon or placing an order just failed with a generic
+    // error, and the customer had no way to tell it was their phone rather than
+    // us. They'd try again — which, for checkout, is the worst possible response.
+    final isOnline = ref.watch(connectivityProvider);
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Column(
+        children: [
+          _OfflineBanner(visible: !isOnline),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sits above every screen, so it can't be missed on whichever page the customer
+/// happens to be on when the signal goes.
+class _OfflineBanner extends StatelessWidget {
+  final bool visible;
+  const _OfflineBanner({required this.visible});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: visible
+          ? Material(
+              color: const Color(0xFFC0574F),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 10.h,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        PhosphorIcons.wifiSlash(),
+                        color: Colors.white,
+                        size: 16.sp,
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          "You're offline. We'll pick up where you left off "
+                          "once you're back.",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 }
 
