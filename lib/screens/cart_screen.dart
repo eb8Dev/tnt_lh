@@ -520,7 +520,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
             child: Container(
               width: 220.w,
-              height: 56.h,
+              height: 52.h,
               decoration: BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(18.r),
@@ -594,7 +594,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             ),
             child: Container(
               width: 180.w,
-              height: 60.h,
+              height: 52.h,
               decoration: BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(20.r),

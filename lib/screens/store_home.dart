@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
+import 'package:tnt_lh/providers/unsaved_changes_provider.dart';
 import 'package:tnt_lh/screens/cafe/cafe_home_content.dart';
 import 'package:tnt_lh/screens/cafe/cafe_profile_screen.dart';
 import 'package:tnt_lh/screens/cart_screen.dart';
@@ -29,12 +30,105 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     _selectedIndex = widget.initialIndex;
   }
 
-  void _onItemTapped(int index) {
+  Future<void> _onItemTapped(int index) async {
     if (index == _selectedIndex) return;
+
+    // Leaving the profile mid-edit would silently bin the changes, so ask first.
+    const profileTab = 4;
+    if (_selectedIndex == profileTab &&
+        ref.read(profileHasUnsavedChangesProvider)) {
+      final leave = await _confirmDiscardChanges();
+      if (leave != true) return;
+      ref.read(profileHasUnsavedChangesProvider.notifier).set(false);
+    }
+
     HapticFeedback.selectionClick();
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  Future<bool?> _confirmDiscardChanges() {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 32.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Discard your changes?',
+              style: GoogleFonts.poppins(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              "You've edited your profile but haven't saved it. Leaving now "
+              'will discard those changes.',
+              style: GoogleFonts.poppins(
+                fontSize: 13.sp,
+                color: Colors.black54,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 52.h,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                      ),
+                      child: Text(
+                        'Keep editing',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: SizedBox(
+                    height: 52.h,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade400,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                      ),
+                      child: Text(
+                        'Discard',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleStoreSwitch() {

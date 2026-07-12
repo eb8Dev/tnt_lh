@@ -11,6 +11,7 @@ import 'package:tnt_lh/providers/wishlist_provider.dart';
 import 'package:tnt_lh/screens/cafe/cafe_item_details_screen.dart';
 import 'package:tnt_lh/screens/wishlist_screen.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
+import 'package:tnt_lh/widgets/product_image.dart';
 import 'package:tnt_lh/widgets/skeleton.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 
@@ -613,7 +614,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
 
                             /// Redesigned Search Bar
                             Container(
-                              height: 56.h,
+                              height: 52.h,
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20.r),
@@ -1095,22 +1096,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                       borderRadius: BorderRadius.circular(26.r),
                       child: Stack(
                         children: [
-                          product.image != null && product.image!.isNotEmpty
-                              ? Image.network(
-                                  product.image!,
-                                  fit: BoxFit.cover,
-                                  height: double.infinity,
-                                  width: double.infinity,
-                                )
-                              : Center(
-                                  child: Icon(
-                                    isLittleH
-                                        ? Icons.cake_rounded
-                                        : Icons.local_cafe_rounded,
-                                    size: 40.sp,
-                                    color: Colors.black12,
-                                  ),
-                                ),
+                          ProductImage(
+                            url: product.image,
+                            isLittleH: isLittleH,
+                            iconSize: 40,
+                          ),
                           Positioned(
                             top: 8,
                             left: 8,
@@ -1598,7 +1588,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
           TactileButton(
             onTap: _addToCart,
             child: Container(
-              height: 56.h,
+              height: 52.h,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.black,

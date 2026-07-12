@@ -318,7 +318,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
             child: Container(
               width: 220.w,
-              height: 56.h,
+              height: 52.h,
               decoration: BoxDecoration(
                 color: Colors.black,
                 borderRadius: BorderRadius.circular(18.r),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/product_image.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,17 +164,11 @@ class WishlistScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(24.r),
                       ),
-                      child: product.image != null && product.image!.isNotEmpty
-                          ? Image.network(product.image!, fit: BoxFit.cover)
-                          : Center(
-                              child: Icon(
-                                product.brand == 'littleh'
-                                    ? Icons.cake_rounded
-                                    : Icons.local_cafe_rounded,
-                                size: 40.sp,
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
+                      child: ProductImage(
+                        url: product.image,
+                        isLittleH: product.brand == 'littleh',
+                        iconSize: 40,
+                      ),
                     ),
                   ),
                   Positioned(

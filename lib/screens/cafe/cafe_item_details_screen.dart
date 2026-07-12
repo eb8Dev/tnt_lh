@@ -7,6 +7,7 @@ import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/providers/wishlist_provider.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
+import 'package:tnt_lh/widgets/product_image.dart';
 
 class ItemDetailsScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -119,22 +120,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               SizedBox(width: 8.w),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background:
-                  widget.product.image != null &&
-                      widget.product.image!.isNotEmpty
-                  ? Image.network(widget.product.image!, fit: BoxFit.cover)
-                  : Container(
-                      color: Colors.grey.shade100,
-                      child: Center(
-                        child: Icon(
-                          isLittleH
-                              ? Icons.cake_rounded
-                              : Icons.local_cafe_rounded,
-                          size: 80.sp,
-                          color: Colors.black12,
-                        ),
-                      ),
-                    ),
+              background: ProductImage(
+                url: widget.product.image,
+                isLittleH: isLittleH,
+                iconSize: 80,
+              ),
             ),
           ),
           SliverToBoxAdapter(
@@ -356,7 +346,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
   /// Height of the bottom action bar: its vertical padding + the 56h button,
   /// plus whatever the OS reserves at the bottom (gesture bar / nav bar).
   double get _bottomActionHeight =>
-      16.h + 56.h + 32.h + MediaQuery.of(context).viewPadding.bottom;
+      16.h + 52.h + 32.h + MediaQuery.of(context).viewPadding.bottom;
 
   Widget _buildBottomAction(Color themeColor) {
     return Container(
@@ -375,7 +365,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
       child: Row(
         children: [
           Container(
-            height: 56.h,
+            height: 52.h,
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(18.r),
@@ -461,7 +451,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 Navigator.pop(context);
               },
               child: Container(
-                height: 56.h,
+                height: 52.h,
                 decoration: BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.circular(18.r),

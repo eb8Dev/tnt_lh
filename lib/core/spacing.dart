@@ -19,6 +19,17 @@ class Space {
   static const double huge = 48;
 }
 
+/// Control sizes. Buttons had drifted to 55/56/60/64/68 — chunky and uneven.
+/// 52 is a comfortable, standard primary CTA (well above the 48 minimum touch
+/// target); 44 suits secondary/compact actions.
+class Sizes {
+  Sizes._();
+
+  static const double buttonPrimary = 52;
+  static const double buttonCompact = 44;
+  static const double field = 52;
+}
+
 /// A vertical gap on the spacing scale, e.g. `Gap(Space.md)`. Applies `.h` so
 /// it scales with the device like the rest of the UI.
 class Gap extends StatelessWidget {
