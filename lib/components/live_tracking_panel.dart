@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
 import 'package:tnt_lh/services/auth_service.dart';
+import 'package:tnt_lh/utils/map_markers.dart';
 
 class LiveTrackingPanel extends ConsumerStatefulWidget {
   final dynamic order;
@@ -38,6 +40,50 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
 
   DateTime? _lastRouteFetch;
   double _apiDurationMinutes = 0.0;
+
+  /// The rider's bearing, derived from successive positions — the tracking
+  /// socket sends coordinates only, no heading. Held between moves so the
+  /// sprite doesn't spin on the spot at a traffic light.
+  double _riderBearing = 0;
+
+  BitmapDescriptor? _riderIcon;
+  BitmapDescriptor? _storeIcon;
+  BitmapDescriptor? _destIcon;
+  bool _iconsRequested = false;
+
+  bool get _isBakery =>
+      (widget.order.brand ?? '').toString().toLowerCase().contains('littleh');
+
+  /// Marker bitmaps are async and not cheap; this widget rebuilds on every
+  /// socket tick, so build them once.
+  Future<void> _loadMarkerIcons() async {
+    if (_iconsRequested) return;
+    _iconsRequested = true;
+
+    final ratio = MediaQuery.of(context).devicePixelRatio;
+    final icons = await Future.wait([
+      MapMarkers.rider(accent: _accent, ratio: ratio),
+      MapMarkers.store(isBakery: _isBakery, ratio: ratio),
+      MapMarkers.destination(accent: _accent, ratio: ratio),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _riderIcon = icons[0];
+      _storeIcon = icons[1];
+      _destIcon = icons[2];
+    });
+  }
+
+  /// Initial bearing from `a` to `b`, in degrees clockwise from north.
+  double _bearingBetween(LatLng a, LatLng b) {
+    final lat1 = a.latitude * math.pi / 180;
+    final lat2 = b.latitude * math.pi / 180;
+    final dLon = (b.longitude - a.longitude) * math.pi / 180;
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+  }
 
   @override
   void initState() {
@@ -235,13 +281,20 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     }
   }
 
+  /// Three default teardrops (azure / green / red) used to stand for the rider,
+  /// the outlet and your own front door — the same shape three times, and a
+  /// legend you had to memorise. Now they're a scooter, the store, and a house.
   Set<Marker> _buildMarkers() {
     final markers = <Marker>{};
     if (_riderLoc != null) {
       markers.add(Marker(
         markerId: const MarkerId('rider'),
         position: _riderLoc!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        icon: _riderIcon ?? BitmapDescriptor.defaultMarker,
+        rotation: _riderBearing,
+        anchor: const Offset(0.5, 0.5),
+        flat: true,
+        zIndexInt: 3,
         infoWindow: InfoWindow(title: _riderName),
       ));
     }
@@ -249,16 +302,20 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
       markers.add(Marker(
         markerId: const MarkerId('pickup'),
         position: _pickupLoc!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: const InfoWindow(title: 'Pickup'),
+        icon: _storeIcon ?? BitmapDescriptor.defaultMarker,
+        anchor: const Offset(0.5, 1.0),
+        zIndexInt: 1,
+        infoWindow: const InfoWindow(title: 'Your order was picked up here'),
       ));
     }
     if (_deliveryLoc != null) {
       markers.add(Marker(
         markerId: const MarkerId('delivery'),
         position: _deliveryLoc!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(title: 'Delivery'),
+        icon: _destIcon ?? BitmapDescriptor.defaultMarker,
+        anchor: const Offset(0.5, 1.0),
+        zIndexInt: 2,
+        infoWindow: const InfoWindow(title: 'Your address'),
       ));
     }
     return markers;
@@ -337,10 +394,19 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     final trackingState = ref.watch(riderTrackingProvider);
     final myRiderState = trackingState[widget.order.id];
 
+    _loadMarkerIcons();
+
     if (myRiderState != null && myRiderState.location != _riderLoc) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          final previous = _riderLoc;
           setState(() {
+            // Only re-aim the sprite on a real move; sub-5m GPS jitter would
+            // otherwise have the bike spinning while the rider stands still.
+            if (previous != null &&
+                _metersBetween(previous, myRiderState.location) > 5) {
+              _riderBearing = _bearingBetween(previous, myRiderState.location);
+            }
             _riderLoc = myRiderState.location;
             _updateStatusText();
             _pruneRoute(_riderLoc!);
