@@ -80,6 +80,10 @@ class OrderService {
     String? brand,
     List<Map<String, dynamic>>? items,
     String? couponCode,
+    /// Stable across retries of the SAME checkout. Lets the server recognise a
+    /// replay and hand back the order it already made, instead of making
+    /// another one. See CheckoutScreen, which holds the key until success.
+    String? idempotencyKey,
   }) async {
     // If specific items are provided, use the general orders endpoint.
     // This allows brand-specific checkout without clearing the entire cart.
@@ -114,16 +118,35 @@ class OrderService {
           "couponCode": couponCode,
       };
 
-      final response = await ApiClient.post(url, body: body);
+      final response = await ApiClient.post(
+        url,
+        body: body,
+        headers: idempotencyKey == null
+            ? null
+            : {'X-Idempotency-Key': idempotencyKey},
+      );
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         return data;
-      } else {
-        throw Exception(data['message'] ?? 'Failed to create order');
       }
+
+      // The same checkout is still being processed on the server. Retrying is
+      // exactly the wrong move — that's what used to duplicate the order.
+      if (response.statusCode == 409 && data['inProgress'] == true) {
+        throw Exception(
+          data['message'] ??
+              "We're still placing that order. Check your orders in a moment.",
+        );
+      }
+
+      throw Exception(data['message'] ?? 'Failed to create order');
     } catch (e) {
-      throw Exception('Network error: $e');
+      // ApiClient already throws readable messages for timeouts and dead
+      // connections; wrapping them in "Network error: Exception: ..." just
+      // buried them.
+      if (e is Exception) rethrow;
+      throw Exception(e.toString());
     }
   }
 

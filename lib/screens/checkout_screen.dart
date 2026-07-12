@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final TextEditingController _instructionsController = TextEditingController();
 
   String _paymentMethod = "COD";
+
+  /// Identifies THIS checkout, and survives retries of it.
+  ///
+  /// If the order reaches the server but the reply doesn't reach us — a timeout,
+  /// a dropped cell, the app backgrounded mid-flight — the customer sees a
+  /// failure for an order that actually exists. Tapping "Place order" again used
+  /// to create a SECOND one: food cooked twice, a second rider sent, cash
+  /// collected twice on COD. Reusing this key lets the server recognise the
+  /// retry and hand back the original order. Cleared only once an order is
+  /// genuinely placed, so the NEXT checkout is a new one.
+  String? _idempotencyKey;
+
+  String _newIdempotencyKey() {
+    final rand = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
   bool _isLoading = false;
   bool _isGlobal = true;
 
@@ -417,6 +435,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     setState(() => _isLoading = true);
 
+    // Reuse the key if this is a retry; mint one if it's a fresh attempt.
+    _idempotencyKey ??= _newIdempotencyKey();
+
     try {
       final currentBrand = widget.specificBrand ?? ref.read(brandProvider);
 
@@ -442,9 +463,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         brand: currentBrand,
         items: _isGlobal ? null : itemsPayload,
         couponCode: _appliedCoupon,
+        idempotencyKey: _idempotencyKey,
       );
 
       if (result['success'] == true) {
+        // The order exists. Retire the key so the customer's NEXT checkout isn't
+        // mistaken for a replay of this one.
+        _idempotencyKey = null;
         if (!_isGlobal) {
           for (var item in widget.cart.items) {
             try {
@@ -470,9 +495,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Was "Error: Exception: Network error: Exception: SocketException:
+        // Failed host lookup..." — a stack of wrappers shown to a customer.
         SnackBarUtils.showThemedSnackBar(
           context: context,
-          message: "Error: $e",
+          message: e.toString().replaceAll('Exception: ', ''),
           isError: true,
         );
       }
