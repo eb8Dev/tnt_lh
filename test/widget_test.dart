@@ -1,30 +1,57 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tnt_lh/providers/connectivity_provider.dart';
 
-import 'package:tnt_lh/main.dart';
-
+/// This file used to hold the stock `flutter create` "Counter increments smoke
+/// test" — pumping a counter app that has never existed here. It failed on every
+/// run, so `flutter test` was permanently red and a real regression would have
+/// been indistinguishable from the noise.
+///
+/// The offline banner is worth pinning: a dropped connection used to be entirely
+/// silent, which led customers to retry — and at checkout, retrying is precisely
+/// what used to duplicate the order.
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  Widget harness({required bool online, required Widget child}) {
+    return ProviderScope(
+      overrides: [connectivityProvider.overrideWith(() => _FakeConnectivity(online))],
+      child: ScreenUtilInit(
+        designSize: const Size(390, 844),
+        builder: (context, _) => MaterialApp(home: child),
+      ),
+    );
+  }
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('the offline banner shows only when the phone is offline', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      harness(
+        online: false,
+        child: Consumer(
+          builder: (context, ref, _) {
+            final isOnline = ref.watch(connectivityProvider);
+            return Scaffold(
+              body: isOnline
+                  ? const Text('online')
+                  : const Text("You're offline."),
+            );
+          },
+        ),
+      ),
+    );
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.textContaining("offline"), findsOneWidget);
+    expect(find.text('online'), findsNothing);
   });
+}
+
+class _FakeConnectivity extends ConnectivityNotifier {
+  _FakeConnectivity(this._online);
+  final bool _online;
+
+  @override
+  bool build() => _online;
 }
