@@ -50,7 +50,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // This only happens on Android auto-verification
           await FirebaseAuth.instance.signInWithCredential(credential);
         },
+        // These are Firebase callbacks. They can fire up to a minute later —
+        // long after the customer has given up and pressed back. Touching
+        // setState or `context` on a widget that's gone is a hard crash, on the
+        // very first thing a new customer does in the app.
         verificationFailed: (FirebaseAuthException e) {
+          if (!mounted) return;
           SnackBarUtils.showThemedSnackBar(
             context: context,
             message: _friendlyPhoneAuthError(e),
@@ -59,15 +64,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           setState(() => _isLoading = false);
         },
         codeSent: (String verificationId, int? resendToken) {
+          if (!mounted) return;
           setState(() => _isLoading = false);
           widget.onOtpSent(phone, verificationId);
         },
         codeAutoRetrievalTimeout: (String verificationId) {},
       );
     } catch (e) {
+      // Same reason: verifyPhoneNumber is awaited, so the screen may be gone.
+      if (!mounted) return;
       SnackBarUtils.showThemedSnackBar(
         context: context,
-        message: "Error: $e",
+        message: "Couldn't send the code. Please try again.",
         isError: true,
       );
       setState(() => _isLoading = false);

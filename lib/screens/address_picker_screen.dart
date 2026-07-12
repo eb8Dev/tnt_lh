@@ -84,6 +84,9 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       return;
     }
 
+    // The permission prompts above are awaited, so the picker may already be
+    // gone by the time the customer answers them.
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final position = await Geolocator.getCurrentPosition();

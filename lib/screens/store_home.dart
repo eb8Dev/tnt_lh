@@ -40,6 +40,8 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
         ref.read(profileHasUnsavedChangesProvider)) {
       final leave = await _confirmDiscardChanges();
       if (leave != true) return;
+      // The dialog was open and awaited; the tab bar could be gone by now.
+      if (!mounted) return;
       ref.read(profileHasUnsavedChangesProvider.notifier).set(false);
     }
 
