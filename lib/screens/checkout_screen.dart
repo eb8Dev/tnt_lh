@@ -857,7 +857,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   onTap: _isLoading ? null : _placeOrder,
                   child: Container(
                     width: double.infinity,
-                    height: 52.h,
+                    height: 48.h,
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(20.r),

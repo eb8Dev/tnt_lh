@@ -614,7 +614,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
 
                             /// Redesigned Search Bar
                             Container(
-                              height: 52.h,
+                              height: 48.h,
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20.r),
@@ -1588,7 +1588,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
           TactileButton(
             onTap: _addToCart,
             child: Container(
-              height: 52.h,
+              height: 48.h,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.black,

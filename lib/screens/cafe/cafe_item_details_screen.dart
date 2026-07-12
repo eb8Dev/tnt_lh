@@ -346,7 +346,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
   /// Height of the bottom action bar: its vertical padding + the 56h button,
   /// plus whatever the OS reserves at the bottom (gesture bar / nav bar).
   double get _bottomActionHeight =>
-      16.h + 52.h + 32.h + MediaQuery.of(context).viewPadding.bottom;
+      16.h + 48.h + 24.h + MediaQuery.of(context).viewPadding.bottom;
 
   Widget _buildBottomAction(Color themeColor) {
     return Container(
@@ -365,7 +365,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
       child: Row(
         children: [
           Container(
-            height: 52.h,
+            height: 48.h,
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(18.r),
@@ -451,7 +451,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 Navigator.pop(context);
               },
               child: Container(
-                height: 52.h,
+                height: 48.h,
                 decoration: BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.circular(18.r),

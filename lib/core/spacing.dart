@@ -20,14 +20,14 @@ class Space {
 }
 
 /// Control sizes. Buttons had drifted to 55/56/60/64/68 — chunky and uneven.
-/// 52 is a comfortable, standard primary CTA (well above the 48 minimum touch
-/// target); 44 suits secondary/compact actions.
+/// 48 is the standard primary CTA (Material's minimum touch target, and a
+/// visible ~14% trim on the old 56); 44 suits secondary/compact actions.
 class Sizes {
   Sizes._();
 
-  static const double buttonPrimary = 52;
+  static const double buttonPrimary = 48;
   static const double buttonCompact = 44;
-  static const double field = 52;
+  static const double field = 48;
 }
 
 /// A vertical gap on the spacing scale, e.g. `Gap(Space.md)`. Applies `.h` so

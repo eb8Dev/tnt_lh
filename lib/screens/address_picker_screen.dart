@@ -285,7 +285,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                   SizedBox(height: 24.h),
                   SizedBox(
                     width: double.infinity,
-                    height: 52.h,
+                    height: 48.h,
                     child: ElevatedButton(
                       onPressed: _isLoading
                           ? null

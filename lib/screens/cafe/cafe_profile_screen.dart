@@ -278,6 +278,21 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The login response is partial — the full profile (email, address, prefs)
+    // lands later via a background fetch. Reading it once in initState left the
+    // email box blank. Re-sync whenever the user object changes, unless the
+    // person is mid-edit (never clobber what they're typing).
+    ref.listen<AuthState>(authProvider, (_, next) {
+      final u = next.user;
+      if (u == null || _isEditing) return;
+      if (_nameController.text != (u.name ?? '')) {
+        _nameController.text = u.name ?? '';
+      }
+      if (_emailController.text != (u.email ?? '')) {
+        _emailController.text = u.email ?? '';
+      }
+    });
+
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final isLittleH = ref.watch(brandProvider) == 'littleh';

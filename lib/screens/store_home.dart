@@ -82,7 +82,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 52.h,
+                    height: 48.h,
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(sheetContext, false),
                       style: OutlinedButton.styleFrom(
@@ -103,7 +103,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: SizedBox(
-                    height: 52.h,
+                    height: 48.h,
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(sheetContext, true),
                       style: ElevatedButton.styleFrom(
