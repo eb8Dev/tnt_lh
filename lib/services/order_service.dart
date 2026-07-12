@@ -3,6 +3,13 @@ import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/services/api_client.dart';
 import 'package:tnt_lh/models/order_model.dart';
 
+/// A page of orders, plus whether the server has more.
+class OrdersPage {
+  final List<Order> orders;
+  final bool hasMore;
+  const OrdersPage({required this.orders, required this.hasMore});
+}
+
 class OrderService {
   // Helper to get headers
 
@@ -25,13 +32,26 @@ class OrderService {
     }
   }
 
-  /// Get My Orders
-  static Future<List<Order>> getMyOrders({
+  /// One page of the customer's orders.
+  ///
+  /// The caller needs to know whether there is more to come, not just what came
+  /// back — otherwise a list can't tell "that's everything" from "still loading",
+  /// which is exactly why the orders screen had no end-of-list marker.
+  static Future<OrdersPage> getMyOrders({
     int page = 1,
     int limit = 20,
     String? brand,
+    /// Return every brand's orders in ONE correctly sorted, correctly paginated
+    /// list. The app used to fetch each brand separately and merge them on the
+    /// phone, which cannot be paginated: page 2 of a brand with three orders is
+    /// empty while the other brand still has fifty.
+    bool allBrands = false,
   }) async {
-    final queryParams = {'page': page.toString(), 'limit': limit.toString()};
+    final queryParams = {
+      'page': page.toString(),
+      'limit': limit.toString(),
+      if (allBrands) 'ignoreBrand': 'true',
+    };
     final url = AppConfig.buildUrl(
       '/customer/orders/my-orders',
       brand: brand,
@@ -41,15 +61,29 @@ class OrderService {
       final response = await ApiClient.get(url);
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200) {
-        final List<dynamic> ordersJson =
-            data['data']['orders'] ?? data['data'] ?? [];
-        return ordersJson.map((json) => Order.fromJson(json)).toList();
-      } else {
+      if (response.statusCode != 200) {
         throw Exception(data['message'] ?? 'Failed to fetch orders');
       }
+
+      final payload = data['data'];
+      final List<dynamic> ordersJson =
+          (payload is Map ? payload['orders'] : payload) ?? [];
+      final orders = ordersJson.map((json) => Order.fromJson(json)).toList();
+
+      // Prefer the server's own pagination block. Fall back to "a full page came
+      // back, so there is probably another" if it isn't there.
+      final pagination = payload is Map ? payload['pagination'] : null;
+      final bool hasMore;
+      if (pagination is Map && pagination['totalPages'] != null) {
+        hasMore = page < (pagination['totalPages'] as num).toInt();
+      } else {
+        hasMore = orders.length >= limit;
+      }
+
+      return OrdersPage(orders: orders, hasMore: hasMore);
     } catch (e) {
-      throw Exception('Network error: $e');
+      if (e is Exception) rethrow;
+      throw Exception(e.toString());
     }
   }
 

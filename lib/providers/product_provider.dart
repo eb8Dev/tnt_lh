@@ -33,15 +33,96 @@ final categoriesProvider = FutureProvider.family<List<Category>, String>((
   return raw.map((e) => Category.fromJson(e)).toList();
 });
 
-final productsProvider = FutureProvider.family<List<Product>, ProductParams>((
-  ref,
-  params,
-) async {
-  // Brand-scoped endpoint already filters by brand — see categoriesProvider.
-  final raw = await AuthService.getProducts(
-    categoryId: params.categoryId,
-    search: params.search,
-    brand: params.brand,
+/// A page of products, and whether there are more.
+class ProductsState {
+  final List<Product> products;
+  final bool hasMore;
+  final bool isLoadingMore;
+
+  const ProductsState({
+    required this.products,
+    this.hasMore = false,
+    this.isLoadingMore = false,
+  });
+
+  ProductsState copyWith({
+    List<Product>? products,
+    bool? hasMore,
+    bool? isLoadingMore,
+  }) => ProductsState(
+    products: products ?? this.products,
+    hasMore: hasMore ?? this.hasMore,
+    isLoadingMore: isLoadingMore ?? this.isLoadingMore,
   );
-  return raw.map((e) => Product.fromJson(e)).toList();
-});
+}
+
+/// THE MENU WAS TRUNCATED AT 20 ITEMS.
+///
+/// This asked for products without a page size, so the API's default of 20
+/// applied — while the live catalogue holds 286 products for Teas n Trees and
+/// 105 for Little H. The customer could see about 7% of the menu and had no way
+/// to reach the rest: no "load more", no end-of-list marker, the grid simply
+/// stopped. Everything past the first twenty items was unsellable.
+///
+/// Now it pages, appending as the customer scrolls, and says so when it runs out.
+class ProductsNotifier extends AsyncNotifier<ProductsState> {
+  ProductsNotifier(this.params);
+
+  final ProductParams params;
+
+  static const _pageSize = 30;
+  int _page = 1;
+
+  @override
+  Future<ProductsState> build() => _loadFirstPage();
+
+  Future<ProductsState> _loadFirstPage() async {
+    _page = 1;
+    final page = await _fetch(1);
+    return ProductsState(products: page.$1, hasMore: page.$2);
+  }
+
+  /// (products, hasMore)
+  Future<(List<Product>, bool)> _fetch(int page) async {
+    // Brand-scoped endpoint already filters by brand — see categoriesProvider.
+    final raw = await AuthService.getProducts(
+      categoryId: params.categoryId,
+      search: params.search,
+      brand: params.brand,
+      page: page,
+      limit: _pageSize,
+    );
+    final products = raw.map((e) => Product.fromJson(e)).toList();
+    // The service hands back just the list, so infer "there's more" from a full
+    // page. One redundant request at the very end is a fair price for not
+    // reshaping every caller.
+    return (products, products.length >= _pageSize);
+  }
+
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.hasMore || current.isLoadingMore) return;
+
+    state = AsyncValue.data(current.copyWith(isLoadingMore: true));
+    try {
+      final next = _page + 1;
+      final page = await _fetch(next);
+      _page = next;
+      state = AsyncValue.data(
+        ProductsState(
+          products: [...current.products, ...page.$1],
+          hasMore: page.$2,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (_) {
+      // Keep what's already on screen; scrolling again retries.
+      state = AsyncValue.data(current.copyWith(isLoadingMore: false));
+    }
+  }
+}
+
+final productsProvider =
+    AsyncNotifierProvider.family<ProductsNotifier, ProductsState, ProductParams>(
+      ProductsNotifier.new,
+    );

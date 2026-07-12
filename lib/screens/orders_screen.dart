@@ -21,10 +21,29 @@ class OrdersScreen extends ConsumerStatefulWidget {
 }
 
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+  final _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(orderProvider.notifier).fetchOrders());
+    Future.microtask(() => ref.read(orderProvider.notifier).refresh());
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Fetch the next page a little before the customer actually hits the bottom,
+  /// so the list keeps flowing instead of stalling on a spinner.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 400) {
+      ref.read(orderProvider.notifier).loadMore();
+    }
   }
 
   @override
@@ -52,25 +71,72 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           error: err,
           onRetry: () => ref.invalidate(orderProvider),
         ),
-        data: (orders) {
+        data: (ordersState) {
+          final orders = ordersState.orders;
           if (orders.isEmpty) {
             return _buildEmptyState();
           }
           return RefreshIndicator(
-            onRefresh: () => ref.read(orderProvider.notifier).fetchOrders(),
+            onRefresh: () => ref.read(orderProvider.notifier).refresh(),
             color: Theme.of(context).colorScheme.primary,
             child: ListView.separated(
+              controller: _scrollController,
               padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
-              // +1 for the "you owe us a rating" nudge, when there is one.
-              itemCount: orders.length + 1,
+              // +1 for the "you owe us a rating" nudge, +1 for the footer that
+              // either loads the next page or says we've reached the end.
+              itemCount: orders.length + 2,
               separatorBuilder: (_, _) => SizedBox(height: 16.h),
               itemBuilder: (context, index) {
                 if (index == 0) return _buildRatingNudge();
+                if (index == orders.length + 1) {
+                  return _buildListFooter(ordersState);
+                }
                 return _buildOrderCard(orders[index - 1]);
               },
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// The end of the list should say something. Before this, the list simply
+  /// stopped at whatever the first page held, and the customer had no way to
+  /// tell whether that was all their orders or just all we'd bothered to load.
+  Widget _buildListFooter(OrdersState state) {
+    if (state.isLoadingMore) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 24.h),
+        child: Center(
+          child: SizedBox(
+            width: 22.sp,
+            height: 22.sp,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (state.hasMore) {
+      // Scrolling pulls the next page in automatically; this is just something
+      // to look at while that happens.
+      return SizedBox(height: 24.h);
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 28.h),
+      child: Center(
+        child: Text(
+          "That's all your orders",
+          style: GoogleFonts.poppins(
+            fontSize: 12.sp,
+            color: Colors.black.withValues(alpha: 0.35),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }

@@ -791,7 +791,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                       icon: PhosphorIcons.wifiSlash(),
                       message: "Couldn't load items.\nPull down to try again.",
                     ),
-                    data: (products) {
+                    data: (productsState) {
+                      final products = productsState.products;
                       if (products.isEmpty) {
                         // Say why it's empty and offer the way out, rather than
                         // a dead end: a search miss can be cleared, a category
@@ -825,16 +826,48 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                               "No items found in this section.\nPull down to refresh.",
                         );
                       }
-                      return ListView.separated(
+                      return NotificationListener<ScrollNotification>(
+                        // The menu holds hundreds of items; pull the next page in
+                        // slightly before the customer reaches the bottom so the
+                        // list keeps flowing.
+                        onNotification: (n) {
+                          if (n.metrics.pixels >=
+                              n.metrics.maxScrollExtent - 600) {
+                            ref
+                                .read(
+                                  productsProvider(
+                                    ProductParams(
+                                      categoryId: _selectedCategoryId,
+                                      search: _searchQuery.isEmpty
+                                          ? null
+                                          : _searchQuery,
+                                      brand: widget.brand,
+                                    ),
+                                  ).notifier,
+                                )
+                                .loadMore();
+                          }
+                          return false;
+                        },
+                        child: ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
-                        itemCount: products.length,
+                        // +1 for the footer: a spinner while the next page loads,
+                        // or "you've seen the whole menu" when there isn't one.
+                        itemCount: products.length + 1,
                         separatorBuilder: (_, _) => SizedBox(height: 16.h),
                         itemBuilder: (context, index) {
+                          if (index == products.length) {
+                            return _buildMenuFooter(productsState);
+                          }
                           final product = products[index];
                           return TweenAnimationBuilder<double>(
+                            // Staggered entrance, but capped. This was
+                            // `400 + index * 100`, so with the menu now paging to
+                            // hundreds of items, item #100 would have faded in
+                            // ten seconds after it appeared.
                             duration: Duration(
-                              milliseconds: 400 + (index * 100),
+                              milliseconds: 300 + (index.clamp(0, 8) * 60),
                             ),
                             tween: Tween<double>(begin: 0, end: 1),
                             curve: Curves.easeOutCubic,
@@ -850,6 +883,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                             child: _buildProductCard(product),
                           );
                         },
+                        ),
                       );
                     },
                   ),
@@ -1032,6 +1066,43 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// The end of the menu should say so. The grid used to just stop at whatever
+  /// the first page held — and since that was 20 items out of nearly 300, the
+  /// customer had no way to know there was any more.
+  Widget _buildMenuFooter(ProductsState state) {
+    if (state.isLoadingMore) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 24.h),
+        child: Center(
+          child: SizedBox(
+            width: 22.sp,
+            height: 22.sp,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (state.hasMore) return SizedBox(height: 24.h);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 28.h),
+      child: Center(
+        child: Text(
+          "You've seen the whole menu",
+          style: GoogleFonts.poppins(
+            fontSize: 12.sp,
+            color: Colors.black.withValues(alpha: 0.35),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }
