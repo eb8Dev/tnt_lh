@@ -28,6 +28,18 @@ final socketEventsProvider =
 
 class SocketManager {
   io.Socket? _socket;
+
+  /// The token the live socket authenticated with.
+  ///
+  /// Socket.io authenticates ONCE, at handshake. The access token now rotates
+  /// roughly hourly, and this socket kept whatever token it was built with — so
+  /// the moment it tried to reconnect (a tunnel, a lift, the app resuming) it
+  /// re-handshook with a token that had since expired and the server refused it.
+  /// That is the `Socket authentication error: Error: Invalid token` sitting in
+  /// the production log, and the customer's live order tracking silently died
+  /// with it. Rebuild the socket whenever the token changes.
+  String? _token;
+
   final Ref ref;
 
   SocketManager(this.ref) {
@@ -41,16 +53,28 @@ class SocketManager {
     });
   }
 
-  void connect() async {
-    if (_socket?.connected == true) return;
-
+  Future<void> connect() async {
     final token = await AuthService.getToken();
     if (token == null) return;
 
-    final socketUrl = AppConfig.socketUrl;
+    if (_socket != null) {
+      if (_token != token) {
+        // Stale credentials: tear the old socket down rather than leaving it to
+        // fail its next handshake.
+        debugPrint('🔁 Socket: token changed, rebuilding');
+        _teardown();
+      } else if (_socket!.connected) {
+        return; // already up, on the right token
+      } else {
+        _socket!.connect(); // same token, just asleep
+        return;
+      }
+    }
 
+    final socketUrl = AppConfig.socketUrl;
     debugPrint("🔌 Socket: Connecting to $socketUrl...");
 
+    _token = token;
     _socket = io.io(
       socketUrl,
       io.OptionBuilder()
@@ -64,6 +88,18 @@ class SocketManager {
 
     _socket!.onConnect((_) => debugPrint('✅ Socket: Connected'));
     _socket!.onDisconnect((_) => debugPrint('❌ Socket: Disconnected'));
+
+    // An expired token is refused at the handshake. Fetch the current one and
+    // rebuild — ApiClient refreshes on 401, so by now there usually IS a fresh
+    // token sitting in storage; we were simply still holding the old one.
+    _socket!.onConnectError((err) async {
+      debugPrint('⚠️ Socket: connect error: $err');
+      final latest = await AuthService.getToken();
+      if (latest != null && latest != _token) {
+        _teardown();
+        connect();
+      }
+    });
 
     // Listeners
     _socket!.on('order:status-updated', (data) {
@@ -79,9 +115,20 @@ class SocketManager {
     });
   }
 
+  /// `disconnect()` alone leaves the socket and every listener attached to it
+  /// alive; dropping the reference then leaks them. Each rebuild used to add a
+  /// fresh set on top of the old, so one long session could stack several
+  /// sockets all emitting the same events.
+  void _teardown() {
+    _socket?.clearListeners();
+    _socket?.dispose();
+    _socket = null;
+    _token = null;
+  }
+
   void disconnect() {
     _socket?.disconnect();
-    _socket = null;
+    _teardown();
   }
 }
 

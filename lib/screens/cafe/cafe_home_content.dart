@@ -1112,19 +1112,28 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
 
     return Consumer(
       builder: (context, ref, child) {
-        final cartAsync = ref.watch(cartProvider);
-        int cartQty = 0;
-        String? cartItemId;
-
-        cartAsync.whenData((cart) {
-          final existing = cart.items
-              .where((i) => i.product.id == product.id)
-              .toList();
-          if (existing.isNotEmpty) {
-            cartQty = existing.fold(0, (sum, item) => sum + item.quantity);
-            cartItemId = existing.first.id;
-          }
-        });
+        // Watch only THIS product's line in the cart, not the whole cart.
+        //
+        // Every product card used to `ref.watch(cartProvider)`, so a single tap
+        // on one card's + or - rebuilt EVERY card on screen — the cart object
+        // changed, so all of them were told to. `select` narrows the dependency
+        // to a record of (quantity, itemId) for this product alone; records
+        // compare by value, so a card only rebuilds when its own line actually
+        // changes. Tapping + on a latte no longer redraws the croissant.
+        final (int cartQty, String? cartItemId) = ref.watch(
+          cartProvider.select<(int, String?)>((async) {
+            final cart = async.value;
+            if (cart == null) return (0, null);
+            final existing = cart.items
+                .where((i) => i.product.id == product.id)
+                .toList();
+            if (existing.isEmpty) return (0, null);
+            return (
+              existing.fold<int>(0, (sum, item) => sum + item.quantity),
+              existing.first.id,
+            );
+          }),
+        );
 
         return TactileButton(
           onTap: () {
@@ -1280,14 +1289,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                             ref
                                                 .read(cartProvider.notifier)
                                                 .removeItem(
-                                                  cartItemId!,
+                                                  cartItemId,
                                                   brand: product.brand,
                                                 );
                                           } else {
                                             ref
                                                 .read(cartProvider.notifier)
                                                 .updateQuantity(
-                                                  cartItemId!,
+                                                  cartItemId,
                                                   cartQty - 1,
                                                 );
                                           }
@@ -1316,7 +1325,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent>
                                           ref
                                               .read(cartProvider.notifier)
                                               .updateQuantity(
-                                                cartItemId!,
+                                                cartItemId,
                                                 cartQty + 1,
                                               );
                                         }
