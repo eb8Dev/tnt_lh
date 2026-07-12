@@ -1,6 +1,15 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
 
+/// The brand loader: a cup slowly brewing.
+///
+/// The liquid rises and settles with a live, sloshing surface, a band of crema
+/// sits on top, and steam curls off it — while the colour drifts between the
+/// cafe's sage and the bakery's terracotta, so the one loader speaks for both
+/// brands instead of cross-fading two logos at each other.
+///
+/// Everything is painted on a single canvas (no assets), and it falls back to a
+/// still cup when the OS asks for reduced motion.
 class HouseOfFlavorsLoader extends StatefulWidget {
   final double size;
   final Color? color;
@@ -13,173 +22,67 @@ class HouseOfFlavorsLoader extends StatefulWidget {
 
 class _HouseOfFlavorsLoaderState extends State<HouseOfFlavorsLoader>
     with TickerProviderStateMixin {
-  late AnimationController _steamController;
-  late AnimationController _pulseController;
-  late AnimationController _switchController;
+  // The pour: liquid climbing, then settling back — the "working" beat.
+  late final AnimationController _fill = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  )..repeat(reverse: true);
 
-  @override
-  void initState() {
-    super.initState();
-    _steamController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
+  // The surface ripple, deliberately out of step with the fill so the liquid
+  // never looks like it's moving as one rigid block.
+  late final AnimationController _wave = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  )..repeat();
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+  late final AnimationController _steam = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3200),
+  )..repeat();
 
-    _switchController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
-  }
+  // Sage (Teas n Trees) <-> terracotta (Little H).
+  late final AnimationController _brand = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 5000),
+  )..repeat(reverse: true);
 
   @override
   void dispose() {
-    _steamController.dispose();
-    _pulseController.dispose();
-    _switchController.dispose();
+    _fill.dispose();
+    _wave.dispose();
+    _steam.dispose();
+    _brand.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cafeColor = const Color(0xFF57733C);
-    final bakeryColor = const Color(0xFF8C3414);
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
 
     return SizedBox(
       width: widget.size,
       height: widget.size,
       child: AnimatedBuilder(
-        animation: Listenable.merge([
-          _steamController,
-          _pulseController,
-          _switchController,
-        ]),
-        builder: (context, child) {
-          final isCafePhase = _switchController.value < 0.5;
-          final Color activeColor = Color.lerp(
-            cafeColor,
-            bakeryColor,
-            Curves.easeInOut.transform(_switchController.value),
-          )!;
+        animation: Listenable.merge([_fill, _wave, _steam, _brand]),
+        builder: (context, _) {
+          final brew =
+              widget.color ??
+              Color.lerp(
+                const Color(0xFF57733C), // Teas n Trees sage
+                const Color(0xFF8C3414), // Little H terracotta
+                Curves.easeInOut.transform(_brand.value),
+              )!;
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Warm "Oven/Brew" Glow
-              Container(
-                width: widget.size * 0.8,
-                height: widget.size * 0.8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      activeColor.withValues(
-                        alpha: 0.2 * _pulseController.value,
-                      ),
-                      activeColor.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-              ),
-
-              // 2. Rising Steam/Aroma Waves
-              CustomPaint(
-                size: Size(widget.size, widget.size),
-                painter: _SteamPainter(
-                  progress: _steamController.value,
-                  color: activeColor.withValues(alpha: 0.3),
-                ),
-              ),
-
-              // 3. Floating Ingredients (Coffee Beans / Wheat Particles)
-              ...List.generate(6, (index) {
-                final double seed = index / 6;
-                final double t = (_steamController.value + seed) % 1.0;
-                return Positioned(
-                  bottom: widget.size * (0.2 + (0.6 * t)),
-                  left:
-                      widget.size *
-                      (0.3 + (0.4 * math.sin(t * 2 * math.pi + index))),
-                  child: Opacity(
-                    opacity: (1.0 - t) * 0.5,
-                    child: Container(
-                      width: 8,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: activeColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-
-              // 4. The Iconic Centerpiece
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // The Steaming Icon
-                  Transform.translate(
-                    offset: Offset(0, -10 * _pulseController.value),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: activeColor.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Cross-fading Logos
-                          Opacity(
-                            opacity: isCafePhase ? 1.0 : 0.0,
-                            child: Image.asset(
-                              "assets/images/teas_n_trees_no_bg.png",
-                              width: widget.size * 0.5,
-                              height: widget.size * 0.5,
-                            ),
-                          ),
-                          Opacity(
-                            opacity: isCafePhase ? 0.0 : 1.0,
-                            child: Image.asset(
-                              "assets/images/little_h_logo_no_bg.png",
-                              width: widget.size * 0.5,
-                              height: widget.size * 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // The "Vapor" Base (Shadow)
-                  Container(
-                    width:
-                        widget.size *
-                        0.2 *
-                        (0.8 + 0.2 * _pulseController.value),
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      borderRadius: const BorderRadius.all(
-                        Radius.elliptical(20, 4),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          return CustomPaint(
+            painter: _BrewPainter(
+              // A still, half-full cup when motion is unwelcome.
+              fill: reduceMotion
+                  ? 0.55
+                  : 0.25 + 0.5 * Curves.easeInOutSine.transform(_fill.value),
+              wave: reduceMotion ? 0 : _wave.value,
+              steam: reduceMotion ? -1 : _steam.value,
+              color: brew,
+            ),
           );
         },
       ),
@@ -187,51 +90,199 @@ class _HouseOfFlavorsLoaderState extends State<HouseOfFlavorsLoader>
   }
 }
 
-class _SteamPainter extends CustomPainter {
-  final double progress;
+class _BrewPainter extends CustomPainter {
+  /// 0..1 — how full the cup is.
+  final double fill;
+
+  /// 0..1 — phase of the surface ripple.
+  final double wave;
+
+  /// 0..1 — phase of the rising steam. Negative disables it.
+  final double steam;
+
   final Color color;
 
-  _SteamPainter({required this.progress, required this.color});
+  _BrewPainter({
+    required this.fill,
+    required this.wave,
+    required this.steam,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+
+    // Cup geometry: a gently tapered vessel, centred, sitting on a saucer.
+    final cupTop = s * 0.34;
+    final cupBottom = s * 0.78;
+    final halfTop = s * 0.22;
+    final halfBottom = s * 0.16;
+    final cx = size.width / 2;
+
+    final cup = Path()
+      ..moveTo(cx - halfTop, cupTop)
+      ..lineTo(cx - halfBottom, cupBottom - s * 0.05)
+      ..quadraticBezierTo(
+        cx - halfBottom,
+        cupBottom,
+        cx - halfBottom + s * 0.05,
+        cupBottom,
+      )
+      ..lineTo(cx + halfBottom - s * 0.05, cupBottom)
+      ..quadraticBezierTo(
+        cx + halfBottom,
+        cupBottom,
+        cx + halfBottom,
+        cupBottom - s * 0.05,
+      )
+      ..lineTo(cx + halfTop, cupTop)
+      ..close();
+
+    if (steam >= 0) _paintSteam(canvas, size, s, cx, cupTop);
+
+    // Liquid, clipped to the inside of the cup.
+    canvas.save();
+    canvas.clipPath(cup);
+    _paintLiquid(canvas, size, s, cx, cupTop, cupBottom);
+    canvas.restore();
+
+    // The cup itself, drawn over the liquid so the rim reads cleanly.
+    canvas.drawPath(
+      cup,
+      Paint()
+        ..color = color.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.022
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Handle.
+    canvas.drawArc(
+      Rect.fromCircle(
+        center: Offset(cx + halfTop + s * 0.01, cupTop + s * 0.14),
+        radius: s * 0.085,
+      ),
+      -math.pi / 2.4,
+      math.pi * 1.15,
+      false,
+      Paint()
+        ..color = color.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.02
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Saucer.
+    final saucerY = cupBottom + s * 0.045;
+    canvas.drawLine(
+      Offset(cx - s * 0.26, saucerY),
+      Offset(cx + s * 0.26, saucerY),
+      Paint()
+        ..color = color.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.02
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _paintLiquid(
+    Canvas canvas,
+    Size size,
+    double s,
+    double cx,
+    double cupTop,
+    double cupBottom,
+  ) {
+    final innerTop = cupTop + s * 0.03;
+    final surfaceY = cupBottom - (cupBottom - innerTop) * fill;
+
+    // Two sine waves at different frequencies so the surface never looks like a
+    // single mechanical ripple.
+    final amp = s * 0.016;
+    final path = Path()..moveTo(0, surfaceY);
+    for (double x = 0; x <= size.width; x += 2) {
+      final phase = (x / size.width) * 2 * math.pi;
+      final y =
+          surfaceY +
+          math.sin(phase * 2 + wave * 2 * math.pi) * amp +
+          math.sin(phase * 3.7 - wave * 2 * math.pi * 1.4) * amp * 0.45;
+      path.lineTo(x, y);
+    }
+    path
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            color.withValues(alpha: 0.55),
+            color.withValues(alpha: 0.9),
+          ],
+        ).createShader(Rect.fromLTWH(0, surfaceY, size.width, size.height)),
+    );
+
+    // A band of crema riding the surface.
+    final crema = Path()..moveTo(0, surfaceY);
+    for (double x = 0; x <= size.width; x += 2) {
+      final phase = (x / size.width) * 2 * math.pi;
+      final y =
+          surfaceY +
+          math.sin(phase * 2 + wave * 2 * math.pi) * amp +
+          math.sin(phase * 3.7 - wave * 2 * math.pi * 1.4) * amp * 0.45;
+      crema.lineTo(x, y);
+    }
+    canvas.drawPath(
+      crema,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.018,
+    );
+  }
+
+  void _paintSteam(
+    Canvas canvas,
+    Size size,
+    double s,
+    double cx,
+    double cupTop,
+  ) {
     final paint = Paint()
-      ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = s * 0.016
       ..strokeCap = StrokeCap.round;
 
-    final double centerX = size.width / 2;
-    final double startY = size.height * 0.6;
-
     for (int i = -1; i <= 1; i++) {
-      final double xOffset = i * 25.0;
-      final double individualProgress = (progress + (i * 0.2)) % 1.0;
+      // Each wisp is offset in phase so they don't pulse in lockstep.
+      final t = (steam + i * 0.28) % 1.0;
+      final baseX = cx + i * s * 0.11;
+      final startY = cupTop - s * 0.02;
+      final height = s * 0.26;
 
-      final path = Path();
-
-      // Wavy steam line
-      path.moveTo(centerX + xOffset, startY);
-
-      for (double j = 0; j < individualProgress; j += 0.05) {
-        final double y = startY - (j * 80);
-        final double x =
-            centerX + xOffset + math.sin(j * 10 + progress * 5) * 8;
-        if (j == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
+      final path = Path()..moveTo(baseX, startY);
+      for (double u = 0; u <= 1; u += 0.05) {
+        final y = startY - u * height - t * s * 0.06;
+        final x = baseX + math.sin(u * math.pi * 2.2 + t * math.pi * 2) * s * 0.03;
+        path.lineTo(x, y);
       }
 
-      // Fade out steam
-      final double opacity = (1.0 - individualProgress).clamp(0.0, 1.0);
-      paint.color = color.withValues(alpha: color.a * opacity);
+      // Fade in as it leaves the cup, out as it dissipates.
+      final opacity = (math.sin(t * math.pi)).clamp(0.0, 1.0) * 0.45;
+      paint.color = color.withValues(alpha: opacity);
       canvas.drawPath(path, paint);
     }
   }
 
   @override
-  bool shouldRepaint(_SteamPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color;
+  bool shouldRepaint(_BrewPainter old) =>
+      old.fill != fill ||
+      old.wave != wave ||
+      old.steam != steam ||
+      old.color != color;
 }
