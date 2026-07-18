@@ -48,3 +48,7 @@ app.*.map.json
 /copy_of_models
 
 ./lib/onboarding/slide_to_start.dart
+# Release signing (never commit)
+android/key.properties
+android/app/release-keystore.jks
+**/release-keystore.jks
