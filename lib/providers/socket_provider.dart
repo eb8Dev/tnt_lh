@@ -113,6 +113,17 @@ class SocketManager {
           .read(socketEventsProvider.notifier)
           .emitEvent(SocketEvent('order:created', data));
     });
+
+    // THE LIVE MAP NEVER MOVED. The backend broadcasts the rider's GPS to the
+    // customer as `rider:location-update` on every push, and GlobalListener is
+    // already wired to feed that into riderTrackingProvider — but this socket
+    // never subscribed to the event, so it was dropped on the floor and the
+    // tracking map sat frozen while the rider was actually moving.
+    _socket!.on('rider:location-update', (data) {
+      ref
+          .read(socketEventsProvider.notifier)
+          .emitEvent(SocketEvent('rider:location-update', data));
+    });
   }
 
   /// `disconnect()` alone leaves the socket and every listener attached to it

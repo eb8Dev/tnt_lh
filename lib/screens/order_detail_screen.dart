@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/order_model.dart';
 import 'package:tnt_lh/services/order_service.dart';
+import 'package:tnt_lh/screens/store_home.dart';
 import 'package:tnt_lh/services/review_service.dart';
 import 'package:tnt_lh/components/live_tracking_panel.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
@@ -276,6 +277,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        // Always give a way out. When this screen is the only route (e.g. opened
+        // straight from a notification), the automatic back button vanishes and
+        // the customer is trapped — so fall back to the home menu.
+        leading: IconButton(
+          icon: Icon(PhosphorIcons.caretLeft()),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const StoreHomeScreen(initialIndex: 0),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        ),
       ),
       body: FutureBuilder<Order>(
         future: _orderFuture,

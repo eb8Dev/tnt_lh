@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/active_order_bar.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -178,7 +179,15 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       // IndexedStack keeps every tab's state alive (scroll position, search
       // text). A keyed cross-fade here would remount and lose all of it, so the
       // liveness comes from the haptic on tap instead of a page fade.
-      body: IndexedStack(index: pageIndex, children: pages),
+      // The active-order bar sits just above the bottom nav on every tab, so an
+      // in-flight order is always one tap from tracking. IndexedStack stays in
+      // an Expanded so tab state is still preserved.
+      body: Column(
+        children: [
+          Expanded(child: IndexedStack(index: pageIndex, children: pages)),
+          const ActiveOrderBar(),
+        ],
+      ),
       floatingActionButton: TactileButton(
         onTap: _handleStoreSwitch,
         child: Container(

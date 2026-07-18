@@ -120,3 +120,26 @@ class OrderNotifier extends AsyncNotifier<OrdersState> {
 final orderProvider = AsyncNotifierProvider<OrderNotifier, OrdersState>(() {
   return OrderNotifier();
 });
+
+/// The most recent order that is still in progress, or null.
+///
+/// Feeds the persistent "your order is on the way" bar that testers asked to see
+/// while browsing other pages. Derived from [orderProvider] so it stays in sync
+/// with the socket-driven status updates for free.
+final activeOrderProvider = Provider<Order?>((ref) {
+  final orders = ref.watch(orderProvider).value?.orders ?? const <Order>[];
+
+  // Terminal states — anything else is still live.
+  const done = {
+    'delivered',
+    'completed',
+    'cancelled',
+    'rejected',
+    'refunded',
+  };
+
+  for (final o in orders) {
+    if (!done.contains(o.status.toLowerCase())) return o;
+  }
+  return null;
+});

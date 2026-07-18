@@ -118,6 +118,7 @@ class OrderService {
     /// replay and hand back the order it already made, instead of making
     /// another one. See CheckoutScreen, which holds the key until success.
     String? idempotencyKey,
+    String? alternatePhone,
   }) async {
     // If specific items are provided, use the general orders endpoint.
     // This allows brand-specific checkout without clearing the entire cart.
@@ -150,6 +151,8 @@ class OrderService {
         if (items != null) "items": items,
         if (couponCode != null && couponCode.isNotEmpty)
           "couponCode": couponCode,
+        if (alternatePhone != null && alternatePhone.isNotEmpty)
+          "alternatePhone": alternatePhone,
       };
 
       final response = await ApiClient.post(

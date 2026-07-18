@@ -34,6 +34,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _instructionsController = TextEditingController();
+  final TextEditingController _altPhoneController = TextEditingController();
 
   String _paymentMethod = "COD";
 
@@ -88,6 +89,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void dispose() {
     _addressController.dispose();
     _instructionsController.dispose();
+    _altPhoneController.dispose();
     _couponController.dispose();
     super.dispose();
   }
@@ -457,6 +459,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final result = await OrderService.createOrder(
         deliveryAddress: _addressController.text.trim(),
         deliveryInstructions: _instructionsController.text.trim(),
+        alternatePhone: _altPhoneController.text.trim().isEmpty
+            ? null
+            : _altPhoneController.text.trim(),
         paymentMethod: _paymentMethod,
         latitude: _latitude,
         longitude: _longitude,
@@ -597,8 +602,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           TactileButton(
             onTap: () {
               Navigator.pop(ctx);
+              // Reset to the Orders tab of the home shell FIRST, then push the
+              // detail on top. Previously "Track Order" did
+              // pushAndRemoveUntil(OrderDetail, (route) => false) — which wiped
+              // the whole stack, so the detail screen had nothing beneath it: no
+              // back button, no bottom nav, no way back to the menu. That is the
+              // "can't return to the menu after placing an order" report.
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const StoreHomeScreen(initialIndex: 3),
+                ),
+                (route) => false,
+              );
               if (orderId.isNotEmpty) {
-                Navigator.pushAndRemoveUntil(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => OrderDetailScreen(
@@ -606,15 +624,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       brand: widget.specificBrand,
                     ),
                   ),
-                  (route) => false,
-                );
-              } else {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StoreHomeScreen(initialIndex: 3),
-                  ),
-                  (route) => false,
                 );
               }
             },
@@ -719,6 +728,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration: _inputDecoration(
                     "e.g. Ring the bell, leave at the gate...",
                   ),
+                ),
+
+                SizedBox(height: 40.h),
+
+                // Alternate contact number — requested by testers, for ordering
+                // to someone else's address or a building where a second number
+                // helps the rider get through.
+                _buildSectionTitle("Alternate Contact Number (optional)"),
+                SizedBox(height: 16.h),
+                TextFormField(
+                  controller: _altPhoneController,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  style: GoogleFonts.poppins(fontSize: 14.sp),
+                  decoration: _inputDecoration(
+                    "Another number the rider can call",
+                  ).copyWith(counterText: ''),
+                  validator: (v) {
+                    final t = v?.trim() ?? '';
+                    if (t.isEmpty) return null; // optional
+                    if (!RegExp(r'^[0-9]{10}$').hasMatch(t)) {
+                      return 'Enter a valid 10-digit number, or leave it blank';
+                    }
+                    return null;
+                  },
                 ),
 
                 SizedBox(height: 40.h),

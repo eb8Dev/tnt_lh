@@ -143,6 +143,50 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     }
   }
 
+  /// Edit an existing address. You could add and remove but not correct one, so
+  /// a typo'd flat number meant deleting and starting over. Opens the picker
+  /// seeded with the current pin, then PUTs the change.
+  Future<void> _editAddress(SavedAddress a) async {
+    final picked = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddressPickerScreen(
+          initialLat: a.latitude,
+          initialLng: a.longitude,
+          initialLabel: a.label,
+          initialAddress: a.addressLine,
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    final label = (picked['name'] as String?)?.trim() ?? '';
+    final line = (picked['address'] as String?)?.trim() ?? '';
+    try {
+      await AddressService.updateAddress(
+        addressId: a.id,
+        label: label.isEmpty ? a.label : label,
+        addressLine: line,
+        latitude: picked['lat'] as double?,
+        longitude: picked['lng'] as double?,
+        brand: ref.read(brandProvider),
+      );
+      await _loadAddresses();
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: 'Address updated.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+        isError: true,
+      );
+    }
+  }
+
   Future<void> _makeDefault(SavedAddress a) async {
     await AddressService.setDefault(a.id, brand: ref.read(brandProvider));
     await _loadAddresses();
@@ -787,10 +831,12 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                 color: Colors.black38,
               ),
               onSelected: (v) {
+                if (v == 'edit') _editAddress(a);
                 if (v == 'default') _makeDefault(a);
                 if (v == 'delete') _deleteAddress(a);
               },
               itemBuilder: (_) => [
+                const PopupMenuItem(value: 'edit', child: Text('Edit')),
                 if (!a.isDefault)
                   const PopupMenuItem(
                     value: 'default',

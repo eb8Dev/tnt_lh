@@ -8,7 +8,22 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AddressPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
-  const AddressPickerScreen({super.key, this.initialLocation});
+
+  /// Seed values, used when editing a saved address so the picker opens on the
+  /// existing pin with the label/text already filled in.
+  final double? initialLat;
+  final double? initialLng;
+  final String? initialLabel;
+  final String? initialAddress;
+
+  const AddressPickerScreen({
+    super.key,
+    this.initialLocation,
+    this.initialLat,
+    this.initialLng,
+    this.initialLabel,
+    this.initialAddress,
+  });
 
   @override
   State<AddressPickerScreen> createState() => _AddressPickerScreenState();
@@ -20,15 +35,29 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
   late LatLng _selectedLoc;
   GoogleMapController? _mapController;
   String _addressText = "Loading address...";
-  final TextEditingController _nameController = TextEditingController(
-    text: "Home",
-  );
+  late final TextEditingController _nameController;
+  final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedLoc = widget.initialLocation ?? _defaultLoc;
+    _nameController = TextEditingController(
+      text: widget.initialLabel?.trim().isNotEmpty == true
+          ? widget.initialLabel!.trim()
+          : "Home",
+    );
+    _selectedLoc = widget.initialLocation ??
+        (widget.initialLat != null && widget.initialLng != null
+            ? LatLng(widget.initialLat!, widget.initialLng!)
+            : _defaultLoc);
+
+    // If we were handed the address text (editing), show it immediately rather
+    // than a "Loading…" flash, then refine from the pin.
+    if (widget.initialAddress?.trim().isNotEmpty == true) {
+      _addressText = widget.initialAddress!.trim();
+    }
     _reverseGeocode(_selectedLoc);
   }
 
@@ -36,6 +65,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
   void dispose() {
     _mapController?.dispose();
     _nameController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -62,6 +92,35 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Search for an address by text and drop the pin there.
+  ///
+  /// Requested by testers: typing the address and having the map jump to it is
+  /// far quicker than dragging the map across the city by hand.
+  Future<void> _searchAddress(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return;
+
+    FocusScope.of(context).unfocus();
+    setState(() => _isSearching = true);
+    try {
+      final results = await geo.locationFromAddress(q);
+      if (results.isEmpty) {
+        _snack("Couldn't find that address. Try adding the area or city.");
+        return;
+      }
+      final loc = LatLng(results.first.latitude, results.first.longitude);
+      _selectedLoc = loc;
+      await _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(loc, 16),
+      );
+      await _reverseGeocode(loc);
+    } catch (_) {
+      _snack("Couldn't find that address. Try adding the area or city.");
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
     }
   }
 
@@ -195,6 +254,62 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
             child: Padding(
               padding: EdgeInsets.only(bottom: 45.h), // tip points at centre
               child: Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.fill), color: Colors.red, size: 45.sp),
+            ),
+          ),
+
+          // Search bar — type an address, the map jumps to it.
+          Positioned(
+            top: 12.h,
+            left: 16.w,
+            right: 16.w,
+            child: Material(
+              elevation: 3,
+              borderRadius: BorderRadius.circular(14.r),
+              child: TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                onSubmitted: _searchAddress,
+                style: GoogleFonts.poppins(fontSize: 13.sp),
+                decoration: InputDecoration(
+                  hintText: "Search area, street, landmark…",
+                  hintStyle: GoogleFonts.poppins(
+                    fontSize: 13.sp,
+                    color: Colors.black38,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: Icon(
+                    PhosphorIcons.magnifyingGlass(),
+                    size: 18.sp,
+                    color: Colors.black54,
+                  ),
+                  suffixIcon: _isSearching
+                      ? Padding(
+                          padding: EdgeInsets.all(12.r),
+                          child: SizedBox(
+                            width: 16.w,
+                            height: 16.h,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        )
+                      : IconButton(
+                          icon: Icon(
+                            PhosphorIcons.arrowRight(),
+                            size: 18.sp,
+                            color: Colors.black54,
+                          ),
+                          onPressed: () =>
+                              _searchAddress(_searchController.text),
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 12.h),
+                ),
+              ),
             ),
           ),
 
