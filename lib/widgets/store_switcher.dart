@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -64,7 +65,7 @@ class StoreSwitcher extends StatelessWidget {
                       child: _segment(
                         context,
                         brand: 'teasntrees',
-                        label: 'Teas N Trees',
+                        label: Brands.cafeName,
                         icon: PhosphorIcons.coffee(
                           PhosphorIconsStyle.fill,
                         ),
@@ -76,7 +77,7 @@ class StoreSwitcher extends StatelessWidget {
                       child: _segment(
                         context,
                         brand: 'littleh',
-                        label: 'Little H',
+                        label: Brands.bakeryName,
                         icon: PhosphorIcons.cake(
                           PhosphorIconsStyle.fill,
                         ),

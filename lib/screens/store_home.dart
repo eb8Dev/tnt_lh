@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:tnt_lh/widgets/active_order_bar.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -156,13 +157,11 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
 
     final targetColor = targetBrand == 'teasntrees'
         ? const Color(0xFF57733C)
-        : const Color(0xFF8C3414);
+        : Brands.bakeryColor;
 
-    final targetLogo = targetBrand == 'teasntrees'
-        ? "assets/images/teas_n_trees_no_bg.png"
-        : "assets/images/little_h_logo_no_bg.png";
+    final targetLogo = Brands.logo(targetBrand);
 
-    // Teas N Trees is the left segment, Little H the right — start the wipe
+    // Teas N Trees is the left segment, Cream N Crust the right — start the wipe
     // under whichever one was tapped, up near the switcher.
     final originAlignment = targetBrand == 'teasntrees'
         ? const Alignment(-0.6, -0.82)

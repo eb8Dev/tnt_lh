@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -59,11 +60,11 @@ final ThemeData littleHTheme = ThemeData(
   scaffoldBackgroundColor: const Color(0xFFFCFBF4),
   colorScheme: ColorScheme.fromSeed(
     seedColor: const Color(0xFFF2F0D5), // Cream/Light Yellow
-    primary: const Color(0xFF8C3414), // Dark Brown/Red
+    primary: Brands.bakeryColor, // Chocolate brown
     onPrimary: const Color(0xFFF2F0D5),
-    secondary: const Color(0xFFD96F66), // Coral/Orange-Red
+    secondary: const Color(0xFFE56B8F), // Strawberry pink
     onSecondary: Colors.white,
-    tertiary: const Color(0xFFF2E4DC), // Light Peach/Pink
+    tertiary: const Color(0xFFF9E3EA), // Light pink
     onTertiary: Colors.black,
     surface: const Color(0xFFFCFBF4),
     onSurface: Colors.black,
@@ -121,7 +122,7 @@ class MyApp extends ConsumerWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, _) => MaterialApp(
-        title: 'Teas n Trees & Little H',
+        title: 'Teas N Trees & Cream N Crust',
         debugShowCheckedModeBanner: false,
         theme: theme,
         builder: (context, child) {

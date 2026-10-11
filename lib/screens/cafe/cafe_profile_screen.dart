@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -411,7 +412,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
               ),
               GapW(Space.xs),
               Text(
-                isLittleH ? 'LITTLE H' : 'TEAS N TREES',
+                (isLittleH ? Brands.bakeryName : Brands.cafeName).toUpperCase(),
                 style: GoogleFonts.poppins(
                   color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 11.sp,

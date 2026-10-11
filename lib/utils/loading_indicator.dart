@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
@@ -10,7 +11,7 @@ import 'package:tnt_lh/providers/brand_provider.dart';
 ///
 ///  * **Teas n Trees** — a cup brewing: the liquid climbs and settles with a
 ///    live sloshing surface, crema on top, steam curling off it.
-///  * **Little H** — dough proving: a scored boule swells and relaxes in its
+///  * **Cream N Crust** — dough proving: a scored boule swells and relaxes in its
 ///    bowl while flour drifts down around it.
 ///
 /// It reads [brandProvider] itself, so it changes with the store without any
@@ -38,7 +39,7 @@ class HouseOfFlavorsLoader extends ConsumerStatefulWidget {
 class _HouseOfFlavorsLoaderState extends ConsumerState<HouseOfFlavorsLoader>
     with TickerProviderStateMixin {
   static const _sage = Color(0xFF57733C); // Teas n Trees
-  static const _terracotta = Color(0xFF8C3414); // Little H
+  static const _terracotta = Brands.bakeryColor; // Cream N Crust
 
   /// The main beat: liquid climbing, or dough proving.
   late final AnimationController _rise = AnimationController(

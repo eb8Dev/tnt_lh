@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/skeleton.dart';
@@ -245,16 +246,16 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     vertical: 6.h,
                   ),
                   decoration: BoxDecoration(
-                    color: (isTeas ? Color(0xFF57733C) : Color(0xFF8C3414))
+                    color: (isTeas ? Brands.cafeColor : Brands.bakeryColor)
                         .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(
-                    isTeas ? "Teas N Trees" : "Little H",
+                    isTeas ? Brands.cafeName : Brands.bakeryName,
                     style: GoogleFonts.poppins(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
-                      color: isTeas ? Color(0xFF57733C) : Color(0xFF8C3414),
+                      color: isTeas ? Brands.cafeColor : Brands.bakeryColor,
                     ),
                   ),
                 ),

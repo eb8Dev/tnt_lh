@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/product_image.dart';
@@ -192,9 +193,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     if (bakeryItems.isNotEmpty) ...[
                       SizedBox(height: 40.h),
                       _buildBrandSection(
-                        "Little H (Bakery)",
+                        "${Brands.bakeryName} (Bakery)",
                         bakeryItems,
-                        Color(0xFF8C3414),
+                        Brands.bakeryColor,
                         'littleh',
                       ),
                     ],

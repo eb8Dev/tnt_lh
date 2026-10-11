@@ -156,7 +156,9 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
                       ),
                         child: Image.asset(
                           widget.logoAsset,
-                          width: 130.w,
+                          // Wide enough for the Cream N Crust wordmark; the
+                          // squarer Teas N Trees mark just centres inside it.
+                          width: 220.w,
                           height: 84.h,
                           fit: BoxFit.contain,
                         ),

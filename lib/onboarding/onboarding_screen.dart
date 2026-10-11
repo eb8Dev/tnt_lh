@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -43,15 +44,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       gradient: [Color(0xFFF6F9D4), Color(0xFFDCEFA2)],
     ),
     _OnboardData(
-      title: "Little H Bakery",
-      description: "Freshly baked happiness made with love.",
-      image: "assets/images/little_h_logo_no_bg.png",
+      title: Brands.bakeryName,
+      description: "An artisan bakery. Freshly baked happiness, made with love.",
+      image: Brands.bakeryLogo,
       gradient: [Theme.of(context).colorScheme.surface, Color(0xFFF3D4C2)],
     ),
     _OnboardData(
       title: "Sweet Moments",
       description: "Desserts that make every moment special.",
-      image: "assets/images/little_h_logo_no_bg.png",
+      image: Brands.bakeryLogo,
       gradient: [Color(0xFFF5D6C6), Color(0xFFF0BFAE)],
     ),
   ];

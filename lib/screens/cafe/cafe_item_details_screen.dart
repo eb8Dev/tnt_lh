@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -151,7 +152,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           borderRadius: BorderRadius.circular(10.r),
                         ),
                         child: Text(
-                          isLittleH ? "Little H" : "Teas N Trees",
+                          isLittleH ? Brands.bakeryName : Brands.cafeName,
                           style: GoogleFonts.poppins(
                             fontSize: 11.sp,
                             fontWeight: FontWeight.bold,

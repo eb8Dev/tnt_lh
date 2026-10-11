@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
@@ -559,7 +560,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         decoration: BoxDecoration(
                           color: o['brand'] == 'teasntrees'
                               ? Color(0xFF57733C)
-                              : Color(0xFF8C3414),
+                              : Brands.bakeryColor,
                           shape: BoxShape.circle,
                         ),
                       ),
