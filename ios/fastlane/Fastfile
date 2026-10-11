@@ -302,4 +302,39 @@ platform :ios do
       UI.success("No in-progress review submission")
     end
   end
+
+  # Spaceship has no wrapper for the TestFlight feedback endpoints, so these go
+  # over plain HTTPS with the same API-key token.
+  def asc_get(path, params = {})
+    require "net/http"
+    require "json"
+    asc_token
+    uri = URI("https://api.appstoreconnect.apple.com/v1/#{path}")
+    uri.query = URI.encode_www_form(params) unless params.empty?
+    req = Net::HTTP::Get.new(uri)
+    req["Authorization"] = "Bearer #{Spaceship::ConnectAPI.token.text}"
+    res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+    UI.user_error!("GET #{path}: #{res.code} #{res.body[0, 300]}") unless res.code == "200"
+    JSON.parse(res.body)
+  end
+
+  desc "Print the latest TestFlight crash reports testers have shared"
+  lane :crashes do |options|
+    app = (asc_token; Spaceship::ConnectAPI::App.find(APP_ID))
+    items = asc_get(
+      "apps/#{app.id}/betaFeedbackCrashSubmissions",
+      { "limit" => (options[:limit] || 3).to_i, "sort" => "-createdDate" },
+    )["data"] || []
+    UI.important("#{items.size} crash submission(s)")
+    out_dir = File.expand_path("../../build/ios/crashes", __dir__)
+    FileUtils.mkdir_p(out_dir)
+    items.each do |item|
+      a = item["attributes"] || {}
+      UI.message("#{a['createdDate']} #{a['deviceModel']} iOS #{a['osVersion']} — #{a['comment']}")
+      text = asc_get("betaFeedbackCrashSubmissions/#{item['id']}/crashLog").dig("data", "attributes", "logText").to_s
+      path = File.join(out_dir, "#{item['id']}.crash")
+      File.write(path, text)
+      UI.success("CRASH_LOG #{path} (#{text.length} chars)")
+    end
+  end
 end
