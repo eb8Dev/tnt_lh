@@ -39,9 +39,9 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [x] Phone-login crash fixed: Firebase phone-auth URL scheme was missing, and the Google sign-in scheme was the literal placeholder `REVERSED_CLIENT_ID`
   - [x] Notification prompt no longer blocks the first frame; asked on the signed-in home screen, and the push token is now registered right after login
   - [ ] Each step of the flow confirmed by hand on the simulator
-- [ ] 2.3 Rider app builds and launches on the iOS simulator (first ever iOS build)
+- [x] 2.3 Rider app builds and launches on the iOS simulator (first ever iOS build; login screen renders, API URL loads)
 - [ ] 2.4 Rider app core flow on iOS: login, go online, accept, navigate, proof photo, complete; background location
-- [ ] 2.5 Align iOS deployment target (Xcode project says 13.0, Podfiles say 15.6 / 14.0)
+- [x] 2.5 Align iOS deployment target (customer 15.6, rider 15.0, project and Podfile agree; both rebuilt)
 - [ ] 2.6 Push notifications: entitlements in both apps + APNs key in Firebase (owner: Apple Developer account)
 - [ ] 2.7 Signing: development team on the customer project; archive both apps
 - [ ] 2.8 App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
