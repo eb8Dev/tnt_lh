@@ -56,10 +56,10 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [x] Archive both apps (signed and exported through the pipeline)
 - [ ] 2.8 App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
 - [ ] 2.9 App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
-- [ ] 2.10 TestFlight build of both apps
+- [x] 2.10 TestFlight build of both apps
   - [x] Customer `1.0.0+4` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+5` (processed 2026-10-12)
   - [x] Rider `1.0.0+5` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+6` (processed 2026-10-12)
-  - [ ] Owner confirms both replacement builds open on a real iPhone
+  - [x] Owner confirmed both replacement builds open on a real iPhone (2026-10-12); phone OTP login works with a test number
 - [ ] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS
 - [ ] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish)
 - [ ] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done)
