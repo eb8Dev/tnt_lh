@@ -17,13 +17,13 @@ Work branch in both app repos: `cnc-ios-foldable`.
 Decision 2026-10-11: change only what users see for now. The internal brand
 key stays `littleh` (API URLs, database, code identifiers) until Phase 4.
 
-- [ ] 1.1 Customer app: all visible wording says Cream N Crust
-- [ ] 1.2 Customer app: logo swapped (PNG from the supplied image for now)
-- [ ] 1.3 Customer app: bakery theme colours retuned to the logo (chocolate brown, strawberry pink)
-- [ ] 1.4 Customer app: app name on the home screen (Android label, iOS display name, app title)
-- [ ] 1.5 Rider app: store name, bakery detection, app name
-- [ ] 1.6 Backend: user-visible strings (outlet name, portal messages) — needs a push to `main` to go live
-- [ ] 1.7 Web app (`tnt-lh-customer`): visible wording and logo
+- [x] 1.1 Customer app: all visible wording says Cream N Crust (`e0b6669`; names live in `lib/core/brand.dart`)
+- [x] 1.2 Customer app: logo swapped (PNG from the supplied image for now)
+- [x] 1.3 Customer app: bakery theme colours retuned to the logo (chocolate brown `#63290C`, strawberry pink `#E56B8F`) — owner to eyeball
+- [x] 1.4 Customer app: app name on the home screen (Android "Teas n Trees / Cream N Crust", iOS "TNT & CNC") — owner to confirm the names
+- [x] 1.5 Rider app: store name, bakery detection, app name (`c7a2c54`; Android label "TNT - CNC Riders")
+- [ ] 1.6 Backend: user-visible strings (outlet name, portal messages, coupon message) — coded on branch `cnc-rebrand` (`0f69bda`); **not live until merged and pushed to `main`**
+- [ ] 1.7 Web app (`tnt-lh-customer`): visible wording and logo — coded on branch `cnc-rebrand` (`aad3218`), builds; **not yet checked in a browser or deployed to the VM**
 - [ ] 1.8 Replace the stopgap PNG with the final SVG logo when it arrives
 - [ ] 1.9 Store listings: Play listing text and screenshots (owner, in Play Console)
 - [ ] 1.10 Admin panels: visible wording (their team; separate repos)
@@ -61,6 +61,13 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
 - [ ] 4.3 Apps and web app switch to the new key; rename internal identifiers
 - [ ] 4.4 Rotate the credentials exposed in the public backend repo (Atlas password, JWT secret, Firebase service-account key) and scrub `.env.example`
 
+## Open questions for the owner
+
+- App names under the icon: Android customer "Teas n Trees / Cream N Crust", iOS customer "TNT & CNC", Android rider "TNT - CNC Riders". OK, or different?
+- Web app still shows `hello@littlehbakery.in` as the bakery contact email, and the About page still says "We believe in Little Happiness". New email / new line?
+- Web URLs still contain `/littleh/...` (it is the brand key). Changes with Phase 4.
+
 ## Deviations log
 
 - 2026-10-11 — Baseline was committed on a new branch `cnc-ios-foldable` rather than `main`, so the rebrand/iOS/foldable work can be reviewed as one unit. Nothing pushed.
+- 2026-10-11 — Backend and web rebrand commits sit on a `cnc-rebrand` branch in each repo. Backend `main` auto-deploys to production on push, so going live is a deliberate step.
