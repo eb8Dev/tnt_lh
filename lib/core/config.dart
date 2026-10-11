@@ -7,7 +7,13 @@ class AppConfig {
   // overrides either at runtime.
   static const String _prodBaseUrl = "https://api.teasntrees.in/api";
   static const String _devBaseUrl = "http://10.0.2.2:5000/api";
-  static String _baseUrl = kDebugMode ? _devBaseUrl : _prodBaseUrl;
+  // Testers (and debug runs) hit production — we don't run a local backend
+  // anymore. Flip _useLocalBackend to true only when actively developing the
+  // API against a local emulator.
+  static const bool _useLocalBackend = false;
+  static String _baseUrl = (_useLocalBackend && kDebugMode)
+      ? _devBaseUrl
+      : _prodBaseUrl;
   static const String defaultBrand = "teasntrees";
 
   // Google Maps / Directions API key (dev; rotate + restrict for prod).

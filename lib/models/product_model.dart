@@ -7,12 +7,18 @@ class Category {
   final String? description;
   final String brand; // 'teasntrees' or 'littleh'
 
+  /// Number of available products in this category. Null when the backend
+  /// hasn't supplied it (older builds/endpoints) — the menu sheet then just
+  /// hides the count rather than showing a wrong zero.
+  final int? productCount;
+
   Category({
     required this.id,
     required this.name,
     this.image,
     this.description,
     required this.brand,
+    this.productCount,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -22,12 +28,15 @@ class Category {
       brandStr = json['brand'].toString().toLowerCase().trim();
     }
 
+    final rawCount = json['productCount'] ?? json['count'];
+
     return Category(
       id: AppFormatters.parseId(json['_id'] ?? json['id']),
       name: json['name'] ?? '',
       image: json['image'] ?? json['icon'],
       description: json['description'],
       brand: brandStr,
+      productCount: rawCount is num ? rawCount.toInt() : null,
     );
   }
 }

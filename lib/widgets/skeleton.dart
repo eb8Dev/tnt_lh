@@ -87,27 +87,27 @@ class ProductCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 145.h,
-      padding: EdgeInsets.all(8.r),
+      height: 108.h,
+      padding: EdgeInsets.all(6.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(32.r),
+        borderRadius: BorderRadius.circular(24.r),
         border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
       ),
       child: Row(
         children: [
-          Skeleton(width: 129.w, height: 129.h, radius: 26),
-          SizedBox(width: 16.w),
+          Skeleton(width: 96.w, height: 96.h, radius: 20),
+          SizedBox(width: 12.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Skeleton(width: 140.w, height: 16.h),
+                Skeleton(width: 140.w, height: 15.h),
+                SizedBox(height: 8.h),
+                Skeleton(width: 90.w, height: 11.h),
                 SizedBox(height: 12.h),
-                Skeleton(width: 90.w, height: 12.h),
-                SizedBox(height: 16.h),
-                Skeleton(width: 70.w, height: 20.h, radius: 10),
+                Skeleton(width: 64.w, height: 18.h, radius: 9),
               ],
             ),
           ),

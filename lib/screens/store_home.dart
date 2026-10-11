@@ -12,6 +12,7 @@ import 'package:tnt_lh/screens/cafe/cafe_home_content.dart';
 import 'package:tnt_lh/screens/cafe/cafe_profile_screen.dart';
 import 'package:tnt_lh/screens/cart_screen.dart';
 import 'package:tnt_lh/screens/orders_screen.dart';
+import 'package:tnt_lh/services/update_service.dart';
 import 'package:tnt_lh/widgets/store_transition_overlay.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
 
@@ -26,18 +27,26 @@ class StoreHomeScreen extends ConsumerStatefulWidget {
 class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   int _selectedIndex = 0;
 
+  // The four tabs map directly to page indices now that the centre store-switch
+  // FAB is gone (the switch moved to a top segmented control on the home tab).
+  static const int _profileTab = 3;
+
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
+    // Check for a newer build once the home is on screen (Play on Android,
+    // App Store lookup on iOS). Fire-and-forget; it never blocks or throws.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) UpdateService.check(context);
+    });
   }
 
   Future<void> _onItemTapped(int index) async {
     if (index == _selectedIndex) return;
 
     // Leaving the profile mid-edit would silently bin the changes, so ask first.
-    const profileTab = 4;
-    if (_selectedIndex == profileTab &&
+    if (_selectedIndex == _profileTab &&
         ref.read(profileHasUnsavedChangesProvider)) {
       final leave = await _confirmDiscardChanges();
       if (leave != true) return;
@@ -135,24 +144,35 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     );
   }
 
-  void _handleStoreSwitch() {
-    HapticFeedback.selectionClick();
+  /// Cross into a specific store from the top segmented switcher. No-ops if it's
+  /// already the active brand. The full-screen radial wipe (kept from the old
+  /// FAB) sells the "you're entering a different store" moment; it now
+  /// originates from the top where the switcher lives.
+  void _switchToBrand(String targetBrand) {
     final currentBrand = ref.read(brandProvider);
-    final targetBrand = currentBrand == 'teasntrees' ? 'littleh' : 'teasntrees';
+    if (targetBrand == currentBrand) return;
 
-    // Determine target color and logo
+    HapticFeedback.selectionClick();
+
     final targetColor = targetBrand == 'teasntrees'
-        ? Color(0xFF57733C)
-        : Color(0xFF8C3414);
+        ? const Color(0xFF57733C)
+        : const Color(0xFF8C3414);
 
     final targetLogo = targetBrand == 'teasntrees'
         ? "assets/images/teas_n_trees_no_bg.png"
         : "assets/images/little_h_logo_no_bg.png";
 
+    // Teas N Trees is the left segment, Little H the right — start the wipe
+    // under whichever one was tapped, up near the switcher.
+    final originAlignment = targetBrand == 'teasntrees'
+        ? const Alignment(-0.6, -0.82)
+        : const Alignment(0.6, -0.82);
+
     StoreTransitionOverlay.show(
       context,
       color: targetColor,
       logoAsset: targetLogo,
+      originAlignment: originAlignment,
       onTransitionPoint: () {
         ref.read(brandProvider.notifier).setBrand(targetBrand);
       },
@@ -164,127 +184,95 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     final brand = ref.watch(brandProvider);
 
     final List<Widget> pages = [
-      BrandHomeContent(brand: brand, onSwitchStore: _handleStoreSwitch),
-      CartScreen(),
-      OrdersScreen(),
-      CafeProfileScreen(),
+      BrandHomeContent(brand: brand, onSelectStore: _switchToBrand),
+      const CartScreen(),
+      const OrdersScreen(),
+      const CafeProfileScreen(),
     ];
-
-    // Map _selectedIndex to page index since we have 4 pages but 5 slots (1 is FAB)
-    int pageIndex = _selectedIndex;
-    if (_selectedIndex > 1) pageIndex = _selectedIndex - 1;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // IndexedStack keeps every tab's state alive (scroll position, search
       // text). A keyed cross-fade here would remount and lose all of it, so the
       // liveness comes from the haptic on tap instead of a page fade.
-      // The active-order bar sits just above the bottom nav on every tab, so an
-      // in-flight order is always one tap from tracking. IndexedStack stays in
-      // an Expanded so tab state is still preserved.
-      body: Column(
+      body: IndexedStack(index: _selectedIndex, children: pages),
+      // A floating pill nav with the active-order card riding just above it, so
+      // an in-flight order is always one tap from tracking no matter the tab.
+      // Both reserve real layout space (they're not a pure overlay), so no
+      // screen's own bottom content — the cart checkout footer especially — is
+      // ever hidden behind them.
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(child: IndexedStack(index: pageIndex, children: pages)),
           const ActiveOrderBar(),
+          _buildFloatingNav(brand),
         ],
       ),
-      floatingActionButton: TactileButton(
-        onTap: _handleStoreSwitch,
-        child: Container(
-          width: 64.w,
-          height: 64.h,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.onPrimary,
-                Theme.of(context).colorScheme.inversePrimary,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.4),
-                blurRadius: 15,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(12.0.r),
-            child: Image.asset(
-              brand == 'teasntrees'
-                  ? "assets/images/little_h_logo_no_bg.png"
-                  : "assets/images/teas_n_trees_no_bg.png",
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-      ),
+    );
+  }
 
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: Container(
+  Widget _buildFloatingNav(String brand) {
+    final cartCount = ref.watch(cartProvider).value?.itemCount ?? 0;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+        height: 64.h,
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
         decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.03)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: Offset(0, -5),
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        child: BottomAppBar(
-          shape: CircularNotchedRectangle(),
-          notchMargin: 10,
-          color: Colors.white,
-          elevation: 0,
-          child: SizedBox(
-            height: 60.h,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, PhosphorIcons.house(PhosphorIconsStyle.fill), PhosphorIcons.house(), "Home"),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final cart = ref.watch(cartProvider).value;
-                    final count = cart?.itemCount ?? 0;
-                    return _buildNavItem(
-                      1,
-                      brand == 'teasntrees'
-                          ? PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill)
-                          : PhosphorIcons.basket(PhosphorIconsStyle.fill),
-                      brand == 'teasntrees'
-                          ? PhosphorIcons.shoppingBag()
-                          : PhosphorIcons.basket(),
-                      "Bag",
-                      badgeCount: count,
-                    );
-                  },
-                ),
-                SizedBox(width: 48.w), // Space for FAB
-                _buildNavItem(
-                  3,
-                  PhosphorIcons.receipt(PhosphorIconsStyle.fill),
-                  PhosphorIcons.receipt(PhosphorIconsStyle.fill),
-                  "Orders",
-                ),
-                _buildNavItem(
-                  4,
-                  PhosphorIcons.user(PhosphorIconsStyle.fill),
-                  PhosphorIcons.user(),
-                  "Profile",
-                ),
-              ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNavItem(
+              0,
+              PhosphorIcons.house(PhosphorIconsStyle.fill),
+              PhosphorIcons.house(),
+              "Home",
             ),
-          ),
+            _buildNavItem(
+              1,
+              brand == 'teasntrees'
+                  ? PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill)
+                  : PhosphorIcons.basket(PhosphorIconsStyle.fill),
+              brand == 'teasntrees'
+                  ? PhosphorIcons.shoppingBag()
+                  : PhosphorIcons.basket(),
+              "Bag",
+              badgeCount: cartCount,
+            ),
+            _buildNavItem(
+              2,
+              PhosphorIcons.receipt(PhosphorIconsStyle.fill),
+              PhosphorIcons.receipt(),
+              "Orders",
+            ),
+            _buildNavItem(
+              3,
+              PhosphorIcons.user(PhosphorIconsStyle.fill),
+              PhosphorIcons.user(),
+              "Profile",
+            ),
+          ],
         ),
       ),
     );
   }
 
+  /// An expanding-pill nav item: the selected tab fills with the brand colour
+  /// and reveals its label; the rest stay as compact icons. Matches the modern
+  /// floating-nav look (Zomato/Swiggy) the client referenced.
   Widget _buildNavItem(
     int index,
     IconData activeIcon,
@@ -293,10 +281,22 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     int badgeCount = 0,
   }) {
     final isSelected = _selectedIndex == index;
-    return Expanded(
-      child: TactileButton(
-        onTap: () => _onItemTapped(index),
-        child: Column(
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return TactileButton(
+      onTap: () => _onItemTapped(index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 16.w : 12.w,
+          vertical: 10.h,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Stack(
@@ -304,47 +304,48 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               children: [
                 Icon(
                   isSelected ? activeIcon : inactiveIcon,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.black26,
-                  size: 26.sp,
+                  color: isSelected ? Colors.white : Colors.black38,
+                  size: 24.sp,
                 ),
                 if (badgeCount > 0)
                   Positioned(
-                    top: -4,
-                    right: -6,
+                    top: -6,
+                    right: -8,
                     child: Container(
-                      padding: EdgeInsets.all(4.r),
+                      padding: EdgeInsets.all(3.r),
+                      constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.w),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5.w),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          width: 1,
+                        ),
                       ),
-                      constraints: BoxConstraints(minWidth: 18, minHeight: 18),
                       child: Text(
                         '$badgeCount',
-                        style: TextStyle(
-                          color: Colors.white,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          color: primary,
                           fontSize: 9.sp,
                           fontWeight: FontWeight.bold,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
               ],
             ),
-            SizedBox(height: 4.h),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 10.sp,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.black26,
+            if (isSelected) ...[
+              SizedBox(width: 8.w),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

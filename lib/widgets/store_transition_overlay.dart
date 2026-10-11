@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:math' as math;
 
+/// The store-switch transition — a calm vertical "fall" that fits the flat,
+/// floating redesign (the old radial wipe + elastic logo pop read as a splash
+/// screen). A solid panel in the target brand's colour:
+///   1. drops in from the top and lands to cover the screen,
+///   2. holds briefly while the brand wordmark fades in (no bounce),
+///   3. keeps falling out the bottom, revealing the already-reskinned store
+///      from the top down.
+/// The brand swap ([onTransitionPoint]) happens while fully covered, so the
+/// recolour is never seen mid-flight.
 class StoreTransitionOverlay extends StatefulWidget {
   final Color color;
   final String logoAsset;
   final VoidCallback onTransitionPoint;
   final VoidCallback onComplete;
+
+  /// The tapped store segment (fraction of the screen per axis). Retained for
+  /// call-site compatibility; the fall itself is purely vertical.
+  final Alignment originAlignment;
 
   const StoreTransitionOverlay({
     super.key,
@@ -14,6 +26,7 @@ class StoreTransitionOverlay extends StatefulWidget {
     required this.logoAsset,
     required this.onTransitionPoint,
     required this.onComplete,
+    this.originAlignment = const Alignment(0, -0.75),
   });
 
   static void show(
@@ -21,6 +34,7 @@ class StoreTransitionOverlay extends StatefulWidget {
     required Color color,
     required String logoAsset,
     required VoidCallback onTransitionPoint,
+    Alignment originAlignment = const Alignment(0, -0.75),
   }) {
     late OverlayEntry entry;
     entry = OverlayEntry(
@@ -28,6 +42,7 @@ class StoreTransitionOverlay extends StatefulWidget {
         color: color,
         logoAsset: logoAsset,
         onTransitionPoint: onTransitionPoint,
+        originAlignment: originAlignment,
         onComplete: () {
           entry.remove();
         },
@@ -43,10 +58,6 @@ class StoreTransitionOverlay extends StatefulWidget {
 class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _expandAnimation;
-  late Animation<double> _logoAnimation;
-  late Animation<double> _fadeAnimation;
-
   bool _transitionCalled = false;
 
   @override
@@ -54,26 +65,13 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1250),
     );
 
-    _expandAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(0.0, 0.6, curve: Curves.easeInOutCubic),
-    );
-
-    _logoAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(0.3, 0.8, curve: Curves.elasticOut),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(0.8, 1.0, curve: Curves.easeIn),
-    );
-
+    // Swap the brand while the screen is fully covered (mid-hold), so the
+    // recolour is hidden.
     _controller.addListener(() {
-      if (_controller.value >= 0.6 && !_transitionCalled) {
+      if (_controller.value >= 0.5 && !_transitionCalled) {
         _transitionCalled = true;
         widget.onTransitionPoint();
       }
@@ -88,90 +86,89 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
     super.dispose();
   }
 
+  /// Vertical position of the panel in screen-height units:
+  /// -1 = just above the top, 0 = covering, +1 = fallen out the bottom.
+  double _panelY(double t) {
+    const dropEnd = 0.30; // panel has landed (~375ms)
+    const holdEnd = 0.66; // covered pause ends (~450ms of breathing room)
+    if (t < dropEnd) {
+      final p = Curves.easeOutCubic.transform(t / dropEnd);
+      return -1.0 + p; // -1 -> 0
+    }
+    if (t < holdEnd) {
+      return 0.0; // fully covering — the pause
+    }
+    final p = Curves.easeInCubic.transform((t - holdEnd) / (1 - holdEnd));
+    return p; // 0 -> +1
+  }
+
+  /// Wordmark opacity: fades in as the panel lands, holds through the covered
+  /// pause so it can actually be read, then fades out as it drops away.
+  double _logoOpacity(double t) {
+    if (t < 0.22) return 0;
+    if (t < 0.34) return (t - 0.22) / 0.12; // fade in
+    if (t < 0.60) return 1; // hold — ~325ms fully visible
+    if (t < 0.70) return 1 - (t - 0.60) / 0.10; // fade out
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final maxRadius =
-        math.sqrt(size.width * size.width + size.height * size.height) * 1.2;
-    // FAB is centerDocked, roughly at (width/2, height - 60)
-    final fabCenter = Offset(size.width / 2, size.height - 60);
+    final size = MediaQuery.sizeOf(context);
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Opacity(
-          opacity: 1.0 - _fadeAnimation.value,
-          child: Stack(
-            children: [
-              // Circular expansion
-              CustomPaint(
-                size: size,
-                painter: CircularExpandPainter(
-                  center: fabCenter,
-                  radius: _expandAnimation.value * maxRadius,
-                  color: widget.color,
-                ),
-              ),
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final t = _controller.value;
+          final dy = _panelY(t) * size.height;
+          final logoOpacity = _logoOpacity(t).clamp(0.0, 1.0);
 
-              // Logo transition
-              if (_controller.value > 0.2)
+          return Transform.translate(
+            offset: Offset(0, dy),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // The falling colour panel.
+                ColoredBox(color: widget.color),
+                // The wordmark rides with it, fading in on the way down with a
+                // faint settle (no bounce) so the pause reads as deliberate.
                 Center(
-                  child: Transform.scale(
-                    scale: _logoAnimation.value,
-                    child: Opacity(
-                      opacity: (_logoAnimation.value * 2).clamp(0.0, 1.0),
+                  child: Opacity(
+                    opacity: logoOpacity,
+                    child: Transform.scale(
+                      scale: 0.96 + 0.04 * logoOpacity,
                       child: Container(
-                        padding: EdgeInsets.all(20.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 30,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
-                        ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 26.w,
+                        vertical: 22.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
                         child: Image.asset(
                           widget.logoAsset,
-                          width: 160.w,
-                          height: 160.h,
+                          width: 130.w,
+                          height: 84.h,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
-  }
-}
-
-class CircularExpandPainter extends CustomPainter {
-  final Offset center;
-  final double radius;
-  final Color color;
-
-  CircularExpandPainter({
-    required this.center,
-    required this.radius,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, radius, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CircularExpandPainter oldDelegate) {
-    return oldDelegate.radius != radius || oldDelegate.color != color;
   }
 }
