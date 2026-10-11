@@ -53,12 +53,12 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [x] Rider project moved to team `3PH4PG45KG`
   - [x] fastlane pipeline ported from Sujatha Caterers into both apps (`ios/fastlane`): `status`, `beta`, `wait_build`, `submit`, `review_status`, `cancel_review`
   - [x] App Store prerequisites: iPhone-only and portrait-only (as the other apps), Android icon used as the iOS icon with no alpha, export-compliance flag, `ExportOptions.plist`
-  - [ ] Archive both apps (done as part of 2.10)
+  - [x] Archive both apps (signed and exported through the pipeline)
 - [ ] 2.8 App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
 - [ ] 2.9 App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
-- [ ] 2.10 TestFlight build of both apps
-  - [ ] Customer `1.0.0+4` uploaded and processed
-  - [ ] Rider `1.0.0+5` uploaded and processed
+- [x] 2.10 TestFlight build of both apps
+  - [x] Customer `1.0.0+4` uploaded and processed (VALID, 2026-10-11)
+  - [x] Rider `1.0.0+5` uploaded and processed (VALID, 2026-10-11)
 - [ ] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS
 - [ ] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish)
 - [ ] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done)
