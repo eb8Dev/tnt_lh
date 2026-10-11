@@ -491,6 +491,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				DEVELOPMENT_TEAM = 3PH4PG45KG;
 				PRODUCT_BUNDLE_IDENTIFIER = com.manuen.tntLh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -673,6 +675,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				DEVELOPMENT_TEAM = 3PH4PG45KG;
 				PRODUCT_BUNDLE_IDENTIFIER = com.manuen.tntLh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -695,6 +699,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				CODE_SIGN_ENTITLEMENTS = Runner/RunnerRelease.entitlements;
+				DEVELOPMENT_TEAM = 3PH4PG45KG;
 				PRODUCT_BUNDLE_IDENTIFIER = com.manuen.tntLh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
