@@ -1051,11 +1051,10 @@ packages:
   phosphor_flutter:
     dependency: "direct main"
     description:
-      name: phosphor_flutter
-      sha256: "8a14f238f28a0b54842c5a4dc20676598dd4811fcba284ed828bd5a262c11fde"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.0"
+      path: "packages/phosphor_flutter"
+      relative: true
+    source: path
+    version: "2.1.0+flutter347"
   pin_code_fields:
     dependency: "direct main"
     description:

@@ -50,7 +50,11 @@ dependencies:
   flutter_local_notifications: ^20.0.0
   google_fonts: ^8.0.2
   firebase_remote_config: ^6.2.0
-  phosphor_flutter: ^2.1.0
+  # Vendored and patched: the pub.dev release (2.1.0, May 2024) subclasses
+  # IconData, which Flutter 3.47 made final, so it no longer compiles.
+  # See packages/phosphor_flutter/README.md.
+  phosphor_flutter:
+    path: packages/phosphor_flutter
   # Image.network keeps only an in-memory cache, so every cold start
   # re-downloaded the entire menu over the customer's mobile data.
   cached_network_image: ^3.4.1

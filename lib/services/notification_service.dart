@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
@@ -10,11 +11,22 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
+  static bool _listening = false;
+
+  /// Wires up notification handling. Runs before the first frame, so it must
+  /// not prompt and must not wait on the network: the permission prompt used to
+  /// be shown from here, which on iOS left a blank screen behind a system
+  /// dialog on the very first launch. Asking is [enableForSignedInUser]'s job.
   static Future<void> initialize() async {
     const initializationSettingsAndroid = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const initializationSettingsIOS = DarwinInitializationSettings();
+    // Left to their defaults these would raise the iOS permission prompt here.
+    const initializationSettingsIOS = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
     const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsIOS,
@@ -26,10 +38,6 @@ class NotificationService {
         debugPrint('🖱️ Local Notification Clicked: ${details.payload}');
       },
     );
-
-    // Request FCM permissions
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
 
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -43,15 +51,42 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('🖱️ Customer App: Notification Clicked: ${message.data}');
     });
+  }
 
-    // Register token if user is already logged in
-    final token = await AuthService.getToken();
-    if (token != null) {
-      final fcmToken = await messaging.getToken();
-      if (fcmToken != null) {
-        _registerTokenWithBackend(token, fcmToken);
+  /// Asks for notification permission and registers this device for pushes.
+  /// Called once the customer is signed in and looking at the home screen, so
+  /// the prompt appears in context. Registration used to happen only at app
+  /// start for an already-signed-in user, so someone who had just logged in got
+  /// no order pushes until they next cold-started the app.
+  ///
+  /// Never throws: on iOS the FCM token isn't available until APNs has issued
+  /// its own (never, on a simulator), and that must not break the app.
+  static Future<void> enableForSignedInUser() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+
+      if (!_listening) {
+        _listening = true;
+        messaging.onTokenRefresh.listen(_registerCurrentUser);
       }
+
+      if (defaultTargetPlatform == TargetPlatform.iOS &&
+          await messaging.getAPNSToken() == null) {
+        debugPrint('Customer FCM: no APNs token yet; will register on refresh');
+        return;
+      }
+
+      final fcmToken = await messaging.getToken();
+      if (fcmToken != null) await _registerCurrentUser(fcmToken);
+    } catch (e) {
+      debugPrint('❌ Customer FCM setup error: $e');
     }
+  }
+
+  static Future<void> _registerCurrentUser(String fcmToken) async {
+    final token = await AuthService.getToken();
+    if (token != null) await _registerTokenWithBackend(token, fcmToken);
   }
 
   static Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -61,7 +96,10 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
     );
-    const notificationDetails = NotificationDetails(android: androidDetails);
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
 
     await _localNotifications.show(
       id: message.hashCode,

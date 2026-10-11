@@ -52,7 +52,13 @@
 		<string>Editor</string>
 		<key>CFBundleURLSchemes</key>
 		<array>
-		<string>REVERSED_CLIENT_ID</string>
+		<!-- Google sign-in callback: REVERSED_CLIENT_ID from GoogleService-Info.plist.
+		     This was left as the literal placeholder text, so the callback could
+		     never have returned to the app. -->
+		<string>com.googleusercontent.apps.138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r</string>
+		<!-- Firebase phone sign-in (reCAPTCHA fallback): the encoded GOOGLE_APP_ID.
+		     Without it FirebaseAuth kills the app the moment an OTP is requested. -->
+		<string>app-1-138992055382-ios-178b423176878d1e61b7f7</string>
 		</array>
 	</dict>
 	</array>

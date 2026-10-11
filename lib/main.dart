@@ -98,10 +98,9 @@ void main() async {
 
   // FCM Setup
   // Foreground + tap notification handling (local notifications, routing).
+  // The permission prompt and token registration happen later, on the signed-in
+  // home screen (NotificationService.enableForSignedInUser).
   await NotificationService.initialize();
-
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-  await messaging.requestPermission(alert: true, badge: true, sound: true);
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 

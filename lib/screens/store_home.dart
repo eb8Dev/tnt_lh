@@ -13,6 +13,7 @@ import 'package:tnt_lh/screens/cafe/cafe_home_content.dart';
 import 'package:tnt_lh/screens/cafe/cafe_profile_screen.dart';
 import 'package:tnt_lh/screens/cart_screen.dart';
 import 'package:tnt_lh/screens/orders_screen.dart';
+import 'package:tnt_lh/services/notification_service.dart';
 import 'package:tnt_lh/services/update_service.dart';
 import 'package:tnt_lh/widgets/store_transition_overlay.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
@@ -40,6 +41,9 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     // App Store lookup on iOS). Fire-and-forget; it never blocks or throws.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) UpdateService.check(context);
+      // Signed in and on the home screen: the right moment to ask about
+      // notifications and register this device for order pushes.
+      NotificationService.enableForSignedInUser();
     });
   }
 
