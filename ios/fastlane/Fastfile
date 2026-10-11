@@ -1,0 +1,305 @@
+default_platform(:ios)
+
+# App Store Connect API key — the same key drives app creation, signing lookups
+# and the TestFlight upload, so no interactive Apple ID login is ever needed.
+#
+# The key is issued per Apple Developer *team*, not per app, so this is the same
+# key the conclave and Sujatha Caterers apps use. `com.manuen.tntLh` is registered
+# under this team, which is why one key covers it. It lives outside the repo
+# and must never be committed.
+#
+# These lanes are the Sujatha Caterers pipeline, ported as-is; its runbook
+# (sujatha_caterers/scripts/RELEASE_IOS_RUNBOOK.md) explains every odd-looking
+# step. Keep the two in step.
+ASC_KEY_ID   = "79TJL426G2"
+ASC_ISSUER   = "cb07fb7a-b51b-41a8-9466-d07c578a4790"
+ASC_KEY_PATH = File.expand_path("~/.conclave-secrets/ASC_API_AuthKey_79TJL426G2.p8")
+APP_ID       = "com.manuen.tntLh"
+TEAM_ID      = "3PH4PG45KG"
+
+# Read once from pubspec.yaml so the version is never typed twice. Passing the
+# wrong one to `deliver` is the classic way to submit a build that does not
+# exist, or to attach a binary to the previous version's review.
+# Named pubspec_* rather than build_number/app_version, which are also fastlane
+# action names and would be ambiguous to read inside a lane.
+#
+# These follow pubspec.yaml, which is NOT always what TestFlight holds: the
+# Android release script bumps the build number to stay ahead of Play, so after
+# an Android release the pubspec is ahead of the iOS build already uploaded.
+# When they differ, pass the number explicitly — `fastlane ios submit build:11`
+# — and check `fastlane ios status` first for what is actually on App Store
+# Connect. Submitting a build that was never uploaded fails with the unhelpful
+# "Build number: N does not exist".
+def pubspec_version
+  pubspec = File.read(File.expand_path("../../pubspec.yaml", __dir__))
+  pubspec[/^version:\s*([0-9]+\.[0-9]+\.[0-9]+)/, 1] or
+    UI.user_error!("Could not read version from pubspec.yaml")
+end
+
+def pubspec_build
+  pubspec = File.read(File.expand_path("../../pubspec.yaml", __dir__))
+  pubspec[/^version:\s*[0-9]+\.[0-9]+\.[0-9]+\+([0-9]+)/, 1] or
+    UI.user_error!("Could not read build number from pubspec.yaml")
+end
+
+platform :ios do
+  def asc_key
+    app_store_connect_api_key(
+      key_id: ASC_KEY_ID,
+      issuer_id: ASC_ISSUER,
+      key_filepath: ASC_KEY_PATH,
+      in_house: false,
+    )
+  end
+
+  def asc_token
+    require "spaceship"
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id: ASC_KEY_ID, issuer_id: ASC_ISSUER, filepath: ASC_KEY_PATH,
+    )
+  end
+
+  desc "Show the app's App Store state and the latest builds"
+  lane :status do
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    if app.nil?
+      UI.important("No App Store Connect record yet — run `fastlane ios ensure_app`")
+      next
+    end
+    UI.success("App: #{app.name} (#{app.id})")
+    app.get_app_store_versions.first(4).each do |v|
+      UI.important("version #{v.version_string}: #{v.app_store_state}")
+    end
+    Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 5).each do |b|
+      UI.message("build #{b.version}: #{b.processing_state}")
+    end
+  end
+
+  desc "Create the App Store Connect record if it does not exist yet"
+  lane :ensure_app do
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    if app
+      UI.success("App already exists in App Store Connect: #{app.name} (#{app.id})")
+    else
+      app = Spaceship::ConnectAPI::App.create(
+        name: "Teas N Trees & Cream N Crust",
+        version_string: pubspec_version,
+        sku: "tntlh-customer",
+        primary_locale: "en-US",
+        bundle_id: APP_ID,
+        platforms: ["IOS"],
+      )
+      UI.success("Created App Store Connect record: #{app.id}")
+    end
+  end
+
+  desc "Push App Store listing metadata + screenshots (no binary, no submission)"
+  lane :push_metadata do
+    deliver(
+      api_key: asc_key,
+      app_identifier: APP_ID,
+      app_version: pubspec_version,
+      skip_binary_upload: true,
+      overwrite_screenshots: true,
+      run_precheck_before_submit: false,
+      submit_for_review: false,
+      force: true, # no interactive HTML preview
+    )
+  end
+
+  desc "Poll until a build finishes App Store Connect processing"
+  lane :wait_build do |options|
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    target = (options[:build] || pubspec_build).to_s
+    40.times do
+      builds = Spaceship::ConnectAPI::Build.all(app_id: app.id, sort: "-uploadedDate", limit: 20)
+      b = builds.find { |x| x.version.to_s == target }
+      state = b&.processing_state
+      UI.message("build #{target}: #{state || 'not visible yet'}")
+      if state == "VALID"
+        UI.success("BUILD_READY #{target}")
+        break
+      elsif state == "FAILED" || state == "INVALID"
+        UI.user_error!("Build #{target} processing #{state}")
+      end
+      sleep 30
+    end
+  end
+
+  desc "Upload an already-built IPA to TestFlight (no rebuild)"
+  lane :upload_only do
+    ipa = Dir[File.expand_path("../../build/ios/ipa/*.ipa", __dir__)].max_by { |f| File.mtime(f) }
+    UI.user_error!("No IPA found — run the build first") if ipa.nil?
+    upload_to_testflight(
+      api_key: asc_key,
+      ipa: ipa,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+    )
+  end
+
+  desc "Build the Flutter release archive, export a signed IPA, and upload to TestFlight"
+  lane :beta do
+    ensure_app
+
+    archive = File.expand_path("../../build/ios/archive/Runner.xcarchive", __dir__)
+    export_dir = File.expand_path("../../build/ios/ipa", __dir__)
+
+    # Compile with Flutter but do NOT let it archive.
+    #
+    # `flutter build ipa` runs xcodebuild without an Apple account and without
+    # the API key, so it cannot fetch a profile for this bundle id. It falls
+    # back to the wildcard "iOS Team Provisioning Profile: *", which carries no
+    # aps-environment, and the archive dies on the push entitlement even though
+    # Push is enabled on the App ID. Archiving ourselves below — with the key —
+    # lets Xcode create the right profile headlessly.
+    Dir.chdir("../..") do
+      # fastlane runs with its own Ruby/Bundler environment, and CocoaPods was
+      # installed against a different Ruby. Inheriting that environment makes
+      # `pod` fail with "CocoaPods is installed but broken", whereupon Flutter
+      # skips pod install, silently produces no .xcarchive, and the export step
+      # below fails with the confusing "archive not found". Handing the child a
+      # stripped environment gives it the same shell a developer would have.
+      strip = ENV.keys.select do |k|
+        k.start_with?("GEM_", "BUNDLE_", "RUBYOPT", "RUBYLIB", "FASTLANE_")
+      end
+      clean = strip.to_h { |k| [k, nil] }
+
+      unless system(clean, "flutter", "build", "ios", "--release", "--no-codesign")
+        UI.user_error!("flutter build ios failed — see the output above")
+      end
+    end
+
+    # Archive with the API key so xcodebuild can create/download the App Store
+    # profile for this bundle id, push entitlement included.
+    sh(
+      "xcodebuild", "-workspace", File.expand_path("../Runner.xcworkspace", __dir__),
+      "-scheme", "Runner",
+      "-configuration", "Release",
+      "-destination", "generic/platform=iOS",
+      "-archivePath", archive,
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath", ASC_KEY_PATH,
+      "-authenticationKeyID", ASC_KEY_ID,
+      "-authenticationKeyIssuerID", ASC_ISSUER,
+      "archive",
+    )
+
+    unless File.directory?(archive)
+      UI.user_error!("No archive produced at #{archive} — check the build output above")
+    end
+
+    # Export the signed IPA from the archive using the App Store Connect API key.
+    # -allowProvisioningUpdates + the key let xcodebuild create/download the
+    # iOS Distribution cert and App Store profile headlessly.
+    sh(
+      "xcodebuild", "-exportArchive",
+      "-archivePath", archive,
+      "-exportPath", export_dir,
+      "-exportOptionsPlist", File.expand_path("../ExportOptions.plist", __dir__),
+      "-allowProvisioningUpdates",
+      "-authenticationKeyPath", ASC_KEY_PATH,
+      "-authenticationKeyID", ASC_KEY_ID,
+      "-authenticationKeyIssuerID", ASC_ISSUER,
+    )
+
+    upload_only
+  end
+
+  desc "Submit the selected build for App Store review (metadata already pushed)"
+  lane :submit do |options|
+    # Apple refuses the submission without it, and says only "not in valid
+    # state" — it never names the missing field. Costed an hour once.
+    push_whats_new
+
+    deliver(
+      api_key: asc_key,
+      app_identifier: APP_ID,
+      app_version: pubspec_version,
+      build_number: (options[:build] || pubspec_build).to_s,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: true,
+      automatic_release: true, # release automatically once approved
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        add_id_info_uses_idfa: false,
+      },
+      run_precheck_before_submit: false,
+      force: true,
+    )
+  end
+
+
+  desc "Push the release notes onto the version about to be submitted"
+  desc "Apple requires a What's New note on every update. `submit` runs with"
+  desc "skip_metadata, so without this the version sits in"
+  desc "PREPARE_FOR_SUBMISSION and the submission is refused with a bare"
+  desc "\"not in valid state\" that names no field."
+  lane :push_whats_new do
+    asc_token
+    notes_path = File.expand_path("../../scripts/release_notes.txt", __dir__)
+    UI.user_error!("No release notes at #{notes_path}") unless File.exist?(notes_path)
+    notes = File.read(notes_path).strip
+    UI.user_error!("Release notes are empty") if notes.empty?
+
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    version = app.get_app_store_versions.find do |v|
+      v.version_string == pubspec_version
+    end
+
+    # Create the version record if this is the first push for it.
+    #
+    # It has to happen here rather than in `submit`, and that ordering is a
+    # genuine knot: deliver refuses to submit a version with no What's New,
+    # and What's New cannot be written onto a version that does not exist.
+    # So this lane owns both — create, then write — and `submit` runs it first.
+    if version.nil?
+      UI.important("No App Store version #{pubspec_version} yet — creating it")
+      resp = Spaceship::ConnectAPI.post_app_store_version(
+        app_id: app.id,
+        attributes: { versionString: pubspec_version, platform: "IOS" },
+      )
+      version = resp.to_models.first
+      UI.user_error!("Could not create version #{pubspec_version}") if version.nil?
+    end
+
+    version.get_app_store_version_localizations.each do |loc|
+      loc.update(attributes: { whatsNew: notes })
+      UI.success("What's New set for #{loc.locale}")
+    end
+  end
+
+  desc "Read current App Store review status + any rejection messages"
+  lane :review_status do
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    app.get_app_store_versions(includes: "appStoreReviewDetail").first(3).each do |v|
+      UI.important("Version #{v.version_string} — state: #{v.app_store_state}")
+    end
+    begin
+      resp = Spaceship::ConnectAPI.get("resolutionCenterThreads", { "filter[app]" => app.id, "limit" => 5 })
+      UI.message(resp.to_json)
+    rescue => e
+      UI.error("resolutionCenterThreads: #{e.class} #{e.message}")
+    end
+  end
+
+  desc "Cancel any in-progress review submission (e.g. after a rejection)"
+  lane :cancel_review do
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    sub = app.get_in_progress_review_submission(platform: "IOS")
+    if sub
+      UI.important("Cancelling in-progress review submission #{sub.id} (state=#{sub.state})")
+      sub.cancel_submission
+      UI.success("Cancelled")
+    else
+      UI.success("No in-progress review submission")
+    end
+  end
+end

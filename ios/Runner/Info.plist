@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -20,10 +22,42 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r</string>
+				<string>app-1-138992055382-ios-178b423176878d1e61b7f7</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>google</string>
+		<string>com.googleusercontent.apps</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Used only while you are using the app, to set your delivery address and show your order on the map. The app never tracks your location in the background.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to set your delivery address and show your order on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to set your profile photo.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -31,61 +65,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>CFBundleURLTypes</key>
-	<array>
-	<dict>
-		<key>CFBundleTypeRole</key>
-		<string>Editor</string>
-		<key>CFBundleURLSchemes</key>
-		<array>
-		<!-- Google sign-in callback: REVERSED_CLIENT_ID from GoogleService-Info.plist.
-		     This was left as the literal placeholder text, so the callback could
-		     never have returned to the app. -->
-		<string>com.googleusercontent.apps.138992055382-aqkds67cucqdvs1tr5p7no3fjk51e96r</string>
-		<!-- Firebase phone sign-in (reCAPTCHA fallback): the encoded GOOGLE_APP_ID.
-		     Without it FirebaseAuth kills the app the moment an OTP is requested. -->
-		<string>app-1-138992055382-ios-178b423176878d1e61b7f7</string>
-		</array>
-	</dict>
-	</array>
-
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-	<string>google</string>
-	<string>com.googleusercontent.apps</string>
-	</array>
-
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We use your location to set your delivery address and show your order on the map.</string>
-
-	<!-- The profile screen picks a photo from the gallery (ImageSource.gallery).
-	     Without this key iOS TERMINATES the app the moment the picker opens — not
-	     a permission denial, a hard crash — and App Review rejects the build. -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Used to set your profile photo.</string>
-
-	<!-- Order updates arrive by push (firebase_messaging). Without
-	     `remote-notification` iOS won't deliver them while the app is in the
-	     background — which is when a customer actually needs to hear that their
-	     order is on its way. -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-		<string>fetch</string>
 	</array>
 </dict>
 </plist>
