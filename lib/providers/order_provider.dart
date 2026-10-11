@@ -121,12 +121,27 @@ final orderProvider = AsyncNotifierProvider<OrderNotifier, OrdersState>(() {
   return OrderNotifier();
 });
 
+/// An order that hasn't finished, and whether it has gone quiet.
+typedef ActiveOrder = ({Order order, bool delayed});
+
 /// The most recent order that is still in progress, or null.
 ///
 /// Feeds the persistent "your order is on the way" bar that testers asked to see
 /// while browsing other pages. Derived from [orderProvider] so it stays in sync
 /// with the socket-driven status updates for free.
-final activeOrderProvider = Provider<Order?>((ref) {
+///
+/// "Not finished" is not the same as "in progress". An order the store or rider
+/// never closed out stays in a live status forever, and the bar used to keep
+/// promising "On the way to you" for months. These are same-city deliveries
+/// that take an hour or two, so:
+///  - nothing has moved for [_delayedAfter]: still shown, but flagged
+///    `delayed` so the bar stops promising and offers help instead;
+///  - nothing has moved for [_abandonedAfter]: no longer treated as active at
+///    all. It stays in the Orders tab, where it can be reported.
+const _delayedAfter = Duration(hours: 3);
+const _abandonedAfter = Duration(hours: 24);
+
+final activeOrderProvider = Provider<ActiveOrder?>((ref) {
   final orders = ref.watch(orderProvider).value?.orders ?? const <Order>[];
 
   // Terminal states — anything else is still live.
@@ -138,8 +153,17 @@ final activeOrderProvider = Provider<Order?>((ref) {
     'refunded',
   };
 
+  final now = DateTime.now();
   for (final o in orders) {
-    if (!done.contains(o.status.toLowerCase())) return o;
+    if (done.contains(o.status.toLowerCase())) continue;
+
+    // No timestamp at all: assume it's current rather than hide a live order.
+    final quietFor = o.lastActivity == null
+        ? Duration.zero
+        : now.difference(o.lastActivity!);
+    if (quietFor >= _abandonedAfter) continue;
+
+    return (order: o, delayed: quietFor >= _delayedAfter);
   }
   return null;
 });

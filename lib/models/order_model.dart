@@ -10,6 +10,7 @@ class Order {
   final double tax;
   final double total;
   final String? createdAt;
+  final String? updatedAt;
   final List<OrderItem> items;
   final OrderAddress? deliveryAddress;
   final String paymentMethod;
@@ -37,6 +38,7 @@ class Order {
     required this.tax,
     required this.total,
     this.createdAt,
+    this.updatedAt,
     required this.items,
     this.deliveryAddress,
     required this.paymentMethod,
@@ -55,6 +57,11 @@ class Order {
     required this.timeline,
   });
 
+  /// When this order last moved (its last status change), falling back to when
+  /// it was placed. Null only if the server sent neither.
+  DateTime? get lastActivity =>
+      DateTime.tryParse(updatedAt ?? '') ?? DateTime.tryParse(createdAt ?? '');
+
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: AppFormatters.parseId(json['_id'] ?? json['id']),
@@ -66,6 +73,7 @@ class Order {
       tax: (json['tax'] ?? 0).toDouble(),
       total: (json['total'] ?? 0).toDouble(),
       createdAt: json['createdAt']?.toString(),
+      updatedAt: json['updatedAt']?.toString(),
       items:
           (json['items'] as List?)
               ?.map((item) => OrderItem.fromJson(item))

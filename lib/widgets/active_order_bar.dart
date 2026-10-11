@@ -44,21 +44,28 @@ class ActiveOrderBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Order? order = ref.watch(activeOrderProvider);
+    final active = ref.watch(activeOrderProvider);
 
     // AnimatedSize so it slides in/out cleanly as orders start and finish.
     return AnimatedSize(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
-      child: order == null
+      child: active == null
           ? const SizedBox(width: double.infinity)
-          : _bar(context, order),
+          : _bar(context, active.order, delayed: active.delayed),
     );
   }
 
-  Widget _bar(BuildContext context, Order order) {
+  Widget _bar(BuildContext context, Order order, {required bool delayed}) {
     final primary = Theme.of(context).colorScheme.primary;
-    final label = _statusLabel(order.status);
+    // An order that has sat in the same status for hours is not "on the way".
+    // Say so, and point at the order page, where it can be reported.
+    final label = delayed
+        ? (
+            text: 'This order is taking longer than usual',
+            icon: PhosphorIcons.warningCircle(),
+          )
+        : _statusLabel(order.status);
 
     return Container(
       margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 8.h),
@@ -105,7 +112,9 @@ class ActiveOrderBar extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      'Order #${order.orderNumber} · tap to track',
+                      delayed
+                          ? 'Order #${order.orderNumber} · tap for details and help'
+                          : 'Order #${order.orderNumber} · tap to track',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
