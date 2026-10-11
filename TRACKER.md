@@ -47,14 +47,22 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [ ] APNs key uploaded to Firebase project `tnt-lh` for both iOS apps: reuse the Conclave/Sujatha key, Key ID `YGC3BG873X`, Team ID `3PH4PG45KG`
   - [ ] Push Notifications capability enabled on both App IDs in the Apple Developer account
   - [ ] A real push received on a real iPhone (simulators can't get an APNs token)
-- [ ] 2.12 App Store Connect: register both bundle IDs and create both app records (owner; steps given 2026-10-11). Public check done: neither bundle ID is live on the store, and no app named Cream N Crust or Teas N Trees shows up in the India store
+- [x] 2.12 App Store Connect: both bundle IDs registered and both app records created by the owner — customer "Teas n Trees | Cream n Crust" (`6821685979`), rider "TnT CnC | Rider" (`6821686237`), both at version 1.0
 - [ ] 2.7 Signing and archive
   - [x] Customer project: development team set to `3PH4PG45KG` (same team as Conclave and Sujatha)
-  - [ ] Rider project: still on team `2FW2293384` — the shared APNs key only works if the rider app ships under `3PH4PG45KG`; owner to confirm, then switch
-  - [ ] Archive both apps
+  - [x] Rider project moved to team `3PH4PG45KG`
+  - [x] fastlane pipeline ported from Sujatha Caterers into both apps (`ios/fastlane`): `status`, `beta`, `wait_build`, `submit`, `review_status`, `cancel_review`
+  - [x] App Store prerequisites: iPhone-only and portrait-only (as the other apps), Android icon used as the iOS icon with no alpha, export-compliance flag, `ExportOptions.plist`
+  - [ ] Archive both apps (done as part of 2.10)
 - [ ] 2.8 App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
 - [ ] 2.9 App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
 - [ ] 2.10 TestFlight build of both apps
+  - [ ] Customer `1.0.0+4` uploaded and processed
+  - [ ] Rider `1.0.0+5` uploaded and processed
+- [ ] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS
+- [ ] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish)
+- [ ] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done)
+- [ ] 2.16 New app icon art: both current icons still carry the Little H "H" (owner to supply, with the SVG logo)
 - [ ] 2.11 Run both apps on a real iPhone
 
 ## Phase 3 — Foldables
@@ -95,3 +103,5 @@ until it is merged to `main` and pushed (which deploys).
 - 2026-10-11 — Owner forgot the rider PIN for 9515409973. PINs are hashed, so it needs a reset on production. Added `scripts/reset_rider_pin.mjs` to the backend (branch `cnc-rebrand`); the SSH run was blocked by the permission checker, so the owner runs it. The proper fix is still the admin-panel PIN reset.
 - 2026-10-11 — Found on the simulator: the active-order bar said "On the way to you" for an order left unfinished since July. The bar now flags an order as delayed after 3 hours without a status change and stops treating it as active after 24 hours. Still open: nothing on the backend closes or flags abandoned orders, and the Orders tab still lists them with their old live status.
 - 2026-10-11 — Owner's decision on abandoned orders: flag, then cancel. Built as a backend job (B.2); tested against a throwaway in-memory database, not against production data.
+- 2026-10-11 — Disk filled up mid-build (120 MB free). Freed about 10 GB by deleting today's iOS build outputs for the two apps, a test database download and Xcode's derived-data cache. Still tight: about 10 GB free on a 228 GB disk.
+- 2026-10-11 — Owner asked for the other projects' fastlane pipeline to be used here; ported from `sujatha_caterers`. Its runbook (`sujatha_caterers/scripts/RELEASE_IOS_RUNBOOK.md`) is the reference for traps.
