@@ -56,9 +56,10 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [x] Archive both apps (signed and exported through the pipeline)
 - [ ] 2.8 App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
 - [ ] 2.9 App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
-- [x] 2.10 TestFlight build of both apps
-  - [x] Customer `1.0.0+4` uploaded and processed (VALID, 2026-10-11)
-  - [x] Rider `1.0.0+5` uploaded and processed (VALID, 2026-10-11)
+- [ ] 2.10 TestFlight build of both apps
+  - [x] Customer `1.0.0+4` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+5` (processed 2026-10-12)
+  - [x] Rider `1.0.0+5` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+6` (processed 2026-10-12)
+  - [ ] Owner confirms both replacement builds open on a real iPhone
 - [ ] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS
 - [ ] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish)
 - [ ] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done)
@@ -105,3 +106,4 @@ until it is merged to `main` and pushed (which deploys).
 - 2026-10-11 — Owner's decision on abandoned orders: flag, then cancel. Built as a backend job (B.2); tested against a throwaway in-memory database, not against production data.
 - 2026-10-11 — Disk filled up mid-build (120 MB free). Freed about 10 GB by deleting today's iOS build outputs for the two apps, a test database download and Xcode's derived-data cache. Still tight: about 10 GB free on a 228 GB disk.
 - 2026-10-11 — Owner asked for the other projects' fastlane pipeline to be used here; ported from `sujatha_caterers`. Its runbook (`sujatha_caterers/scripts/RELEASE_IOS_RUNBOOK.md`) is the reference for traps.
+- 2026-10-12 — First TestFlight builds closed immediately on launch. Cause: apps built with the iOS 27 SDK must use the UIScene life cycle to launch on iOS 27; both apps still used the old one. Reproduced on an iOS 27 simulator, fixed in both, re-uploaded. Lesson: test on the newest iOS simulator, not only the one that happens to be booted. `ems/build` deleted with the owner's OK to make room.
