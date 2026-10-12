@@ -83,6 +83,18 @@ until it is merged to `main` and pushed (which deploys).
 - [ ] B.2 Stale orders: flag after 24h without activity, cancel 24h after the flag (`src/services/staleOrderService.js`). On first deploy every order abandoned before now gets flagged at once and cancelled a day later
 - [ ] B.3 Admin panel shows flagged orders (`order:stale` socket event, `staleFlaggedAt` field) — their team
 
+## Phase 5 — Requests from the business (2026-10-13)
+
+- [ ] 5.1 Rider resets a forgotten PIN themselves; admin is notified
+  - [x] Backend endpoint `POST /rider/auth/reset-pin` — branch `rider-pin-reset` (`dea1546`), tested against a throwaway local database
+  - [x] Rider app screen (SMS code → new PIN) — committed on `cnc-ios-foldable`; builds on Android and iOS; step 1 checked on the Android emulator
+  - [ ] Backend branch merged and deployed (needs the owner's go-ahead)
+  - [ ] Full flow with a real SMS code on Android and iOS (needs the backend live)
+  - [ ] Rider app's Android SHA fingerprints confirmed in Firebase (phone verification fails in release builds without them)
+  - [ ] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos
+  - [ ] New rider builds shipped (Play + TestFlight)
+- [ ] 5.2 Admin panel menu management — both panels already have Products and Categories pages (create, edit, delete, price, sizes, add-ons, image, availability); owner to say what is missing or not working
+
 ## Phase 4 — Later (agreed to defer)
 
 - [ ] 4.1 Backend: new brand key (`creamncrust`) with `littleh` kept as an alias
