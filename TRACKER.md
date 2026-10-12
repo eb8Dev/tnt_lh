@@ -98,7 +98,7 @@ until it is merged to `main` and pushed (which deploys).
 ## Phase 6 — Deployment and operations (stays on the Windows VM; no Linux VM available)
 
 - [ ] 6.1 Rotate the credentials exposed in the public backend repo (same as 4.4) — do first
-- [ ] 6.2 Backend: check job before deploy (parse every file, boot against a throwaway MongoDB, hit six endpoints) — committed locally (`.github/workflows/deploy.yml`); push blocked until the GitHub login has the `workflow` scope
+- [x] 6.2 Backend: check job before deploy (parse every file, boot against a throwaway MongoDB, hit six endpoints) — live on GitHub 2026-10-13; first run failed and skipped the deploy as designed, second passed and deployed
 - [ ] 6.3 Website: build and deploy from GitHub on push, replacing the hand-copied archive
 - [ ] 6.4 Error alerts for the backend and web apps (Sentry) — needs an account from the owner
 - [ ] 6.5 Staging copy on the same VM (second checkout, own port, own subdomain, the clone database)
