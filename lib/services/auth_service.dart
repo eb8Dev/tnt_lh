@@ -300,6 +300,27 @@ class AuthService {
     }
   }
 
+  /// Deletes the signed-in customer's account (the backend deactivates and
+  /// anonymises it). Returns null on success, or the reason it was refused —
+  /// for example an order still in progress.
+  static Future<String?> deleteAccount({String? brand}) async {
+    final url = AppConfig.buildUrl('/customer/auth/account', brand: brand);
+    try {
+      final token = await getToken();
+      final response = await http.delete(
+        url,
+        headers: {if (token != null) 'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) return null;
+      final message = jsonDecode(response.body)['message'];
+      return message is String && message.isNotEmpty
+          ? message
+          : 'Could not delete your account. Please try again.';
+    } catch (e) {
+      return 'Could not reach the server. Check your connection and try again.';
+    }
+  }
+
   static Future<void> logout({String? brand}) async {
     final refreshToken = await _storage.read(key: _refreshTokenKey);
     if (refreshToken != null) {

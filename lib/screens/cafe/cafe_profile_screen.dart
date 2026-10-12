@@ -369,6 +369,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
               _buildSupportSection(),
               Gap(Space.lg),
               _buildLogoutButton(),
+              Gap(Space.sm),
+              _buildDeleteAccountButton(),
             ],
           ),
         ),
@@ -422,8 +424,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
               ),
               const Spacer(),
               TactileButton(
-                onTap: () =>
-                    _isEditing ? _cancelEditing() : _setEditing(true),
+                onTap: () => _isEditing ? _cancelEditing() : _setEditing(true),
                 child: Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: Space.sm.w,
@@ -617,9 +618,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
           label: 'Email',
           controller: _emailController,
           icon: PhosphorIcons.envelopeSimple(),
-          validator: (v) => (v == null || !v.contains('@'))
-              ? 'Enter a valid email'
-              : null,
+          validator: (v) =>
+              (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
         ),
         if (_isEditing) ...[
           Gap(Space.md),
@@ -858,11 +858,26 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       title: 'Notifications',
       icon: PhosphorIcons.bell(),
       children: [
-        _switchRow('Push', prefs.push, (v) => _updateNotificationPreference('push', v)),
-        _switchRow('Email', prefs.email, (v) => _updateNotificationPreference('email', v)),
-        _switchRow('SMS', prefs.sms, (v) => _updateNotificationPreference('sms', v)),
-        _switchRow('Offers & treats', prefs.offers,
-            (v) => _updateNotificationPreference('offers', v)),
+        _switchRow(
+          'Push',
+          prefs.push,
+          (v) => _updateNotificationPreference('push', v),
+        ),
+        _switchRow(
+          'Email',
+          prefs.email,
+          (v) => _updateNotificationPreference('email', v),
+        ),
+        _switchRow(
+          'SMS',
+          prefs.sms,
+          (v) => _updateNotificationPreference('sms', v),
+        ),
+        _switchRow(
+          'Offers & treats',
+          prefs.offers,
+          (v) => _updateNotificationPreference('offers', v),
+        ),
       ],
     );
   }
@@ -887,9 +902,17 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       title: 'Support',
       icon: PhosphorIcons.lifebuoy(),
       children: [
-        _menuRow('Help & feedback', PhosphorIcons.chatCircleDots(), _showHelpSupport),
+        _menuRow(
+          'Help & feedback',
+          PhosphorIcons.chatCircleDots(),
+          _showHelpSupport,
+        ),
         Gap(Space.xs),
-        _menuRow('Privacy policy', PhosphorIcons.shieldCheck(), _launchPrivacyPolicy),
+        _menuRow(
+          'Privacy policy',
+          PhosphorIcons.shieldCheck(),
+          _launchPrivacyPolicy,
+        ),
       ],
     );
   }
@@ -918,6 +941,68 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
               color: Colors.black26,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Delete your account?',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Your name, phone number, email, saved addresses and photo will be '
+          'removed, and you will be signed out. This cannot be undone.\n\n'
+          'Records of past orders are kept, without your profile details.',
+          style: GoogleFonts.poppins(fontSize: 13.sp, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep my account'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final refused = await ref.read(authProvider.notifier).deleteAccount();
+    if (!mounted) return;
+    if (refused != null) {
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: refused,
+        isError: true,
+      );
+      return;
+    }
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => OnboardingScreen(onGetStarted: () {})),
+      (route) => false,
+    );
+  }
+
+  Widget _buildDeleteAccountButton() {
+    return Center(
+      child: TextButton(
+        onPressed: _confirmDeleteAccount,
+        style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+        child: Text(
+          'Delete account',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w500,
+            fontSize: 13.sp,
+          ),
         ),
       ),
     );
@@ -1016,8 +1101,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       borderRadius: BorderRadius.circular(14.r),
                     ),
                   ),
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? "Message can't be empty" : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? "Message can't be empty"
+                      : null,
                 ),
                 Gap(Space.md),
                 SizedBox(
@@ -1036,11 +1122,16 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                         final message = typed.isEmpty
                             ? messageController.text.trim()
                             : '$typed\n\n${messageController.text.trim()}';
-                        final parts = (user?.name ?? 'Customer').trim().split(' ');
+                        final parts = (user?.name ?? 'Customer').trim().split(
+                          ' ',
+                        );
                         await ContactService.submitContactForm(
-                          firstName: parts.first.isEmpty ? 'Customer' : parts.first,
-                          lastName:
-                              parts.length > 1 ? parts.sublist(1).join(' ') : '-',
+                          firstName: parts.first.isEmpty
+                              ? 'Customer'
+                              : parts.first,
+                          lastName: parts.length > 1
+                              ? parts.sublist(1).join(' ')
+                              : '-',
                           email: user?.email ?? 'anonymous@example.com',
                           subject: 'Support',
                           message: message,

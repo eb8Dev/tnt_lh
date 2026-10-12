@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -103,6 +105,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               "before trying again.";
         }
         return msg.isNotEmpty ? msg : "Verification failed. Please try again.";
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(authProvider.notifier).signInWithApple();
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -376,6 +387,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
+
+                    // Apple requires this next to any other social sign-in.
+                    if (Platform.isIOS) ...[
+                      SizedBox(height: 12.h),
+                      TactileButton(
+                        onTap: _isLoading ? null : _signInWithApple,
+                        child: Container(
+                          width: double.infinity,
+                          height: 60.h,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(20.r),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.apple,
+                                color: Colors.white,
+                                size: 26.h,
+                              ),
+                              SizedBox(width: 10.w),
+                              Text(
+                                "Sign in with Apple",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15.sp,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

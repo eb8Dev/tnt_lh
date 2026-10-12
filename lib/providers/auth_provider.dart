@@ -80,8 +80,10 @@ class AuthNotifier extends Notifier<AuthState> {
         final idToken = await firebaseUser.getIdToken();
         if (idToken == null) throw "Failed to get ID token";
 
+        // Google and Apple both exchange through the same endpoint: the
+        // backend reads the email out of the verified token either way.
         final isGoogle = firebaseUser.providerData.any(
-          (p) => p.providerId == 'google.com',
+          (p) => p.providerId == 'google.com' || p.providerId == 'apple.com',
         );
         Map<String, dynamic> authResult;
 
@@ -89,7 +91,7 @@ class AuthNotifier extends Notifier<AuthState> {
           debugPrint("Auth: Performing Google Login exchange...");
           authResult = await AuthService.googleLogin(
             idToken: idToken,
-            email: firebaseUser.email!,
+            email: firebaseUser.email ?? '',
             name: firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
           );
@@ -212,6 +214,45 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  /// Sign in with Apple (iOS). Apple requires it wherever another social
+  /// sign-in is offered. Firebase drives the native Apple sheet itself.
+  Future<void> signInWithApple() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final provider = fb.AppleAuthProvider()
+        ..addScope('email')
+        ..addScope('name');
+      // The authStateChanges listener takes over from here, as with Google.
+      await fb.FirebaseAuth.instance.signInWithProvider(provider);
+    } on fb.FirebaseAuthException catch (e) {
+      // Backing out of the Apple sheet is not an error — just stop.
+      final cancelled =
+          e.code == 'canceled' ||
+          e.code == 'web-context-canceled' ||
+          (e.message ?? '').contains('1001');
+      state = state.copyWith(
+        isLoading: false,
+        error: cancelled
+            ? null
+            : 'Apple sign-in failed. Please try phone login.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Apple sign-in failed. Please try phone login.',
+      );
+    }
+  }
+
+  /// Deletes the account for good. Returns null on success, or the reason it
+  /// was refused. On success the customer is signed out.
+  Future<String?> deleteAccount() async {
+    final refused = await AuthService.deleteAccount();
+    if (refused != null) return refused;
+    await logout();
+    return null;
   }
 
   Future<void> completeProfile({

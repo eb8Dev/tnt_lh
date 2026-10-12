@@ -22,7 +22,7 @@ key stays `littleh` (API URLs, database, code identifiers) until Phase 4.
 - [x] 1.3 Customer app: bakery theme colours retuned to the logo (chocolate brown `#63290C`, strawberry pink `#E56B8F`) — owner to eyeball
 - [x] 1.4 Customer app: app name on the home screen (Android "Teas n Trees / Cream N Crust", iOS "TNT & CNC") — owner to confirm the names
 - [x] 1.5 Rider app: store name, bakery detection, app name (`c7a2c54`; Android label "TNT - CNC Riders")
-- [ ] 1.6 Backend: user-visible strings (outlet name, portal messages, coupon message) — coded on branch `cnc-rebrand` (`0f69bda`); **not live until merged and pushed to `main`**
+- [x] 1.6 Backend: user-visible strings — live 2026-10-13; (outlet name, portal messages, coupon message) — coded on branch `cnc-rebrand` (`0f69bda`); **not live until merged and pushed to `main`**
 - [ ] 1.7 Web app (`tnt-lh-customer`): visible wording and logo — coded on branch `cnc-rebrand` (`aad3218`), builds; **not yet checked in a browser or deployed to the VM**
 - [ ] 1.8 Replace the stopgap PNG with the final SVG logo when it arrives
 - [ ] 1.9 Store listings: Play listing text and screenshots (owner, in Play Console)
@@ -54,8 +54,8 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [x] fastlane pipeline ported from Sujatha Caterers into both apps (`ios/fastlane`): `status`, `beta`, `wait_build`, `submit`, `review_status`, `cancel_review`
   - [x] App Store prerequisites: iPhone-only and portrait-only (as the other apps), Android icon used as the iOS icon with no alpha, export-compliance flag, `ExportOptions.plist`
   - [x] Archive both apps (signed and exported through the pipeline)
-- [ ] 2.8 App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
-- [ ] 2.9 App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
+- [ ] 2.8 (coded 2026-10-13, untested; owner must enable the Apple provider in Firebase Authentication) App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
+- [ ] 2.9 (backend live 2026-10-13: deactivate + anonymise; customer app UI coded, not yet run by hand; rider app UI pending) App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
 - [x] 2.10 TestFlight build of both apps
   - [x] Customer `1.0.0+4` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+5` (processed 2026-10-12)
   - [x] Rider `1.0.0+5` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+6` (processed 2026-10-12)
@@ -79,8 +79,8 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
 Branch `cnc-rebrand` in `teasntrees_backend`. Nothing here is on production
 until it is merged to `main` and pushed (which deploys).
 
-- [ ] B.1 Cream N Crust wording (same item as 1.6)
-- [ ] B.2 Stale orders: flag after 24h without activity, cancel 24h after the flag (`src/services/staleOrderService.js`). On first deploy every order abandoned before now gets flagged at once and cancelled a day later
+- [x] B.1 Cream N Crust wording — live 2026-10-13
+- [x] B.2 (live 2026-10-13; VM logs not checked, access was blocked) Stale orders: flag after 24h without activity, cancel 24h after the flag (`src/services/staleOrderService.js`). On first deploy every order abandoned before now gets flagged at once and cancelled a day later
 - [ ] B.3 Admin panel shows flagged orders (`order:stale` socket event, `staleFlaggedAt` field) — their team
 
 ## Phase 5 — Requests from the business (2026-10-13)
@@ -88,10 +88,10 @@ until it is merged to `main` and pushed (which deploys).
 - [ ] 5.1 Rider resets a forgotten PIN themselves; admin is notified
   - [x] Backend endpoint `POST /rider/auth/reset-pin` — branch `rider-pin-reset` (`dea1546`), tested against a throwaway local database
   - [x] Rider app screen (SMS code → new PIN) — committed on `cnc-ios-foldable`; builds on Android and iOS; step 1 checked on the Android emulator
-  - [ ] Backend branch merged and deployed (needs the owner's go-ahead)
+  - [x] Backend merged to `main` and live in production (2026-10-13)
   - [ ] Full flow with a real SMS code on Android and iOS (needs the backend live)
-  - [ ] Rider app's Android SHA fingerprints confirmed in Firebase (phone verification fails in release builds without them)
-  - [ ] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos
+  - [x] Rider app's Android SHA fingerprints in Firebase (owner confirmed 2026-10-13)
+  - [ ] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos; owner: later
   - [ ] New rider builds shipped (Play + TestFlight)
 - [ ] 5.2 Admin panel menu management — both panels already have Products and Categories pages (create, edit, delete, price, sizes, add-ons, image, availability); owner to say what is missing or not working
 
@@ -119,3 +119,5 @@ until it is merged to `main` and pushed (which deploys).
 - 2026-10-11 — Disk filled up mid-build (120 MB free). Freed about 10 GB by deleting today's iOS build outputs for the two apps, a test database download and Xcode's derived-data cache. Still tight: about 10 GB free on a 228 GB disk.
 - 2026-10-11 — Owner asked for the other projects' fastlane pipeline to be used here; ported from `sujatha_caterers`. Its runbook (`sujatha_caterers/scripts/RELEASE_IOS_RUNBOOK.md`) is the reference for traps.
 - 2026-10-12 — First TestFlight builds closed immediately on launch. Cause: apps built with the iOS 27 SDK must use the UIScene life cycle to launch on iOS 27; both apps still used the old one. Reproduced on an iOS 27 simulator, fixed in both, re-uploaded. Lesson: test on the newest iOS simulator, not only the one that happens to be booted. `ems/build` deleted with the owner's OK to make room.
+- 2026-10-13 — Backend deployed to production: Cream N Crust wording, stale-order job, rider PIN reset, account deletion, and a fix to social sign-in (the email was trusted from the request body; it now comes from the verified token).
+- 2026-10-13 — Client wants a shorter umbrella app name ("Duobite"-style); name ideas requested. Play/App Store listing text waits on the name.
