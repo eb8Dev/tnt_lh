@@ -85,7 +85,7 @@ until it is merged to `main` and pushed (which deploys).
 
 ## Phase 5 — Requests from the business (2026-10-13)
 
-- [ ] 5.1 Rider resets a forgotten PIN themselves; admin is notified
+- [ ] 5.1 (rider `1.0.0 (8)` on TestFlight, Android bundle built 2026-10-13; awaiting owner's real-SMS test and Play upload) Rider resets a forgotten PIN themselves; admin is notified
   - [x] Backend endpoint `POST /rider/auth/reset-pin` — branch `rider-pin-reset` (`dea1546`), tested against a throwaway local database
   - [x] Rider app screen (SMS code → new PIN) — committed on `cnc-ios-foldable`; builds on Android and iOS; step 1 checked on the Android emulator
   - [x] Backend merged to `main` and live in production (2026-10-13)
@@ -94,6 +94,18 @@ until it is merged to `main` and pushed (which deploys).
   - [ ] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos; owner: later
   - [ ] New rider builds shipped (Play + TestFlight)
 - [ ] 5.2 Admin panel menu management — both panels already have Products and Categories pages (create, edit, delete, price, sizes, add-ons, image, availability); owner to say what is missing or not working
+
+## Phase 6 — Deployment and operations (stays on the Windows VM; no Linux VM available)
+
+- [ ] 6.1 Rotate the credentials exposed in the public backend repo (same as 4.4) — do first
+- [ ] 6.2 Backend: check job before deploy (parse every file, boot against a throwaway MongoDB, hit six endpoints) — committed locally (`.github/workflows/deploy.yml`); push blocked until the GitHub login has the `workflow` scope
+- [ ] 6.3 Website: build and deploy from GitHub on push, replacing the hand-copied archive
+- [ ] 6.4 Error alerts for the backend and web apps (Sentry) — needs an account from the owner
+- [ ] 6.5 Staging copy on the same VM (second checkout, own port, own subdomain, the clone database)
+- [ ] 6.6 Rollback: keep the previous release on the VM and a one-command switch back
+- [ ] 6.7 Backups of uploaded files (`C:\Storage`) off the VM
+- [ ] 6.8 Uptime check with an alert when the API or site is down
+- [ ] 6.9 Android releases uploaded by command (Play service-account key)
 
 ## Phase 4 — Later (agreed to defer)
 
