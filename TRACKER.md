@@ -23,7 +23,7 @@ key stays `littleh` (API URLs, database, code identifiers) until Phase 4.
 - [x] 1.4 Customer app: app name on the home screen (Android "Teas n Trees / Cream N Crust", iOS "TNT & CNC") — owner to confirm the names
 - [x] 1.5 Rider app: store name, bakery detection, app name (`c7a2c54`; Android label "TNT - CNC Riders")
 - [x] 1.6 Backend: user-visible strings — live 2026-10-13; (outlet name, portal messages, coupon message) — coded on branch `cnc-rebrand` (`0f69bda`); **not live until merged and pushed to `main`**
-- [ ] 1.7 Web app (`tnt-lh-customer`): visible wording and logo — coded on branch `cnc-rebrand` (`aad3218`), builds; **not yet checked in a browser or deployed to the VM**
+- [x] 1.7 Web app (`tnt-lh-customer`): visible wording and logo — live on teasntrees.in 2026-10-13 (owner ran the upload; live bundle matches the local build). Commit `aad3218` is still only on the local `cnc-rebrand` branch; owner to push
 - [ ] 1.8 Replace the stopgap PNG with the final SVG logo when it arrives
 - [ ] 1.9 Store listings: Play listing text and screenshots (owner, in Play Console)
 - [ ] 1.10 Admin panels: visible wording (their team; separate repos)
