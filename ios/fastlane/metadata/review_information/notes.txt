@@ -1,0 +1,30 @@
+DEMO ACCOUNT (no SMS needed)
+The app signs in with a phone number. The number below is a test number that
+needs NO real SMS.
+
+  Phone: <<TEST NUMBER — OWNER TO FILL>>    Code: <<CODE>>
+
+Steps: go past the intro -> enter the phone number -> Send code -> enter the
+code -> Verify.
+
+1. PURPOSE AND AUDIENCE
+Teas N Trees (a cafe) and Cream N Crust (a bakery) are two physical stores in
+Guntur, India, run by the same owner. The app lets their customers order food
+and drinks from either store for home delivery, and follow the order.
+
+2. MAIN FEATURES
+The switch at the top of the home screen changes store. Add items to the cart,
+open the cart, choose or add a delivery address, and place the order. Orders
+appear under Orders with live status and a map once a rider is assigned.
+
+3. PAYMENTS
+Everything sold is physical food and drink, delivered. Payment is cash on
+delivery. There is no digital content, so there is no In-App Purchase.
+
+4. LOCATION
+Location is used only while the app is open, to set the delivery address and
+show the order on the map. It is never tracked in the background.
+
+5. SIGN-IN AND ACCOUNT DELETION
+Phone number, Google and Sign in with Apple are offered. Account deletion is
+in Profile -> Delete account.
