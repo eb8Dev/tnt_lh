@@ -354,6 +354,45 @@ platform :ios do
     JSON.parse(res.body)
   end
 
+  def asc_post(path, body)
+    require "net/http"
+    require "json"
+    asc_token
+    uri = URI("https://api.appstoreconnect.apple.com/v1/#{path}")
+    req = Net::HTTP::Post.new(uri)
+    req["Authorization"] = "Bearer #{Spaceship::ConnectAPI.token.text}"
+    req["Content-Type"] = "application/json"
+    req.body = body.to_json
+    res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+    UI.user_error!("POST #{path}: #{res.code} #{res.body[0, 400]}") unless res.code.start_with?("2")
+    JSON.parse(res.body)
+  end
+
+  desc "Set the app's price to Free (India as base territory). Apple refuses a submission with no price."
+  lane :set_free_price do
+    app = (asc_token; Spaceship::ConnectAPI::App.find(APP_ID))
+    points = asc_get("apps/#{app.id}/appPricePoints", { "filter[territory]" => "IND", "limit" => "200" })["data"]
+    free = points.find { |p| p.dig("attributes", "customerPrice").to_f.zero? }
+    UI.user_error!("No free price point found") if free.nil?
+    asc_post("appPriceSchedules", {
+      data: {
+        type: "appPriceSchedules",
+        relationships: {
+          app: { data: { type: "apps", id: app.id } },
+          baseTerritory: { data: { type: "territories", id: "IND" } },
+          manualPrices: { data: [{ type: "appPrices", id: "${price}" }] },
+        },
+      },
+      included: [{
+        type: "appPrices",
+        id: "${price}",
+        attributes: { startDate: nil },
+        relationships: { appPricePoint: { data: { type: "appPricePoints", id: free["id"] } } },
+      }],
+    })
+    UI.success("Price set to Free")
+  end
+
   desc "Print the latest TestFlight crash reports testers have shared"
   lane :crashes do |options|
     app = (asc_token; Spaceship::ConnectAPI::App.find(APP_ID))
