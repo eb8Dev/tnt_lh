@@ -60,9 +60,9 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
   - [x] Customer `1.0.0+4` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+5` (processed 2026-10-12)
   - [x] Rider `1.0.0+5` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+6` (processed 2026-10-12)
   - [x] Owner confirmed both replacement builds open on a real iPhone (2026-10-12); phone OTP login works with a test number
-- [ ] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS
-- [ ] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish)
-- [ ] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done)
+- [x] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS — done 2026-10-15 (BrewCrust names, text, 6.9" screenshots, reviewer logins)
+- [x] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish) — owner done 2026-10-15
+- [x] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done) — submitted 2026-10-15: BrewCrust 1.0.0 (7), BrewCrust Rider 1.0.0 (9), WAITING_FOR_REVIEW; price set to Free
 - [ ] 2.16 New app icon art: both current icons still carry the Little H "H" (owner to supply, with the SVG logo)
 - [ ] 2.11 Run both apps on a real iPhone
 
@@ -91,8 +91,8 @@ until it is merged to `main` and pushed (which deploys).
   - [x] Backend merged to `main` and live in production (2026-10-13)
   - [ ] Full flow with a real SMS code on Android and iOS (needs the backend live)
   - [x] Rider app's Android SHA fingerprints in Firebase (owner confirmed 2026-10-13)
-  - [ ] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos; owner: later
-  - [ ] New rider builds shipped (Play + TestFlight)
+  - [x] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos; owner: later — pushed to both panels 2026-10-15 (toast + card line); event path verified locally
+  - [x] New rider builds shipped (Play + TestFlight) — rider 1.0.0 (9): Play beta + App Store review
 - [ ] 5.2 Admin panel menu management — both panels already have Products and Categories pages (create, edit, delete, price, sizes, add-ons, image, availability); owner to say what is missing or not working
 
 ## Phase 6 — Deployment and operations (stays on the Windows VM; no Linux VM available)
@@ -105,7 +105,7 @@ until it is merged to `main` and pushed (which deploys).
 - [ ] 6.6 Rollback: keep the previous release on the VM and a one-command switch back
 - [ ] 6.7 Backups of uploaded files (`C:\Storage`) off the VM
 - [ ] 6.8 Uptime check with an alert when the API or site is down
-- [ ] 6.9 Android releases uploaded by command (Play service-account key)
+- [x] 6.9 Android releases uploaded by command (Play service-account key) — done 2026-10-15 (`android/fastlane`, key in ~/.tnt-secrets); both apps on Play beta: customer 7, rider 9
 
 ## Phase 4 — Later (agreed to defer)
 
@@ -133,3 +133,4 @@ until it is merged to `main` and pushed (which deploys).
 - 2026-10-12 — First TestFlight builds closed immediately on launch. Cause: apps built with the iOS 27 SDK must use the UIScene life cycle to launch on iOS 27; both apps still used the old one. Reproduced on an iOS 27 simulator, fixed in both, re-uploaded. Lesson: test on the newest iOS simulator, not only the one that happens to be booted. `ems/build` deleted with the owner's OK to make room.
 - 2026-10-13 — Backend deployed to production: Cream N Crust wording, stale-order job, rider PIN reset, account deletion, and a fix to social sign-in (the email was trusted from the request body; it now comes from the verified token).
 - 2026-10-13 — Client wants a shorter umbrella app name ("Duobite"-style); name ideas requested. Play/App Store listing text waits on the name.
+- 2026-10-15 — Umbrella name BrewCrust adopted (home screen: BrewCrust / BC Rider). Screenshot runs found and fixed three customer-app bugs (loading placeholder layout, missing Poppins Extra Bold, bag header overflow). Test push to iPhone confirmed.
