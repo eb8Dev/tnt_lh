@@ -2,7 +2,7 @@ DEMO ACCOUNT (no SMS needed)
 The app signs in with a phone number. The number below is a test number that
 needs NO real SMS.
 
-  Phone: <<TEST NUMBER — OWNER TO FILL>>    Code: <<CODE>>
+  Phone: 9515409973    Code: 123456
 
 Steps: go past the intro -> enter the phone number -> Send code -> enter the
 code -> Verify.

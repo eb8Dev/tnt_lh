@@ -229,27 +229,37 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 6.w,
-                  height: 24.h,
-                  decoration: BoxDecoration(
-                    color: themeColor,
-                    borderRadius: BorderRadius.circular(3.r),
+            // Expanded + ellipsis: "Cream N Crust (Bakery)" plus the two
+            // buttons is wider than a phone, and the row overflowed, cutting
+            // off the store's Checkout button.
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    width: 6.w,
+                    height: 24.h,
+                    decoration: BoxDecoration(
+                      color: themeColor,
+                      borderRadius: BorderRadius.circular(3.r),
+                    ),
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                  SizedBox(width: 12.w),
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            SizedBox(width: 8.w),
             Row(
               children: [
                 TactileButton(

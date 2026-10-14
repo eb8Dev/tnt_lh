@@ -95,6 +95,22 @@ platform :ios do
     end
   end
 
+  desc "Make the editable App Store version match pubspec (the record was created as 1.0; builds are 1.0.0)"
+  lane :align_version do
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    v = app.get_edit_app_store_version(platform: "IOS")
+    if v.nil?
+      UI.important("No editable App Store version")
+    elsif v.version_string == pubspec_version
+      UI.success("App Store version already #{pubspec_version}")
+    else
+      old = v.version_string
+      v.update(attributes: { versionString: pubspec_version })
+      UI.success("App Store version #{old} -> #{pubspec_version}")
+    end
+  end
+
   desc "Push App Store listing metadata + screenshots (no binary, no submission)"
   lane :push_metadata do
     deliver(

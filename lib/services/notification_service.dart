@@ -62,6 +62,9 @@ class NotificationService {
   /// Never throws: on iOS the FCM token isn't available until APNs has issued
   /// its own (never, on a simulator), and that must not break the app.
   static Future<void> enableForSignedInUser() async {
+    // Store screenshots (integration_test/screenshots_test.dart) are taken
+    // with this set, so the system prompt isn't over every one of them.
+    if (const bool.fromEnvironment('SCREENSHOT_MODE')) return;
     try {
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(alert: true, badge: true, sound: true);

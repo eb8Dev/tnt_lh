@@ -124,7 +124,11 @@ class ProductListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // shrinkWrap: it is also placed inside other scrollables (the home
+    // screen's), where an unbounded ListView fails layout and the loading
+    // state rendered as nothing at all.
     return ListView.separated(
+      shrinkWrap: true,
       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
       physics: const NeverScrollableScrollPhysics(),
       itemCount: count,
