@@ -26,7 +26,7 @@ key stays `littleh` (API URLs, database, code identifiers) until Phase 4.
 - [x] 1.7 Web app (`tnt-lh-customer`): visible wording and logo — live on teasntrees.in 2026-10-13 (owner ran the upload; live bundle matches the local build). Commit `aad3218` is still only on the local `cnc-rebrand` branch; owner to push
 - [ ] 1.8 Replace the stopgap PNG with the final SVG logo when it arrives
 - [ ] 1.9 Play listing text — drafted in `docs/PLAY_LISTING.md` with the BrewCrust name; owner updates Play Console in the next release
-- [ ] 1.10 Admin panels: visible wording (their team; separate repos)
+- [x] 1.10 Admin panels: bakery wording and logo are Cream N Crust (2026-10-15)
 
 Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
 `com.teasntrees.tnt_rider`, `com.teasntrees.tntRider`), Firebase project
@@ -63,7 +63,7 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
 - [x] 2.13 App Store listing for both apps: description, keywords, support and privacy URLs, 6.9" screenshots (1320×2868), review notes with a test login the reviewer can use without an Indian SMS — done 2026-10-15 (BrewCrust names, text, 6.9" screenshots, reviewer logins)
 - [x] 2.14 App Store Connect forms only the owner can answer: age rating, content rights, App Privacy (and press Publish) — owner done 2026-10-15
 - [x] 2.15 Submit both apps for review (needs the owner's explicit go-ahead; blocked until 2.8, 2.9, 2.13 and 2.14 are done) — submitted 2026-10-15: BrewCrust 1.0.0 (7), BrewCrust Rider 1.0.0 (9), WAITING_FOR_REVIEW; price set to Free
-- [ ] 2.16 New app icon art: both current icons still carry the Little H "H" (owner to supply, with the SVG logo)
+- [ ] 2.16 New BrewCrust icon and SVG logo — three concepts in `docs/brand/` (icon-concepts.png); owner to choose
 - [ ] 2.11 Run both apps on a real iPhone
 
 ## Phase 3 — Foldables
@@ -81,7 +81,7 @@ until it is merged to `main` and pushed (which deploys).
 
 - [x] B.1 Cream N Crust wording — live 2026-10-13
 - [x] B.2 (live 2026-10-13; VM logs not checked, access was blocked) Stale orders: flag after 24h without activity, cancel 24h after the flag (`src/services/staleOrderService.js`). On first deploy every order abandoned before now gets flagged at once and cancelled a day later
-- [ ] B.3 Admin panel shows flagged orders (`order:stale` socket event, `staleFlaggedAt` field) — their team
+- [x] B.3 Admin panels: 'Needs attention' filter, auto-cancel badges, live pop-up for stale orders — live 2026-10-15, checked locally with the real job
 
 ## Phase 5 — Requests from the business (2026-10-13)
 
@@ -103,7 +103,7 @@ until it is merged to `main` and pushed (which deploys).
 - [x] 6.4 Error alerts (Sentry, org manuen-infotech-opc-private-li): backend (every logger.error + unhandled Express errors, production only) and website (production builds) — live 2026-10-15; test events sent to both projects
 - [ ] 6.5 Staging copy on the same VM (second checkout, own port, own subdomain, the clone database)
 - [x] 6.6 Rollback — backend: deploy.ps1 health-checks and restores the previous commit on failure; Run workflow with a commit hash deploys that commit (tested back and forward 2026-10-15). Website: Run workflow with 'rollback'
-- [ ] 6.7 Backups of uploaded files (`C:\Storage`, 264 files / 41 MB) to Firebase Storage nightly at 3 AM (`scripts/backup_storage.mjs`, task TnT-Backup) — waiting on the owner to switch on Firebase Storage in project tnt-lh (no bucket exists)
+- [x] 6.7 Nightly backup of uploaded files to Firebase Storage (task TnT-Backup, 3 AM) — first run 264 files, second run 0 changed (2026-10-15)
 - [x] 6.8 Uptime check every 10 min from GitHub (`uptime.yml`), emails connect@manuen.com from manueninfotech@gmail.com — test alert sent 2026-10-15
 - [x] 6.9 Android releases uploaded by command (Play service-account key) — done 2026-10-15 (`android/fastlane`, key in ~/.tnt-secrets); both apps on Play beta: customer 7, rider 9
 
