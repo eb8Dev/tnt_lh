@@ -11,6 +11,48 @@ class AppFormatters {
     return idData.toString();
   }
 
+  /// What a customer should read for an order status. The raw values
+  /// (`in_transit`, `out-for-delivery`) were printed as-is.
+  static String statusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Order placed';
+      case 'confirmed':
+        return 'Confirmed';
+      case 'preparing':
+        return 'Being prepared';
+      case 'ready':
+        return 'Ready';
+      case 'waiting_for_rider':
+        return 'Finding a rider';
+      case 'assigned':
+        return 'Rider assigned';
+      case 'out-for-delivery':
+        return 'Picked up';
+      case 'in_transit':
+        return 'On the way';
+      case 'delivered':
+        return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        final s = status.replaceAll(RegExp(r'[_-]'), ' ').trim();
+        return s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+    }
+  }
+
+  /// A status-history note worth showing a customer. The backend also writes
+  /// its own bookkeeping there ("Updated via delivery (in_transit)").
+  static String? customerNote(String? note) {
+    final n = note?.trim() ?? '';
+    if (n.isEmpty ||
+        n.startsWith('Updated via') ||
+        RegExp(r'\([a-z_-]+\)').hasMatch(n)) {
+      return null;
+    }
+    return n;
+  }
+
   static Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'delivered':

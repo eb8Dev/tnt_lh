@@ -396,7 +396,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               borderRadius: BorderRadius.circular(8.r),
                             ),
                             child: Text(
-                              order.status.toUpperCase().replaceAll('_', ' '),
+                              AppFormatters.statusLabel(
+                                order.status,
+                              ).toUpperCase(),
                               style: TextStyle(
                                 color: AppFormatters.getStatusColor(
                                   order.status,
@@ -456,18 +458,20 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            t.status.toUpperCase().replaceAll(
-                                              '_',
-                                              ' ',
-                                            ),
+                                            AppFormatters.statusLabel(t.status),
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 13.sp,
                                             ),
                                           ),
-                                          if (t.description != null)
+                                          if (AppFormatters.customerNote(
+                                                t.description,
+                                              ) !=
+                                              null)
                                             Text(
-                                              t.description!,
+                                              AppFormatters.customerNote(
+                                                t.description,
+                                              )!,
                                               style: TextStyle(
                                                 color: Colors.grey[600],
                                                 fontSize: 12.sp,

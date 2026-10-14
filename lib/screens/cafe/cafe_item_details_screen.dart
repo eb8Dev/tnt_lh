@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +67,12 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 400,
+              // About a third of the screen: at 400 the photo took nearly
+              // half of it and pushed the name, price and options down.
+              expandedHeight: (MediaQuery.sizeOf(context).height * 0.36).clamp(
+                240.0,
+                340.0,
+              ),
               pinned: true,
               backgroundColor: Colors.white,
               elevation: 0,
@@ -201,24 +207,22 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                         color: themeColor,
                       ),
                     ),
-                    SizedBox(height: 24.h),
-                    Text(
-                      "Description",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
+                    // Only when there is one. A "Description" heading over an
+                    // empty space looked broken, and the old stand-in copy
+                    // described every dish the same way.
+                    if ((widget.product.description ?? '')
+                        .trim()
+                        .isNotEmpty) ...[
+                      SizedBox(height: Space.sm.h),
+                      Text(
+                        widget.product.description!.trim(),
+                        style: GoogleFonts.poppins(
+                          color: Colors.black54,
+                          height: 1.5,
+                          fontSize: 14.sp,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      widget.product.description ??
-                          "A premium handcrafted experience made with the finest ingredients and passion.",
-                      style: GoogleFonts.poppins(
-                        color: Colors.black54,
-                        height: 1.6.h,
-                        fontSize: 14.sp,
-                      ),
-                    ),
+                    ],
                     if (widget.product.sizeOptions.isNotEmpty) ...[
                       SizedBox(height: 24.h),
                       Text(
