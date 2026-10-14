@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -117,7 +118,8 @@ class MyApp extends ConsumerWidget {
     final theme = brand == 'teasntrees' ? teasNTreesTheme : littleHTheme;
 
     return ScreenUtilInit(
-      designSize: const Size(390, 844),
+      // Capped on wide screens (foldables, tablets): see Responsive.
+      designSize: Responsive.designSizeFor(MediaQuery.sizeOf(context)),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, _) => MaterialApp(
@@ -305,7 +307,11 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
               children: [
                 // Not const: Phosphor icons are method calls, so they can't
                 // appear inside a const expression.
-                Icon(PhosphorIcons.warningCircle(), size: 64, color: Colors.red),
+                Icon(
+                  PhosphorIcons.warningCircle(),
+                  size: 64,
+                  color: Colors.red,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   "Authentication Failed",

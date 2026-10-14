@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'dart:io';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
@@ -343,35 +344,39 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     final isLittleH = ref.watch(brandProvider) == 'littleh';
 
     if (authState.isLoading && user == null) {
-      return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(child: HouseOfFlavorsLoader(size: 160.sp)),
+      return CenteredPage(
+        child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: Center(child: HouseOfFlavorsLoader(size: 160.sp)),
+        ),
       );
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        bottom: false,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(20.w, Space.md.h, 20.w, 120.h),
-            children: [
-              _buildMembershipCard(user, isLittleH),
-              Gap(Space.lg),
-              _buildDetailsSection(authState),
-              Gap(Space.lg),
-              _buildAddressSection(),
-              Gap(Space.lg),
-              _buildPreferencesSection(user),
-              Gap(Space.lg),
-              _buildSupportSection(),
-              Gap(Space.lg),
-              _buildLogoutButton(),
-              Gap(Space.sm),
-              _buildDeleteAccountButton(),
-            ],
+    return CenteredPage(
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          bottom: false,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(20.w, Space.md.h, 20.w, 120.h),
+              children: [
+                _buildMembershipCard(user, isLittleH),
+                Gap(Space.lg),
+                _buildDetailsSection(authState),
+                Gap(Space.lg),
+                _buildAddressSection(),
+                Gap(Space.lg),
+                _buildPreferencesSection(user),
+                Gap(Space.lg),
+                _buildSupportSection(),
+                Gap(Space.lg),
+                _buildLogoutButton(),
+                Gap(Space.sm),
+                _buildDeleteAccountButton(),
+              ],
+            ),
           ),
         ),
       ),

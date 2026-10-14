@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -171,7 +172,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                       ],
                     ),
                   ),
-                  Divider(height: 1, color: Colors.black.withValues(alpha: 0.05)),
+                  Divider(
+                    height: 1,
+                    color: Colors.black.withValues(alpha: 0.05),
+                  ),
                   Expanded(
                     child: ListView.builder(
                       controller: scrollController,
@@ -760,9 +764,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// Builds the product area as slivers for the CustomScrollView.
   List<Widget> _productSlivers(AsyncValue<ProductsState> productsAsync) {
     return productsAsync.when(
-      loading: () => [
-        const SliverToBoxAdapter(child: ProductListSkeleton()),
-      ],
+      loading: () => [const SliverToBoxAdapter(child: ProductListSkeleton())],
       error: (err, _) => [
         SliverFillRemaining(
           hasScrollBody: false,
@@ -823,14 +825,17 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
             padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 4.h),
             sliver: SliverGrid.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+                // 2 on a phone, more on an open foldable or tablet.
+                crossAxisCount: Responsive.columnsFor(
+                  MediaQuery.sizeOf(context).width,
+                  minTileWidth: 175.w,
+                ),
                 mainAxisSpacing: 14.h,
                 crossAxisSpacing: 14.w,
                 childAspectRatio: 0.68,
               ),
               itemCount: products.length,
-              itemBuilder: (context, index) =>
-                  _buildGridCard(products[index]),
+              itemBuilder: (context, index) => _buildGridCard(products[index]),
             ),
           ),
           // The paging footer sits full-width below the grid (a grid can't hold
@@ -1074,7 +1079,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       blurRadius: 6,
                                     ),
                                   ],
