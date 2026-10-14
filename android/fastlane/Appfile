@@ -1,2 +1,3 @@
-json_key_file(ENV["PLAY_JSON_KEY"] || File.expand_path("~/.sujatha-secrets/play-service-account.json"))
+# Service account invited to the TNT Play account (see TRACKER Phase 6.9)
+json_key_file(ENV["PLAY_JSON_KEY"] || File.expand_path("~/.tnt-secrets/play-service-account.json"))
 package_name("com.manuen.tnt_lh")
