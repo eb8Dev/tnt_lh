@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:math';
 import 'package:tnt_lh/core/brand.dart';
@@ -720,13 +721,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
 
                   _buildSectionTitle("Delivery Address"),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: Space.sm.h),
                   _buildAddressSection(),
 
-                  SizedBox(height: 40.h),
+                  SizedBox(height: Space.lg.h),
 
                   _buildSectionTitle("Special Instructions"),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: Space.sm.h),
                   TextFormField(
                     controller: _instructionsController,
                     style: GoogleFonts.poppins(fontSize: 14.sp),
@@ -735,13 +736,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   ),
 
-                  SizedBox(height: 40.h),
+                  SizedBox(height: Space.lg.h),
 
                   // Alternate contact number — requested by testers, for ordering
                   // to someone else's address or a building where a second number
                   // helps the rider get through.
                   _buildSectionTitle("Alternate Contact Number (optional)"),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: Space.sm.h),
                   TextFormField(
                     controller: _altPhoneController,
                     keyboardType: TextInputType.phone,
@@ -760,10 +761,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     },
                   ),
 
-                  SizedBox(height: 40.h),
+                  SizedBox(height: Space.lg.h),
 
                   _buildSectionTitle("Payment Method"),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: Space.sm.h),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -781,70 +782,43 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                     child: Column(
                       children: [
-                        RadioListTile<String>(
-                          value: "COD",
-                          groupValue: _paymentMethod,
-                          onChanged: (val) =>
-                              setState(() => _paymentMethod = val.toString()),
-                          title: Text(
-                            "Cash on Delivery",
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15.sp,
+                        // Its own Material, so the tap highlight shows on top of the card.
+                        Material(
+                          type: MaterialType.transparency,
+                          child: RadioListTile<String>(
+                            value: "COD",
+                            groupValue: _paymentMethod,
+                            onChanged: (val) =>
+                                setState(() => _paymentMethod = val.toString()),
+                            title: Text(
+                              "Cash on Delivery",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15.sp,
+                              ),
                             ),
-                          ),
-                          subtitle: Text(
-                            "Pay when your order arrives",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.sp,
-                              color: Colors.black38,
+                            subtitle: Text(
+                              "Pay when your order arrives",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
+                                color: Colors.black38,
+                              ),
                             ),
-                          ),
-                          activeColor: Theme.of(context).colorScheme.primary,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 4.h,
+                            activeColor: Theme.of(context).colorScheme.primary,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 4.h,
+                            ),
                           ),
                         ),
-                        Divider(
-                          height: 1.h,
-                          indent: 20,
-                          endIndent: 20,
-                          color: Color(0xFFF0F0F0),
-                        ),
-                        // No payment gateway is wired up yet, so this is shown as
-                        // a disabled row rather than a radio that looks selectable
-                        // and only ever answers with a "coming soon" snackbar.
-                        RadioListTile<String>(
-                          value: "Online",
-                          groupValue: _paymentMethod,
-                          onChanged: null,
-                          title: Text(
-                            "Online Payment",
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15.sp,
-                              color: Colors.black38,
-                            ),
-                          ),
-                          subtitle: Text(
-                            "UPI, Cards, Netbanking — coming soon",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.sp,
-                              color: Colors.black26,
-                            ),
-                          ),
-                          activeColor: Theme.of(context).colorScheme.primary,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 4.h,
-                          ),
-                        ),
+                        // Online payment returns as a second option once a
+                        // gateway is wired up; a disabled "coming soon" row
+                        // only took space and promised something absent.
                       ],
                     ),
                   ),
 
-                  SizedBox(height: 40.h),
+                  SizedBox(height: Space.lg.h),
 
                   // Summary
                   Container(

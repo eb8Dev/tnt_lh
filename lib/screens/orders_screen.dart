@@ -292,7 +292,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        "${order.items.length} items • ₹${order.total}",
+                        "${order.items.length} ${order.items.length == 1 ? 'item' : 'items'} • ₹${order.total}",
                         style: GoogleFonts.poppins(
                           fontSize: 14.sp,
                           color: Colors.black54,
@@ -311,7 +311,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text(
-                    order.status.toUpperCase(),
+                    AppFormatters.statusLabel(order.status).toUpperCase(),
                     style: GoogleFonts.poppins(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.bold,
@@ -328,7 +328,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Track Status",
+                  // Nothing to track once it is over.
+                  [
+                        'delivered',
+                        'cancelled',
+                      ].contains(order.status.toLowerCase())
+                      ? "View details"
+                      : "Track order",
                   style: GoogleFonts.poppins(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w600,

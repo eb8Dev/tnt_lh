@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
@@ -193,7 +194,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         ),
 
                       if (bakeryItems.isNotEmpty) ...[
-                        SizedBox(height: 40.h),
+                        SizedBox(height: Space.lg.h),
                         _buildBrandSection(
                           "${Brands.bakeryName} (Bakery)",
                           bakeryItems,
@@ -201,7 +202,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           'littleh',
                         ),
                       ],
-                      SizedBox(height: 40.h),
+                      SizedBox(height: Space.md.h),
                     ],
                   ),
                 ),
@@ -556,7 +557,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   Widget _buildGlobalCheckoutFooter(Cart cart) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, 34),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(36.r)),

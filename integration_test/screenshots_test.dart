@@ -27,7 +27,11 @@ void main() {
     }
   }
 
-  Future<bool> waitFor(WidgetTester tester, Finder f, {int seconds = 40}) async {
+  Future<bool> waitFor(
+    WidgetTester tester,
+    Finder f, {
+    int seconds = 40,
+  }) async {
     for (var i = 0; i < seconds * 4; i++) {
       await tester.pump(const Duration(milliseconds: 250));
       if (f.evaluate().isNotEmpty) return true;
@@ -40,6 +44,12 @@ void main() {
     // ignore: avoid_print
     print('SHOT:$name');
     await settle(tester, 4); // the host captures during this pause
+  }
+
+  // Pages here use custom back buttons, which tester.pageBack() cannot find.
+  Future<void> goBack(WidgetTester tester) async {
+    tester.state<NavigatorState>(find.byType(Navigator).last).maybePop();
+    await settle(tester, 3);
   }
 
   Future<void> tapIfThere(WidgetTester tester, Finder f) async {
@@ -87,9 +97,11 @@ void main() {
     // Add it, so the bag has something in it.
     await tapIfThere(tester, find.textContaining('Add to Bag'));
     await settle(tester, 3);
-    if (find.byIcon(PhosphorIcons.house(PhosphorIconsStyle.fill)).evaluate().isEmpty) {
-      await tester.pageBack();
-      await settle(tester, 3);
+    if (find
+        .byIcon(PhosphorIcons.house(PhosphorIconsStyle.fill))
+        .evaluate()
+        .isEmpty) {
+      await goBack(tester);
     }
 
     // The switcher scrolls away with the header; bring it back first.
@@ -103,5 +115,26 @@ void main() {
     await tapIfThere(tester, find.byIcon(PhosphorIcons.basket()));
     await settle(tester, 4);
     await shot(tester, '04_bag');
+
+    // Beyond the store set: the rest of the screens, for design review.
+    await tapIfThere(tester, find.text('Checkout Store'));
+    await settle(tester, 4);
+    await shot(tester, '05_checkout');
+    await goBack(tester);
+
+    await tapIfThere(tester, find.byIcon(PhosphorIcons.receipt()));
+    await settle(tester, 4);
+    await shot(tester, '06_orders');
+    await tapIfThere(tester, find.textContaining('Order #'));
+    await settle(tester, 4);
+    await shot(tester, '07_order_detail');
+    await goBack(tester);
+
+    await tapIfThere(tester, find.byIcon(PhosphorIcons.user()));
+    await settle(tester, 4);
+    await shot(tester, '08_profile');
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
+    await settle(tester, 3);
+    await shot(tester, '09_profile_lower');
   });
 }

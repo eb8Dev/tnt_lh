@@ -1181,7 +1181,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                           height: 1.15,
                         ),
                       ),
-                      SizedBox(height: 5.h),
+                      SizedBox(height: 4.h),
                       Text(
                         "₹${product.displayPrice}",
                         style: GoogleFonts.poppins(

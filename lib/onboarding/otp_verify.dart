@@ -190,7 +190,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                   color: Colors.black54,
                 ),
               ),
-              SizedBox(height: 50.h),
+              SizedBox(height: 48.h),
 
               PinCodeTextField(
                 appContext: context,
@@ -224,7 +224,7 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                 },
               ),
 
-              SizedBox(height: 30.h),
+              SizedBox(height: 32.h),
 
               Center(
                 child: TextButton(

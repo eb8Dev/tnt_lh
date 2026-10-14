@@ -242,7 +242,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             color: Colors.black87,
           ),
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: 8.h),
         TextFormField(
           controller: controller,
           readOnly: readOnly,

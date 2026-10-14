@@ -124,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: size.height * 0.35,
                             fit: BoxFit.contain,
                           ),
-                          SizedBox(height: 60.h),
+                          SizedBox(height: 48.h),
                           Text(
                             _pages[i].title,
                             textAlign: TextAlign.center,
