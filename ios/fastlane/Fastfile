@@ -225,6 +225,22 @@ platform :ios do
     upload_only
   end
 
+  desc "Attach a processed build to the App Store version, without submitting"
+  lane :attach_build do |options|
+    deliver(
+      api_key: asc_key,
+      app_identifier: APP_ID,
+      app_version: pubspec_version,
+      build_number: (options[:build] || pubspec_build).to_s,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: false,
+      run_precheck_before_submit: false,
+      force: true,
+    )
+  end
+
   desc "Submit the selected build for App Store review (metadata already pushed)"
   lane :submit do |options|
     # Apple refuses the submission without it, and says only "not in valid
