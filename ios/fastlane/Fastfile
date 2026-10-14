@@ -245,7 +245,11 @@ platform :ios do
   lane :submit do |options|
     # Apple refuses the submission without it, and says only "not in valid
     # state" — it never names the missing field. Costed an hour once.
-    push_whats_new
+    # A first release has no What's New (Apple rejects one), so skip it then.
+    asc_token
+    app = Spaceship::ConnectAPI::App.find(APP_ID)
+    released_before = app.get_app_store_versions.any? { |v| v.app_store_state == "READY_FOR_SALE" }
+    push_whats_new if released_before
 
     deliver(
       api_key: asc_key,

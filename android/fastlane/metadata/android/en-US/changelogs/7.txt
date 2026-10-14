@@ -1,0 +1,4 @@
+- The app is now called BrewCrust
+- Little H is now Cream N Crust: new name, same bakery
+- Delete your account from the Profile screen
+- Fixes: menu loading, the bag's Checkout button, text styling
