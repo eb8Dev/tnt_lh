@@ -25,7 +25,7 @@ key stays `littleh` (API URLs, database, code identifiers) until Phase 4.
 - [x] 1.6 Backend: user-visible strings — live 2026-10-13; (outlet name, portal messages, coupon message) — coded on branch `cnc-rebrand` (`0f69bda`); **not live until merged and pushed to `main`**
 - [x] 1.7 Web app (`tnt-lh-customer`): visible wording and logo — live on teasntrees.in 2026-10-13 (owner ran the upload; live bundle matches the local build). Commit `aad3218` is still only on the local `cnc-rebrand` branch; owner to push
 - [ ] 1.8 Replace the stopgap PNG with the final SVG logo when it arrives
-- [ ] 1.9 Store listings: Play listing text and screenshots (owner, in Play Console)
+- [ ] 1.9 Play listing text — drafted in `docs/PLAY_LISTING.md` with the BrewCrust name; owner updates Play Console in the next release
 - [ ] 1.10 Admin panels: visible wording (their team; separate repos)
 
 Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
@@ -42,20 +42,20 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
 - [x] 2.3 Rider app builds and launches on the iOS simulator (first ever iOS build; login screen renders, API URL loads)
 - [ ] 2.4 Rider app core flow on iOS: login, go online, accept, navigate, proof photo, complete; background location
 - [x] 2.5 Align iOS deployment target (customer 15.6, rider 15.0, project and Podfile agree; both rebuilt)
-- [ ] 2.6 Push notifications on iOS
+- [x] 2.6 Push notifications on iOS
   - [x] Entitlements in both apps (development for Debug/Profile, production for Release), same layout as the Conclave project
-  - [ ] APNs key uploaded to Firebase project `tnt-lh` for both iOS apps: reuse the Conclave/Sujatha key, Key ID `YGC3BG873X`, Team ID `3PH4PG45KG`
-  - [ ] Push Notifications capability enabled on both App IDs in the Apple Developer account
-  - [ ] A real push received on a real iPhone (simulators can't get an APNs token)
+  - [x] APNs key uploaded to Firebase for both iOS apps (owner, 2026-10-14)
+  - [x] Push capability on both App IDs (signing succeeds with aps-environment)
+  - [x] A real push received on a real iPhone (2026-10-15)
 - [x] 2.12 App Store Connect: both bundle IDs registered and both app records created by the owner — customer "Teas n Trees | Cream n Crust" (`6821685979`), rider "TnT CnC | Rider" (`6821686237`), both at version 1.0
-- [ ] 2.7 Signing and archive
+- [x] 2.7 Signing and archive (fastlane beta, team 3PH4PG45KG)
   - [x] Customer project: development team set to `3PH4PG45KG` (same team as Conclave and Sujatha)
   - [x] Rider project moved to team `3PH4PG45KG`
   - [x] fastlane pipeline ported from Sujatha Caterers into both apps (`ios/fastlane`): `status`, `beta`, `wait_build`, `submit`, `review_status`, `cancel_review`
   - [x] App Store prerequisites: iPhone-only and portrait-only (as the other apps), Android icon used as the iOS icon with no alpha, export-compliance flag, `ExportOptions.plist`
   - [x] Archive both apps (signed and exported through the pipeline)
-- [ ] 2.8 (coded 2026-10-13, untested; owner must enable the Apple provider in Firebase Authentication) App Store rules: Sign in with Apple (required alongside Google sign-in) — checked 2026-10-11: not present in the app; needs building
-- [ ] 2.9 (backend live 2026-10-13: deactivate + anonymise; customer app UI coded, not yet run by hand; rider app UI pending) App Store rules: in-app account deletion — checked 2026-10-11: not present in either app or the backend; needs building (endpoint + UI)
+- [ ] 2.8 Sign in with Apple — in BrewCrust 1.0.0 (7), Apple provider enabled in Firebase (2026-10-14); not yet tried on a real iPhone
+- [x] 2.9 In-app account deletion (deactivate + anonymise) — backend live, both apps have the button (customer 1.0.0 (7), rider 1.0.0 (9)); tested on a throwaway database, not yet by hand in the apps
 - [x] 2.10 TestFlight build of both apps
   - [x] Customer `1.0.0+4` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+5` (processed 2026-10-12)
   - [x] Rider `1.0.0+5` uploaded 2026-10-11 — **crashed on launch on iOS 27**; replaced by `1.0.0+6` (processed 2026-10-12)
@@ -85,19 +85,19 @@ until it is merged to `main` and pushed (which deploys).
 
 ## Phase 5 — Requests from the business (2026-10-13)
 
-- [ ] 5.1 (rider `1.0.0 (8)` on TestFlight, Android bundle built 2026-10-13; awaiting owner's real-SMS test and Play upload) Rider resets a forgotten PIN themselves; admin is notified
+- [x] 5.1 Rider self-service PIN reset with admin alert — backend live, rider 1.0.0 (9) on Play beta and in App Store review, admin panels alert (2026-10-15)
   - [x] Backend endpoint `POST /rider/auth/reset-pin` — branch `rider-pin-reset` (`dea1546`), tested against a throwaway local database
   - [x] Rider app screen (SMS code → new PIN) — committed on `cnc-ios-foldable`; builds on Android and iOS; step 1 checked on the Android emulator
   - [x] Backend merged to `main` and live in production (2026-10-13)
-  - [ ] Full flow with a real SMS code on Android and iOS (needs the backend live)
+  - [ ] Full flow with a real SMS code (owner: no registered test rider on a test number; later)
   - [x] Rider app's Android SHA fingerprints in Firebase (owner confirmed 2026-10-13)
   - [x] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos; owner: later — pushed to both panels 2026-10-15 (toast + card line); event path verified locally
   - [x] New rider builds shipped (Play + TestFlight) — rider 1.0.0 (9): Play beta + App Store review
-- [ ] 5.2 Admin panel menu management — both panels already have Products and Categories pages (create, edit, delete, price, sizes, add-ons, image, availability); owner to say what is missing or not working
+- [x] 5.2 Admin panel menu management — both panels already meet the requirement incl. dish photo upload (checked in code 2026-10-15); the gap is data: most dishes have no photo
 
 ## Phase 6 — Deployment and operations (stays on the Windows VM; no Linux VM available)
 
-- [ ] 6.1 Rotate the credentials exposed in the public backend repo (same as 4.4) — do first
+- [ ] 6.1 Rotate the credentials exposed in the public backend repo — owner: leave while all users are testers (2026-10-14); do before real customers
 - [x] 6.2 Backend: check job before deploy (parse every file, boot against a throwaway MongoDB, hit six endpoints) — live on GitHub 2026-10-13; first run failed and skipped the deploy as designed, second passed and deployed
 - [x] 6.3 Website deploys from GitHub on push to main (own deploy key; `C:\Users\tntadmin\deploy-web.ps1` keeps the previous version) — live 2026-10-15
 - [x] 6.4 Error alerts (Sentry, org manuen-infotech-opc-private-li): backend (every logger.error + unhandled Express errors, production only) and website (production builds) — live 2026-10-15; test events sent to both projects
