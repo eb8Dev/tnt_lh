@@ -68,11 +68,11 @@ Must not change: app IDs (`com.manuen.tnt_lh`, `com.manuen.tntLh`,
 
 ## Phase 3 — Foldables
 
-- [ ] 3.1 Foldable emulator set up (only `Pixel_10_Pro_XL` exists today); capture what breaks folded and unfolded (customer app)
-- [ ] 3.2 Cap the scaling so wide screens show more content, not bigger content
-- [ ] 3.3 Adaptive layouts: grid columns by width; max content width for forms, sheets, checkout; onboarding and login
-- [ ] 3.4 Fold/unfold while running: state survives, nothing important under the hinge
-- [ ] 3.5 Rider app pass on the foldable emulator
+- [x] 3.1 Foldable emulator `Pixel_10_Pro_Fold` (Android 17; set to stay awake on fold) — customer app walked folded and unfolded
+- [x] 3.2 Scaling capped at 1.15x on wide screens (`lib/core/responsive.dart`)
+- [x] 3.3 Grids 2–6 columns by width; detail, bag, checkout, orders, profile and sign-in pages in a centred 640dp column
+- [x] 3.4 Fold/unfold while running: the manifest already handles size changes without restarting the activity; the Pixel Fold's hinge does not cover content
+- [ ] 3.5 Rider app pass on the foldable emulator — owner: later
 
 ## Backend changes waiting to go live
 
@@ -94,6 +94,11 @@ until it is merged to `main` and pushed (which deploys).
   - [x] Admin panel shows the alert (`rider:pin-reset` event, `pinResetAt` / `pinResetCount` on the rider) — panel repos; owner: later — pushed to both panels 2026-10-15 (toast + card line); event path verified locally
   - [x] New rider builds shipped (Play + TestFlight) — rider 1.0.0 (9): Play beta + App Store review
 - [x] 5.2 Admin panel menu management — both panels already meet the requirement incl. dish photo upload (checked in code 2026-10-15); the gap is data: most dishes have no photo
+
+## Phase 7 — Design polish (2026-10-15)
+
+- [x] 7.1 Customer app: spacing on the 4/8/12/16/24 scale, tighter item page, checkout, bag; empty sections hidden; customer-facing order status names; '1 item'; before/after in `docs/design/polish-before-after.png`
+- [ ] 7.2 Ship it: the polish and foldable work are in neither the build under App Store review (1.0.0 (7)) nor Play beta (7); next release
 
 ## Phase 6 — Deployment and operations (stays on the Windows VM; no Linux VM available)
 
