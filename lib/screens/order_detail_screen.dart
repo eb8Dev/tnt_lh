@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -196,8 +197,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                OrderDetailScreen(orderId: newId.toString(), brand: order.brand),
+            builder: (_) => OrderDetailScreen(
+              orderId: newId.toString(),
+              brand: order.brand,
+            ),
           ),
         );
       } else {
@@ -269,212 +272,283 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text("Order Details"),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        // Always give a way out. When this screen is the only route (e.g. opened
-        // straight from a notification), the automatic back button vanishes and
-        // the customer is trapped — so fall back to the home menu.
-        leading: IconButton(
-          icon: Icon(PhosphorIcons.caretLeft()),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const StoreHomeScreen(initialIndex: 0),
-                ),
-                (route) => false,
-              );
-            }
-          },
-        ),
-      ),
-      body: FutureBuilder<Order>(
-        future: _orderFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return ErrorRetryView(error: snapshot.error!, onRetry: _reload);
-          }
-          if (!snapshot.hasData) {
-            return Center(child: Text("Order not found"));
-          }
-
-          final order = snapshot.data!;
-          // Show tracking for ANY active post-dispatch state. The order's own
-          // status lagged the live delivery, and delivery-only statuses
-          // ('arrived', 'heading_to_pickup') never appeared on the order — so
-          // the map vanished right when the rider was arriving. Gate by "not a
-          // pre-dispatch or terminal state" instead; the panel self-hides if no
-          // active delivery is found.
-          const nonTrackable = {
-            'pending',
-            'confirmed',
-            'preparing',
-            'ready',
-            'waiting_for_rider',
-            'delivered',
-            'cancelled',
-          };
-          final isTrackable = !nonTrackable.contains(order.status.toLowerCase());
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _orderFuture = OrderService.getOrderById(
-                  widget.orderId,
-                  brand: widget.brand,
+    return CenteredPage(
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: Text("Order Details"),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          // Always give a way out. When this screen is the only route (e.g. opened
+          // straight from a notification), the automatic back button vanishes and
+          // the customer is trapped — so fall back to the home menu.
+          leading: IconButton(
+            icon: Icon(PhosphorIcons.caretLeft()),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const StoreHomeScreen(initialIndex: 0),
+                  ),
+                  (route) => false,
                 );
-              });
-              await _orderFuture;
+              }
             },
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(16.r),
-              physics: AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isTrackable) LiveTrackingPanel(order: order),
+          ),
+        ),
+        body: FutureBuilder<Order>(
+          future: _orderFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ErrorRetryView(error: snapshot.error!, onRetry: _reload);
+            }
+            if (!snapshot.hasData) {
+              return Center(child: Text("Order not found"));
+            }
 
-                  if (order.status.toLowerCase() == 'delivered' ||
-                      order.status.toLowerCase() == 'completed')
-                    _RateOrderSection(order: order),
+            final order = snapshot.data!;
+            // Show tracking for ANY active post-dispatch state. The order's own
+            // status lagged the live delivery, and delivery-only statuses
+            // ('arrived', 'heading_to_pickup') never appeared on the order — so
+            // the map vanished right when the rider was arriving. Gate by "not a
+            // pre-dispatch or terminal state" instead; the panel self-hides if no
+            // active delivery is found.
+            const nonTrackable = {
+              'pending',
+              'confirmed',
+              'preparing',
+              'ready',
+              'waiting_for_rider',
+              'delivered',
+              'cancelled',
+            };
+            final isTrackable = !nonTrackable.contains(
+              order.status.toLowerCase(),
+            );
+            return RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _orderFuture = OrderService.getOrderById(
+                    widget.orderId,
+                    brand: widget.brand,
+                  );
+                });
+                await _orderFuture;
+              },
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(16.r),
+                physics: AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isTrackable) LiveTrackingPanel(order: order),
 
-                  _buildOrderActions(order),
+                    if (order.status.toLowerCase() == 'delivered' ||
+                        order.status.toLowerCase() == 'completed')
+                      _RateOrderSection(order: order),
 
-                  /// Order ID & Status
-                  _buildSection(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order.orderNumber,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18.sp,
+                    _buildOrderActions(order),
+
+                    /// Order ID & Status
+                    _buildSection(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                order.orderNumber,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18.sp,
+                                ),
                               ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                AppFormatters.formatDateTimeFull(
+                                  order.createdAt,
+                                ),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12.sp,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 6.h,
                             ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              AppFormatters.formatDateTimeFull(order.createdAt),
+                            decoration: BoxDecoration(
+                              color: AppFormatters.getStatusColor(
+                                order.status,
+                              ).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Text(
+                              order.status.toUpperCase().replaceAll('_', ' '),
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: AppFormatters.getStatusColor(
+                                  order.status,
+                                ),
+                                fontWeight: FontWeight.bold,
                                 fontSize: 12.sp,
                               ),
                             ),
-                          ],
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 6.h,
                           ),
-                          decoration: BoxDecoration(
-                            color: AppFormatters.getStatusColor(
-                              order.status,
-                            ).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                          child: Text(
-                            order.status.toUpperCase().replaceAll('_', ' '),
-                            style: TextStyle(
-                              color: AppFormatters.getStatusColor(order.status),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  SizedBox(height: 16.h),
+                    SizedBox(height: 16.h),
 
-                  /// Status Timeline
-                  if (order.timeline.isNotEmpty) ...[
+                    /// Status Timeline
+                    if (order.timeline.isNotEmpty) ...[
+                      Text(
+                        "Order Status",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8.h),
+                      _buildSection(
+                        child: Column(
+                          children: order.timeline.reversed.map((t) {
+                            final isLast = order.timeline.first == t;
+                            return IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  Column(
+                                    children: [
+                                      Container(
+                                        width: 12.w,
+                                        height: 12.h,
+                                        decoration: BoxDecoration(
+                                          color: AppFormatters.getStatusColor(
+                                            t.status,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      if (!isLast)
+                                        Expanded(
+                                          child: Container(
+                                            width: 2.w,
+                                            color: Colors.grey[300],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(bottom: 16),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            t.status.toUpperCase().replaceAll(
+                                              '_',
+                                              ' ',
+                                            ),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13.sp,
+                                            ),
+                                          ),
+                                          if (t.description != null)
+                                            Text(
+                                              t.description!,
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 12.sp,
+                                              ),
+                                            ),
+                                          Text(
+                                            AppFormatters.formatDateTimeFull(
+                                              t.timestamp,
+                                            ),
+                                            style: TextStyle(
+                                              color: Colors.grey[400],
+                                              fontSize: 10.sp,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                    ],
+
+                    /// Items List
                     Text(
-                      "Order Status",
+                      "Order Items",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8.h),
                     _buildSection(
                       child: Column(
-                        children: order.timeline.reversed.map((t) {
-                          final isLast = order.timeline.first == t;
-                          return IntrinsicHeight(
+                        children: order.items.map((item) {
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 12),
                             child: Row(
                               children: [
-                                Column(
-                                  children: [
-                                    Container(
-                                      width: 12.w,
-                                      height: 12.h,
-                                      decoration: BoxDecoration(
-                                        color: AppFormatters.getStatusColor(
-                                          t.status,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
+                                Container(
+                                  width: 40.w,
+                                  height: 40.h,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                  child: Icon(
+                                    PhosphorIcons.coffee(
+                                      PhosphorIconsStyle.duotone,
                                     ),
-                                    if (!isLast)
-                                      Expanded(
-                                        child: Container(
-                                          width: 2.w,
-                                          color: Colors.grey[300],
-                                        ),
-                                      ),
-                                  ],
+                                    size: 20.sp,
+                                    color: Colors.black,
+                                  ),
                                 ),
                                 SizedBox(width: 12.w),
                                 Expanded(
-                                  child: Padding(
-                                    padding: EdgeInsets.only(bottom: 16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      if (item.customization != null)
                                         Text(
-                                          t.status.toUpperCase().replaceAll(
-                                            '_',
-                                            ' ',
-                                          ),
+                                          item.customization!,
                                           style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13.sp,
+                                            color: Colors.grey[600],
+                                            fontSize: 12.sp,
                                           ),
                                         ),
-                                        if (t.description != null)
-                                          Text(
-                                            t.description!,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 12.sp,
-                                            ),
-                                          ),
-                                        Text(
-                                          AppFormatters.formatDateTimeFull(
-                                            t.timestamp,
-                                          ),
-                                          style: TextStyle(
-                                            color: Colors.grey[400],
-                                            fontSize: 10.sp,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    ],
                                   ),
+                                ),
+                                Text(
+                                  "${item.quantity} x ₹${item.price.toStringAsFixed(0)}",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -482,165 +556,107 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         }).toList(),
                       ),
                     ),
+
                     SizedBox(height: 16.h),
-                  ],
 
-                  /// Items List
-                  Text(
-                    "Order Items",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8.h),
-                  _buildSection(
-                    child: Column(
-                      children: order.items.map((item) {
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40.w,
-                                height: 40.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                                child: Icon(
-                                  PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
-                                  size: 20.sp,
-                                  color: Colors.black,
-                                ),
+                    /// Delivery Address
+                    if (order.deliveryAddress != null) ...[
+                      Text(
+                        "Delivery Address",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8.h),
+                      _buildSection(
+                        child: Row(
+                          children: [
+                            Icon(
+                              PhosphorIcons.mapPin(),
+                              size: 20.sp,
+                              color: Colors.black,
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                order.deliveryAddress!.address,
+                                style: TextStyle(fontSize: 13.sp),
                               ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    if (item.customization != null)
-                                      Text(
-                                        item.customization!,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12.sp,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                "${item.quantity} x ₹${item.price.toStringAsFixed(0)}",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                    ],
 
-                  SizedBox(height: 16.h),
-
-                  /// Delivery Address
-                  if (order.deliveryAddress != null) ...[
+                    /// Payment & Summary
                     Text(
-                      "Delivery Address",
+                      "Bill Summary",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8.h),
                     _buildSection(
-                      child: Row(
+                      child: Column(
                         children: [
-                          Icon(
-                            PhosphorIcons.mapPin(),
-                            size: 20.sp,
-                            color: Colors.black,
+                          _buildSummaryRow("Subtotal", order.subtotal),
+                          _buildSummaryRow(
+                            "Delivery Charge",
+                            order.deliveryCharge,
                           ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              order.deliveryAddress!.address,
-                              style: TextStyle(fontSize: 13.sp),
-                            ),
+                          _buildSummaryRow("Tax", order.tax),
+                          Divider(height: 24.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Total Paid",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                "₹${order.total.toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18.sp,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 12.h),
+                          Row(
+                            children: [
+                              Icon(
+                                order.paymentStatus == 'paid'
+                                    ? PhosphorIcons.checkCircle(
+                                        PhosphorIconsStyle.duotone,
+                                      )
+                                    : PhosphorIcons.info(),
+                                size: 16.sp,
+                                color: order.paymentStatus == 'paid'
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                "Payment: ${order.paymentMethod} (${order.paymentStatus})",
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: order.paymentStatus == 'paid'
+                                      ? Colors.green
+                                      : Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 16.h),
+                    SizedBox(height: 32.h),
                   ],
-
-                  /// Payment & Summary
-                  Text(
-                    "Bill Summary",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8.h),
-                  _buildSection(
-                    child: Column(
-                      children: [
-                        _buildSummaryRow("Subtotal", order.subtotal),
-                        _buildSummaryRow(
-                          "Delivery Charge",
-                          order.deliveryCharge,
-                        ),
-                        _buildSummaryRow("Tax", order.tax),
-                        Divider(height: 24.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Total Paid",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              "₹${order.total.toStringAsFixed(2)}",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18.sp,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 12.h),
-                        Row(
-                          children: [
-                            Icon(
-                              order.paymentStatus == 'paid'
-                                  ? PhosphorIcons.checkCircle(PhosphorIconsStyle.duotone)
-                                  : PhosphorIcons.info(),
-                              size: 16.sp,
-                              color: order.paymentStatus == 'paid'
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              "Payment: ${order.paymentMethod} (${order.paymentStatus})",
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: order.paymentStatus == 'paid'
-                                    ? Colors.green
-                                    : Colors.orange,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 32.h),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -912,7 +928,9 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
           child: Padding(
             padding: EdgeInsets.only(right: 6.w),
             child: Icon(
-              filled ? PhosphorIcons.star(PhosphorIconsStyle.fill) : PhosphorIcons.star(),
+              filled
+                  ? PhosphorIcons.star(PhosphorIconsStyle.fill)
+                  : PhosphorIcons.star(),
               color: filled ? const Color(0xFFF5A623) : Colors.black26,
               size: 30.sp,
             ),

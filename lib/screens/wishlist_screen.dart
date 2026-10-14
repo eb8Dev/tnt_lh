@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/product_image.dart';
@@ -90,7 +91,10 @@ class WishlistScreen extends ConsumerWidget {
           return GridView.builder(
             padding: EdgeInsets.all(20.r),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+              crossAxisCount: Responsive.columnsFor(
+                MediaQuery.sizeOf(context).width,
+                minTileWidth: 175.w,
+              ),
               crossAxisSpacing: 16,
               mainAxisSpacing: 20,
               childAspectRatio: 0.75,

@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'dart:ui';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +46,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     _OnboardData(
       title: Brands.bakeryName,
-      description: "An artisan bakery. Freshly baked happiness, made with love.",
+      description:
+          "An artisan bakery. Freshly baked happiness, made with love.",
       image: Brands.bakeryLogo,
       gradient: [Theme.of(context).colorScheme.surface, Color(0xFFF3D4C2)],
     ),
@@ -75,141 +77,143 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Dynamic Background
-          ..._pages.asMap().entries.map((entry) {
-            final index = entry.key;
-            final data = entry.value;
-            final opacity = (1 - (_page - index).abs()).clamp(0.0, 1.0);
+    return CenteredPage(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Dynamic Background
+            ..._pages.asMap().entries.map((entry) {
+              final index = entry.key;
+              final data = entry.value;
+              final opacity = (1 - (_page - index).abs()).clamp(0.0, 1.0);
 
-            return Opacity(
-              opacity: opacity,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: data.gradient,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-            );
-          }),
-
-          // Content
-          PageView.builder(
-            controller: _pageController,
-            itemCount: _pages.length,
-            itemBuilder: (_, i) {
-              final progress = (_page - i).abs();
-              final scale = 1 - (progress * 0.1).clamp(0.0, 0.2);
-              final opacity = 1 - (progress * 0.5).clamp(0.0, 0.6);
-
-              return Transform.scale(
-                scale: scale,
-                child: Opacity(
-                  opacity: opacity,
-                  child: Padding(
-                    padding: EdgeInsets.all(40.r),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          _pages[i].image,
-                          height: size.height * 0.35,
-                          fit: BoxFit.contain,
-                        ),
-                        SizedBox(height: 60.h),
-                        Text(
-                          _pages[i].title,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        SizedBox(height: 20.h),
-                        Text(
-                          _pages[i].description,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            color: Colors.black54,
-                            height: 1.5.h,
-                          ),
-                        ),
-                      ],
+              return Opacity(
+                opacity: opacity,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: data.gradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
                 ),
               );
-            },
-          ),
+            }),
 
-          // Bottom Bar
-          Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                // Indicators
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _pages.length,
-                    (index) => _buildIndicator(index),
-                  ),
-                ),
-                SizedBox(height: 40.h),
+            // Content
+            PageView.builder(
+              controller: _pageController,
+              itemCount: _pages.length,
+              itemBuilder: (_, i) {
+                final progress = (_page - i).abs();
+                final scale = 1 - (progress * 0.1).clamp(0.0, 0.2);
+                final opacity = 1 - (progress * 0.5).clamp(0.0, 0.6);
 
-                // Button
-                if (_page.round() == _pages.length - 1)
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40.w),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 60.h,
-                      child: ElevatedButton(
-                        onPressed: widget.onGetStarted,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.r),
+                return Transform.scale(
+                  scale: scale,
+                  child: Opacity(
+                    opacity: opacity,
+                    child: Padding(
+                      padding: EdgeInsets.all(40.r),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            _pages[i].image,
+                            height: size.height * 0.35,
+                            fit: BoxFit.contain,
                           ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          "Get Started",
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
+                          SizedBox(height: 60.h),
+                          Text(
+                            _pages[i].title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 28.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: 20.h),
+                          Text(
+                            _pages[i].description,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: Colors.black54,
+                              height: 1.5.h,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // Bottom Bar
+            Positioned(
+              bottom: 60,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  // Indicators
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _pages.length,
+                      (index) => _buildIndicator(index),
+                    ),
+                  ),
+                  SizedBox(height: 40.h),
+
+                  // Button
+                  if (_page.round() == _pages.length - 1)
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 40.w),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 60.h,
+                        child: ElevatedButton(
+                          onPressed: widget.onGetStarted,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            "Get Started",
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
+                    )
+                  else
+                    IconButton(
+                      onPressed: () {
+                        _pageController.nextPage(
+                          duration: Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      icon: Icon(
+                        PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
+                        color: Colors.black,
+                      ),
                     ),
-                  )
-                else
-                  IconButton(
-                    onPressed: () {
-                      _pageController.nextPage(
-                        duration: Duration(milliseconds: 500),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    icon: Icon(
-                      PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
-                      color: Colors.black,
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

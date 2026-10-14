@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'dart:math';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
@@ -55,6 +56,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
+
   bool _isLoading = false;
   bool _isGlobal = true;
 
@@ -336,7 +338,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _buildAddressPickerField(FormFieldState<String> field) {
     {
       final hasAddress =
-          _selectedAddressId == null && _addressController.text.trim().isNotEmpty;
+          _selectedAddressId == null &&
+          _addressController.text.trim().isNotEmpty;
       // When no saved address is picked but a one-off map address is set, show
       // it here; otherwise this is the "add new" prompt.
       return TactileButton(
@@ -654,306 +657,308 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final tax = subtotal * (_gstRate / 100);
     final total = subtotal + _deliveryCharge + tax - _couponDiscount;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
+    return CenteredPage(
+      child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        title: Text(
-          _isGlobal ? "Checkout All" : "Checkout Store",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.black87,
-            fontSize: 20.sp,
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          centerTitle: true,
+          title: Text(
+            _isGlobal ? "Checkout All" : "Checkout Store",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.black87,
+              fontSize: 20.sp,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(24.r),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_isGlobal && widget.cart.itemCount > 0)
-                  Container(
-                    margin: EdgeInsets.only(bottom: 32),
-                    padding: EdgeInsets.all(20.r),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(24.r),
-                      border: Border.all(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(24.r),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isGlobal && widget.cart.itemCount > 0)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 32),
+                      padding: EdgeInsets.all(20.r),
+                      decoration: BoxDecoration(
                         color: Theme.of(
                           context,
-                        ).colorScheme.primary.withValues(alpha: 0.1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill),
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 28.sp,
-                        ),
-                        SizedBox(width: 16.w),
-                        Expanded(
-                          child: Text(
-                            "We'll separate your orders for each brand to ensure the best experience.",
-                            style: GoogleFonts.poppins(
-                              fontSize: 13.sp,
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
-                              height: 1.4.h,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                _buildSectionTitle("Delivery Address"),
-                SizedBox(height: 16.h),
-                _buildAddressSection(),
-
-                SizedBox(height: 40.h),
-
-                _buildSectionTitle("Special Instructions"),
-                SizedBox(height: 16.h),
-                TextFormField(
-                  controller: _instructionsController,
-                  style: GoogleFonts.poppins(fontSize: 14.sp),
-                  decoration: _inputDecoration(
-                    "e.g. Ring the bell, leave at the gate...",
-                  ),
-                ),
-
-                SizedBox(height: 40.h),
-
-                // Alternate contact number — requested by testers, for ordering
-                // to someone else's address or a building where a second number
-                // helps the rider get through.
-                _buildSectionTitle("Alternate Contact Number (optional)"),
-                SizedBox(height: 16.h),
-                TextFormField(
-                  controller: _altPhoneController,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  style: GoogleFonts.poppins(fontSize: 14.sp),
-                  decoration: _inputDecoration(
-                    "Another number the rider can call",
-                  ).copyWith(counterText: ''),
-                  validator: (v) {
-                    final t = v?.trim() ?? '';
-                    if (t.isEmpty) return null; // optional
-                    if (!RegExp(r'^[0-9]{10}$').hasMatch(t)) {
-                      return 'Enter a valid 10-digit number, or leave it blank';
-                    }
-                    return null;
-                  },
-                ),
-
-                SizedBox(height: 40.h),
-
-                _buildSectionTitle("Payment Method"),
-                SizedBox(height: 16.h),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 15,
-                        offset: Offset(0, 5),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.02),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      RadioListTile<String>(
-                        value: "COD",
-                        groupValue: _paymentMethod,
-                        onChanged: (val) =>
-                            setState(() => _paymentMethod = val.toString()),
-                        title: Text(
-                          "Cash on Delivery",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15.sp,
-                          ),
-                        ),
-                        subtitle: Text(
-                          "Pay when your order arrives",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12.sp,
-                            color: Colors.black38,
-                          ),
-                        ),
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 4.h,
+                        ).colorScheme.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(24.r),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                         ),
                       ),
-                      Divider(
-                        height: 1.h,
-                        indent: 20,
-                        endIndent: 20,
-                        color: Color(0xFFF0F0F0),
-                      ),
-                      // No payment gateway is wired up yet, so this is shown as
-                      // a disabled row rather than a radio that looks selectable
-                      // and only ever answers with a "coming soon" snackbar.
-                      RadioListTile<String>(
-                        value: "Online",
-                        groupValue: _paymentMethod,
-                        onChanged: null,
-                        title: Text(
-                          "Online Payment",
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15.sp,
-                            color: Colors.black38,
-                          ),
-                        ),
-                        subtitle: Text(
-                          "UPI, Cards, Netbanking — coming soon",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12.sp,
-                            color: Colors.black26,
-                          ),
-                        ),
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 4.h,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 40.h),
-
-                // Summary
-                Container(
-                  padding: EdgeInsets.all(28.r),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
-                    border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.02),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildCouponField(),
-                      SizedBox(height: 20.h),
-                      _buildSummaryRow(
-                        "Item Total",
-                        "₹${subtotal.toStringAsFixed(2)}",
-                      ),
-                      SizedBox(height: 16.h),
-                      _buildSummaryRow(
-                        "Delivery Fee",
-                        "₹${_deliveryCharge.toStringAsFixed(2)}",
-                      ),
-                      SizedBox(height: 16.h),
-                      _buildSummaryRow(
-                        "GST ($_gstRate%)",
-                        "₹${tax.toStringAsFixed(2)}",
-                      ),
-                      if (_couponDiscount > 0) ...[
-                        SizedBox(height: 16.h),
-                        _buildSummaryRow(
-                          "Coupon ($_appliedCoupon)",
-                          "- ₹${_couponDiscount.toStringAsFixed(2)}",
-                          valueColor: Colors.green.shade700,
-                        ),
-                      ],
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20.h),
-                        child: Divider(color: Color(0xFFF0F0F0)),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Row(
                         children: [
-                          Text(
-                            "Grand Total",
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18.sp,
-                              color: Colors.black87,
-                            ),
+                          Icon(
+                            PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill),
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 28.sp,
                           ),
-                          Text(
-                            "₹${total.toStringAsFixed(2)}",
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 24.sp,
-                              color: Theme.of(context).colorScheme.primary,
+                          SizedBox(width: 16.w),
+                          Expanded(
+                            child: Text(
+                              "We'll separate your orders for each brand to ensure the best experience.",
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                                height: 1.4.h,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
+
+                  _buildSectionTitle("Delivery Address"),
+                  SizedBox(height: 16.h),
+                  _buildAddressSection(),
+
+                  SizedBox(height: 40.h),
+
+                  _buildSectionTitle("Special Instructions"),
+                  SizedBox(height: 16.h),
+                  TextFormField(
+                    controller: _instructionsController,
+                    style: GoogleFonts.poppins(fontSize: 14.sp),
+                    decoration: _inputDecoration(
+                      "e.g. Ring the bell, leave at the gate...",
+                    ),
                   ),
-                ),
 
-                SizedBox(height: 48.h),
+                  SizedBox(height: 40.h),
 
-                TactileButton(
-                  onTap: _isLoading ? null : _placeOrder,
-                  child: Container(
-                    width: double.infinity,
-                    height: 48.h,
+                  // Alternate contact number — requested by testers, for ordering
+                  // to someone else's address or a building where a second number
+                  // helps the rider get through.
+                  _buildSectionTitle("Alternate Contact Number (optional)"),
+                  SizedBox(height: 16.h),
+                  TextFormField(
+                    controller: _altPhoneController,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    style: GoogleFonts.poppins(fontSize: 14.sp),
+                    decoration: _inputDecoration(
+                      "Another number the rider can call",
+                    ).copyWith(counterText: ''),
+                    validator: (v) {
+                      final t = v?.trim() ?? '';
+                      if (t.isEmpty) return null; // optional
+                      if (!RegExp(r'^[0-9]{10}$').hasMatch(t)) {
+                        return 'Enter a valid 10-digit number, or leave it blank';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  SizedBox(height: 40.h),
+
+                  _buildSectionTitle("Payment Method"),
+                  SizedBox(height: 16.h),
+                  Container(
                     decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(20.r),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24.r),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
+                          color: Colors.black.withValues(alpha: 0.03),
                           blurRadius: 15,
-                          offset: Offset(0, 8),
+                          offset: Offset(0, 5),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.02),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          value: "COD",
+                          groupValue: _paymentMethod,
+                          onChanged: (val) =>
+                              setState(() => _paymentMethod = val.toString()),
+                          title: Text(
+                            "Cash on Delivery",
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15.sp,
+                            ),
+                          ),
+                          subtitle: Text(
+                            "Pay when your order arrives",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.sp,
+                              color: Colors.black38,
+                            ),
+                          ),
+                          activeColor: Theme.of(context).colorScheme.primary,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 4.h,
+                          ),
+                        ),
+                        Divider(
+                          height: 1.h,
+                          indent: 20,
+                          endIndent: 20,
+                          color: Color(0xFFF0F0F0),
+                        ),
+                        // No payment gateway is wired up yet, so this is shown as
+                        // a disabled row rather than a radio that looks selectable
+                        // and only ever answers with a "coming soon" snackbar.
+                        RadioListTile<String>(
+                          value: "Online",
+                          groupValue: _paymentMethod,
+                          onChanged: null,
+                          title: Text(
+                            "Online Payment",
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15.sp,
+                              color: Colors.black38,
+                            ),
+                          ),
+                          subtitle: Text(
+                            "UPI, Cards, Netbanking — coming soon",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12.sp,
+                              color: Colors.black26,
+                            ),
+                          ),
+                          activeColor: Theme.of(context).colorScheme.primary,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 4.h,
+                          ),
                         ),
                       ],
                     ),
-                    alignment: Alignment.center,
-                    child: _isLoading
-                        ? SizedBox(
-                            height: 24.h,
-                            width: 24.w,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            _isGlobal ? "Place All Orders" : "Confirm Order",
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17.sp,
-                              color: Colors.white,
-                            ),
-                          ),
                   ),
-                ),
-                SizedBox(height: 48.h),
-              ],
+
+                  SizedBox(height: 40.h),
+
+                  // Summary
+                  Container(
+                    padding: EdgeInsets.all(28.r),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(32.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 20,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.black.withValues(alpha: 0.02),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildCouponField(),
+                        SizedBox(height: 20.h),
+                        _buildSummaryRow(
+                          "Item Total",
+                          "₹${subtotal.toStringAsFixed(2)}",
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildSummaryRow(
+                          "Delivery Fee",
+                          "₹${_deliveryCharge.toStringAsFixed(2)}",
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildSummaryRow(
+                          "GST ($_gstRate%)",
+                          "₹${tax.toStringAsFixed(2)}",
+                        ),
+                        if (_couponDiscount > 0) ...[
+                          SizedBox(height: 16.h),
+                          _buildSummaryRow(
+                            "Coupon ($_appliedCoupon)",
+                            "- ₹${_couponDiscount.toStringAsFixed(2)}",
+                            valueColor: Colors.green.shade700,
+                          ),
+                        ],
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.h),
+                          child: Divider(color: Color(0xFFF0F0F0)),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Grand Total",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.sp,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              "₹${total.toStringAsFixed(2)}",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24.sp,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 48.h),
+
+                  TactileButton(
+                    onTap: _isLoading ? null : _placeOrder,
+                    child: Container(
+                      width: double.infinity,
+                      height: 48.h,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(20.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 15,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: _isLoading
+                          ? SizedBox(
+                              height: 24.h,
+                              width: 24.w,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Text(
+                              _isGlobal ? "Place All Orders" : "Confirm Order",
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17.sp,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                  SizedBox(height: 48.h),
+                ],
+              ),
             ),
           ),
         ),
@@ -1143,10 +1148,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   hintText: 'Coupon code',
-                  prefixIcon: Icon(
-                    PhosphorIcons.tag(),
-                    size: 18.sp,
-                  ),
+                  prefixIcon: Icon(PhosphorIcons.tag(), size: 18.sp),
                   contentPadding: EdgeInsets.symmetric(vertical: 4.h),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14.r),

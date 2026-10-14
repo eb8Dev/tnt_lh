@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -126,88 +127,90 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     listenForCartErrors(ref, context);
     final cartState = ref.watch(cartProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
+    return CenteredPage(
+      child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        title: Text(
-          "My Bags",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.black87,
-            fontSize: 20.sp,
-          ),
-        ),
-        actions: [
-          TactileButton(
-            onTap: _clearCart,
-            child: Padding(
-              padding: EdgeInsets.all(12.0.r),
-              child: Icon(
-                PhosphorIcons.trash(),
-                color: Colors.black45,
-                size: 24.sp,
-              ),
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          centerTitle: true,
+          title: Text(
+            "My Bags",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.black87,
+              fontSize: 20.sp,
             ),
           ),
-          SizedBox(width: 8.w),
-        ],
-      ),
-      body: cartState.when(
-        loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
-        error: (err, stack) => ErrorRetryView(
-          error: err,
-          onRetry: () => ref.read(cartProvider.notifier).fetchCart(),
-        ),
-        data: (cart) {
-          if (cart.items.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          final cafeItems = cart.items
-              .where((i) => i.brand == 'teasntrees')
-              .toList();
-          final bakeryItems = cart.items
-              .where((i) => i.brand == 'littleh')
-              .toList();
-
-          return Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 20.w,
-                    vertical: 10.h,
-                  ),
-                  children: [
-                    if (cafeItems.isNotEmpty)
-                      _buildBrandSection(
-                        "Teas N Trees (Cafe)",
-                        cafeItems,
-                        Color(0xFF57733C),
-                        'teasntrees',
-                      ),
-
-                    if (bakeryItems.isNotEmpty) ...[
-                      SizedBox(height: 40.h),
-                      _buildBrandSection(
-                        "${Brands.bakeryName} (Bakery)",
-                        bakeryItems,
-                        Brands.bakeryColor,
-                        'littleh',
-                      ),
-                    ],
-                    SizedBox(height: 40.h),
-                  ],
+          actions: [
+            TactileButton(
+              onTap: _clearCart,
+              child: Padding(
+                padding: EdgeInsets.all(12.0.r),
+                child: Icon(
+                  PhosphorIcons.trash(),
+                  color: Colors.black45,
+                  size: 24.sp,
                 ),
               ),
+            ),
+            SizedBox(width: 8.w),
+          ],
+        ),
+        body: cartState.when(
+          loading: () => Center(child: HouseOfFlavorsLoader(size: 160.sp)),
+          error: (err, stack) => ErrorRetryView(
+            error: err,
+            onRetry: () => ref.read(cartProvider.notifier).fetchCart(),
+          ),
+          data: (cart) {
+            if (cart.items.isEmpty) {
+              return _buildEmptyState();
+            }
 
-              _buildGlobalCheckoutFooter(cart),
-            ],
-          );
-        },
+            final cafeItems = cart.items
+                .where((i) => i.brand == 'teasntrees')
+                .toList();
+            final bakeryItems = cart.items
+                .where((i) => i.brand == 'littleh')
+                .toList();
+
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.w,
+                      vertical: 10.h,
+                    ),
+                    children: [
+                      if (cafeItems.isNotEmpty)
+                        _buildBrandSection(
+                          "Teas N Trees (Cafe)",
+                          cafeItems,
+                          Color(0xFF57733C),
+                          'teasntrees',
+                        ),
+
+                      if (bakeryItems.isNotEmpty) ...[
+                        SizedBox(height: 40.h),
+                        _buildBrandSection(
+                          "${Brands.bakeryName} (Bakery)",
+                          bakeryItems,
+                          Brands.bakeryColor,
+                          'littleh',
+                        ),
+                      ],
+                      SizedBox(height: 40.h),
+                    ],
+                  ),
+                ),
+
+                _buildGlobalCheckoutFooter(cart),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

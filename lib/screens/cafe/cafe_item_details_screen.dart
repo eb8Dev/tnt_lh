@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -59,289 +60,297 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
     final isLittleH = widget.product.brand == 'littleh';
     final themeColor = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 400,
-            pinned: true,
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leading: Padding(
-              padding: EdgeInsets.all(8.0.r),
-              child: TactileButton(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
-                    color: Colors.black,
-                    size: 24.sp,
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              Padding(
+    return CenteredPage(
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 400,
+              pinned: true,
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: Padding(
                 padding: EdgeInsets.all(8.0.r),
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final isFav = ref
-                        .watch(wishlistProvider)
-                        .maybeWhen(
-                          data: (list) =>
-                              list.any((p) => p.id == widget.product.id),
-                          orElse: () => false,
-                        );
-                    return TactileButton(
-                      onTap: () => ref
-                          .read(wishlistProvider.notifier)
-                          .toggleFavorite(widget.product),
-                      child: Container(
-                        padding: EdgeInsets.all(10.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isFav
-                              ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
-                              : PhosphorIcons.heart(),
-                          color: isFav ? Colors.redAccent : Colors.black,
-                          size: 24.sp,
-                        ),
-                      ),
-                    );
-                  },
+                child: TactileButton(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
+                      color: Colors.black,
+                      size: 24.sp,
+                    ),
+                  ),
                 ),
               ),
-              SizedBox(width: 8.w),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: ProductImage(
-                url: widget.product.image,
-                isLittleH: isLittleH,
-                iconSize: 80,
+              actions: [
+                Padding(
+                  padding: EdgeInsets.all(8.0.r),
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final isFav = ref
+                          .watch(wishlistProvider)
+                          .maybeWhen(
+                            data: (list) =>
+                                list.any((p) => p.id == widget.product.id),
+                            orElse: () => false,
+                          );
+                      return TactileButton(
+                        onTap: () => ref
+                            .read(wishlistProvider.notifier)
+                            .toggleFavorite(widget.product),
+                        child: Container(
+                          padding: EdgeInsets.all(10.r),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFav
+                                ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
+                                : PhosphorIcons.heart(),
+                            color: isFav ? Colors.redAccent : Colors.black,
+                            size: 24.sp,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: 8.w),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: ProductImage(
+                  url: widget.product.image,
+                  isLittleH: isLittleH,
+                  iconSize: 80,
+                ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              padding: EdgeInsets.all(24.r),
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(36.r)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: themeColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Text(
-                          isLittleH ? Brands.bakeryName : Brands.cafeName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.bold,
-                            color: themeColor,
+            SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.all(24.r),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(36.r),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 6.h,
                           ),
+                          decoration: BoxDecoration(
+                            color: themeColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Text(
+                            isLittleH ? Brands.bakeryName : Brands.cafeName,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.bold,
+                              color: themeColor,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              PhosphorIcons.star(PhosphorIconsStyle.fill),
+                              color: Colors.amber,
+                              size: 18.sp,
+                            ),
+                            SizedBox(width: 4.w),
+                            Text(
+                              widget.product.averageRating.toStringAsFixed(1),
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      widget.product.name,
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      "₹$_currentPrice",
+                      style: GoogleFonts.poppins(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                        color: themeColor,
+                      ),
+                    ),
+                    SizedBox(height: 24.h),
+                    Text(
+                      "Description",
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.sp,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      widget.product.description ??
+                          "A premium handcrafted experience made with the finest ingredients and passion.",
+                      style: GoogleFonts.poppins(
+                        color: Colors.black54,
+                        height: 1.6.h,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                    if (widget.product.sizeOptions.isNotEmpty) ...[
+                      SizedBox(height: 24.h),
+                      Text(
+                        "Select Size",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.sp,
                         ),
                       ),
-                      Row(
-                        children: [
-                          Icon(
-                            PhosphorIcons.star(PhosphorIconsStyle.fill),
-                            color: Colors.amber,
-                            size: 18.sp,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            widget.product.averageRating.toStringAsFixed(1),
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14.sp,
+                      SizedBox(height: 12.h),
+                      Wrap(
+                        spacing: 12,
+                        children: widget.product.sizeOptions.map((opt) {
+                          final isSelected = _selectedSize == opt.size;
+                          return TactileButton(
+                            onTap: () =>
+                                setState(() => _selectedSize = opt.size),
+                            child: AnimatedContainer(
+                              duration: Duration(milliseconds: 200),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20.w,
+                                vertical: 10.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected ? themeColor : Colors.white,
+                                borderRadius: BorderRadius.circular(14.r),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? themeColor
+                                      : Colors.grey.shade200,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: themeColor.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 4),
+                                        ),
+                                      ]
+                                    : [],
+                              ),
+                              child: Text(
+                                opt.size,
+                                style: GoogleFonts.poppins(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13.sp,
+                                ),
+                              ),
                             ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    if (isLittleH &&
+                        widget.product.cakePricing?.egglessAvailable ==
+                            true) ...[
+                      SizedBox(height: 24.h),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Eggless Option",
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16.sp,
+                                ),
+                              ),
+                              Text(
+                                "+ ₹${widget.product.cakePricing!.egglessExtraCharge}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.sp,
+                                  color: Colors.black38,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Switch.adaptive(
+                            value: _isEggless,
+                            activeTrackColor: themeColor,
+                            onChanged: (val) =>
+                                setState(() => _isEggless = val),
                           ),
                         ],
                       ),
                     ],
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    widget.product.name,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    "₹$_currentPrice",
-                    style: GoogleFonts.poppins(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.bold,
-                      color: themeColor,
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
-                  Text(
-                    "Description",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    widget.product.description ??
-                        "A premium handcrafted experience made with the finest ingredients and passion.",
-                    style: GoogleFonts.poppins(
-                      color: Colors.black54,
-                      height: 1.6.h,
-                      fontSize: 14.sp,
-                    ),
-                  ),
-                  if (widget.product.sizeOptions.isNotEmpty) ...[
                     SizedBox(height: 24.h),
                     Text(
-                      "Select Size",
+                      "Special Instructions",
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
                         fontSize: 16.sp,
                       ),
                     ),
                     SizedBox(height: 12.h),
-                    Wrap(
-                      spacing: 12,
-                      children: widget.product.sizeOptions.map((opt) {
-                        final isSelected = _selectedSize == opt.size;
-                        return TactileButton(
-                          onTap: () => setState(() => _selectedSize = opt.size),
-                          child: AnimatedContainer(
-                            duration: Duration(milliseconds: 200),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 20.w,
-                              vertical: 10.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected ? themeColor : Colors.white,
-                              borderRadius: BorderRadius.circular(14.r),
-                              border: Border.all(
-                                color: isSelected
-                                    ? themeColor
-                                    : Colors.grey.shade200,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: themeColor.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ]
-                                  : [],
-                            ),
-                            child: Text(
-                              opt.size,
-                              style: GoogleFonts.poppins(
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.black87,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13.sp,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                  if (isLittleH &&
-                      widget.product.cakePricing?.egglessAvailable == true) ...[
-                    SizedBox(height: 24.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Eggless Option",
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16.sp,
-                              ),
-                            ),
-                            Text(
-                              "+ ₹${widget.product.cakePricing!.egglessExtraCharge}",
-                              style: GoogleFonts.poppins(
-                                fontSize: 12.sp,
-                                color: Colors.black38,
-                              ),
-                            ),
-                          ],
+                    TextField(
+                      controller: _customizationController,
+                      decoration: InputDecoration(
+                        hintText: "Add any special requests...",
+                        hintStyle: GoogleFonts.poppins(
+                          fontSize: 13.sp,
+                          color: Colors.black26,
                         ),
-                        Switch.adaptive(
-                          value: _isEggless,
-                          activeTrackColor: themeColor,
-                          onChanged: (val) => setState(() => _isEggless = val),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16.r),
+                          borderSide: BorderSide.none,
                         ),
-                      ],
+                      ),
+                      maxLines: 2,
                     ),
+                    // The action bar is a bottomSheet, so it overlays the scroll
+                    // content. Reserve exactly its height (top pad + button +
+                    // bottom pad) plus the system inset, rather than a magic 120
+                    // that silently breaks if the bar changes.
+                    SizedBox(height: _bottomActionHeight),
                   ],
-                  SizedBox(height: 24.h),
-                  Text(
-                    "Special Instructions",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                  SizedBox(height: 12.h),
-                  TextField(
-                    controller: _customizationController,
-                    decoration: InputDecoration(
-                      hintText: "Add any special requests...",
-                      hintStyle: GoogleFonts.poppins(
-                        fontSize: 13.sp,
-                        color: Colors.black26,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16.r),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    maxLines: 2,
-                  ),
-                  // The action bar is a bottomSheet, so it overlays the scroll
-                  // content. Reserve exactly its height (top pad + button +
-                  // bottom pad) plus the system inset, rather than a magic 120
-                  // that silently breaks if the bar changes.
-                  SizedBox(height: _bottomActionHeight),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+        bottomSheet: _buildBottomAction(themeColor),
       ),
-      bottomSheet: _buildBottomAction(themeColor),
     );
   }
 

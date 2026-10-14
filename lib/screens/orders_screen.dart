@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -51,52 +52,54 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   Widget build(BuildContext context) {
     final ordersState = ref.watch(orderProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
+    return CenteredPage(
+      child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        title: Text(
-          "My Orders",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.black87,
-            fontSize: 20.sp,
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          centerTitle: true,
+          title: Text(
+            "My Orders",
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.black87,
+              fontSize: 20.sp,
+            ),
           ),
         ),
-      ),
-      body: ordersState.when(
-        loading: () => const ProductListSkeleton(count: 4),
-        error: (err, stack) => ErrorRetryView(
-          error: err,
-          onRetry: () => ref.invalidate(orderProvider),
+        body: ordersState.when(
+          loading: () => const ProductListSkeleton(count: 4),
+          error: (err, stack) => ErrorRetryView(
+            error: err,
+            onRetry: () => ref.invalidate(orderProvider),
+          ),
+          data: (ordersState) {
+            final orders = ordersState.orders;
+            if (orders.isEmpty) {
+              return _buildEmptyState();
+            }
+            return RefreshIndicator(
+              onRefresh: () => ref.read(orderProvider.notifier).refresh(),
+              color: Theme.of(context).colorScheme.primary,
+              child: ListView.separated(
+                controller: _scrollController,
+                padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
+                // +1 for the "you owe us a rating" nudge, +1 for the footer that
+                // either loads the next page or says we've reached the end.
+                itemCount: orders.length + 2,
+                separatorBuilder: (_, _) => SizedBox(height: 16.h),
+                itemBuilder: (context, index) {
+                  if (index == 0) return _buildRatingNudge();
+                  if (index == orders.length + 1) {
+                    return _buildListFooter(ordersState);
+                  }
+                  return _buildOrderCard(orders[index - 1]);
+                },
+              ),
+            );
+          },
         ),
-        data: (ordersState) {
-          final orders = ordersState.orders;
-          if (orders.isEmpty) {
-            return _buildEmptyState();
-          }
-          return RefreshIndicator(
-            onRefresh: () => ref.read(orderProvider.notifier).refresh(),
-            color: Theme.of(context).colorScheme.primary,
-            child: ListView.separated(
-              controller: _scrollController,
-              padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
-              // +1 for the "you owe us a rating" nudge, +1 for the footer that
-              // either loads the next page or says we've reached the end.
-              itemCount: orders.length + 2,
-              separatorBuilder: (_, _) => SizedBox(height: 16.h),
-              itemBuilder: (context, index) {
-                if (index == 0) return _buildRatingNudge();
-                if (index == orders.length + 1) {
-                  return _buildListFooter(ordersState);
-                }
-                return _buildOrderCard(orders[index - 1]);
-              },
-            ),
-          );
-        },
       ),
     );
   }
@@ -155,14 +158,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       child: TactileButton(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: pending)),
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: pending),
+          ),
         ),
         child: Container(
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
             color: const Color(0xFFFFF6E5),
             borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(color: const Color(0xFFF5A623).withValues(alpha: 0.4)),
+            border: Border.all(
+              color: const Color(0xFFF5A623).withValues(alpha: 0.4),
+            ),
           ),
           child: Row(
             children: [
