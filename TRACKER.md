@@ -99,13 +99,16 @@ until it is merged to `main` and pushed (which deploys).
 
 - [ ] 6.1 Rotate the credentials exposed in the public backend repo (same as 4.4) — do first
 - [x] 6.2 Backend: check job before deploy (parse every file, boot against a throwaway MongoDB, hit six endpoints) — live on GitHub 2026-10-13; first run failed and skipped the deploy as designed, second passed and deployed
-- [ ] 6.3 Website: build and deploy from GitHub on push, replacing the hand-copied archive
-- [ ] 6.4 Error alerts for the backend and web apps (Sentry) — needs an account from the owner
+- [x] 6.3 Website deploys from GitHub on push to main (own deploy key; `C:\Users\tntadmin\deploy-web.ps1` keeps the previous version) — live 2026-10-15
+- [ ] 6.4 Error alerts (Sentry) — owner to create the account; the 14-day trial drops to the free Developer plan by itself
 - [ ] 6.5 Staging copy on the same VM (second checkout, own port, own subdomain, the clone database)
-- [ ] 6.6 Rollback: keep the previous release on the VM and a one-command switch back
-- [ ] 6.7 Backups of uploaded files (`C:\Storage`) off the VM
-- [ ] 6.8 Uptime check with an alert when the API or site is down
+- [x] 6.6 Rollback — backend: deploy.ps1 health-checks and restores the previous commit on failure; Run workflow with a commit hash deploys that commit (tested back and forward 2026-10-15). Website: Run workflow with 'rollback'
+- [ ] 6.7 Backups of uploaded files (`C:\Storage`) to Azure Storage — the VM is not in the MANUEN subscription this Mac can see; owner to say which subscription
+- [ ] 6.8 Uptime check every 10 min from GitHub (`uptime.yml`, backend repo) — running; the email to connect@manuen.com needs SMTP_* repo secrets
 - [x] 6.9 Android releases uploaded by command (Play service-account key) — done 2026-10-15 (`android/fastlane`, key in ~/.tnt-secrets); both apps on Play beta: customer 7, rider 9
+
+- [x] 6.10 Dead push tokens cleared instead of retried hourly — live 2026-10-15
+- [ ] 6.11 Remote Desktop (3389) is open to the whole internet — restrict it to known IPs in the Azure network settings, or close it (SSH is enough)
 
 ## Phase 4 — Later (agreed to defer)
 
