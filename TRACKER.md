@@ -103,12 +103,12 @@ until it is merged to `main` and pushed (which deploys).
 - [ ] 6.4 Error alerts (Sentry) — owner to create the account; the 14-day trial drops to the free Developer plan by itself
 - [ ] 6.5 Staging copy on the same VM (second checkout, own port, own subdomain, the clone database)
 - [x] 6.6 Rollback — backend: deploy.ps1 health-checks and restores the previous commit on failure; Run workflow with a commit hash deploys that commit (tested back and forward 2026-10-15). Website: Run workflow with 'rollback'
-- [ ] 6.7 Backups of uploaded files (`C:\Storage`) to Azure Storage — the VM is not in the MANUEN subscription this Mac can see; owner to say which subscription
-- [ ] 6.8 Uptime check every 10 min from GitHub (`uptime.yml`, backend repo) — running; the email to connect@manuen.com needs SMTP_* repo secrets
+- [ ] 6.7 Backups of uploaded files (`C:\Storage`, 264 files / 41 MB) to Firebase Storage nightly at 3 AM (`scripts/backup_storage.mjs`, task TnT-Backup) — waiting on the owner to switch on Firebase Storage in project tnt-lh (no bucket exists)
+- [ ] 6.8 Uptime check every 10 min from GitHub (`uptime.yml`) — running; SMTP host/port/user set (manueninfotech@gmail.com); waiting on the Gmail app password for SMTP_PASS
 - [x] 6.9 Android releases uploaded by command (Play service-account key) — done 2026-10-15 (`android/fastlane`, key in ~/.tnt-secrets); both apps on Play beta: customer 7, rider 9
 
 - [x] 6.10 Dead push tokens cleared instead of retried hourly — live 2026-10-15
-- [ ] 6.11 Remote Desktop (3389) is open to the whole internet — restrict it to known IPs in the Azure network settings, or close it (SSH is enough)
+- [x] 6.11 Remote Desktop (3389) open to the internet — client's server and setting; owner decided to leave it (2026-10-15)
 
 ## Phase 4 — Later (agreed to defer)
 
