@@ -26,5 +26,10 @@ Location is used only while the app is open, to set the delivery address and
 show the order on the map. It is never tracked in the background.
 
 5. SIGN-IN AND ACCOUNT DELETION
-Phone number, Google and Sign in with Apple are offered. Account deletion is
+Phone number, Google and Sign in with Apple are offered.
+After Sign in with Apple (or Google) a new account is asked for a phone
+number for deliveries: type any 10-digit number other than the demo number
+above. No SMS is sent for it.
+(The earlier rejection of 1.0.0 (7) - Sign in with Apple failing - was a
+server-side fault that blocked creating new accounts. It is fixed.) Account deletion is
 in Profile -> Delete account.
