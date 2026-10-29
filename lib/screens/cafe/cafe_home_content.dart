@@ -408,7 +408,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 // only needed now and then, so browsing reclaims their space.
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
                     child: Row(
                       children: [
                         Expanded(
@@ -428,10 +428,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _PinnedHeaderDelegate(
-                    height: 62.h,
+                    height: 56.h,
                     child: Container(
                       color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 10.h),
+                      padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 6.h),
                       child: _buildSearchBar(isLittleH),
                     ),
                   ),
@@ -471,7 +471,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
         : "Freshly brewed, just for you";
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 10.h),
+      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 6.h),
       child: Row(
         children: [
           Expanded(
@@ -822,18 +822,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
         }
         return [
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 4.h),
+            padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 4.h),
             sliver: SliverGrid.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                // 2 on a phone, more on an open foldable or tablet.
-                crossAxisCount: Responsive.columnsFor(
-                  MediaQuery.sizeOf(context).width,
-                  minTileWidth: 175.w,
-                ),
-                mainAxisSpacing: 14.h,
-                crossAxisSpacing: 14.w,
-                childAspectRatio: 0.68,
-              ),
+              gridDelegate: _gridDelegate(context),
               itemCount: products.length,
               itemBuilder: (context, index) => _buildGridCard(products[index]),
             ),
@@ -953,6 +944,24 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// rating badge, wishlist heart, and the add/stepper control all layered over
   /// it, then a clean name + price footer sits below. Deliberately not a plain
   /// image-over-text column.
+  /// 2 columns on a phone, more on an open foldable or tablet. Each tile is
+  /// as tall as its 4:3 image plus the one-line name and the price.
+  SliverGridDelegate _gridDelegate(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = Responsive.columnsFor(width, minTileWidth: 175.w);
+    final gap = 12.w;
+    final tileWidth = (width - 32.w - gap * (columns - 1)) / columns;
+    final scaler = MediaQuery.textScalerOf(context);
+    final textBlock =
+        scaler.scale(13.sp) * 1.15 + 2.h + scaler.scale(14.sp) * 1.5 + 10.h;
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: columns,
+      mainAxisSpacing: 12.h,
+      crossAxisSpacing: gap,
+      mainAxisExtent: tileWidth * 3 / 4 + textBlock + 2,
+    );
+  }
+
   Widget _buildGridCard(Product product) {
     final isLittleH = widget.brand == 'littleh';
 
@@ -1002,7 +1011,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // --- Image with layered controls -----------------------------
-                Expanded(
+                // 4:3, so a card is about as tall as it is wide and a phone
+                // shows two full rows (it was ~1.5x taller than wide).
+                AspectRatio(
+                  aspectRatio: 4 / 3,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -1166,13 +1178,13 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 ),
                 // --- Name + price footer -------------------------------------
                 Padding(
-                  padding: EdgeInsets.fromLTRB(12.w, 2.h, 12.w, 12.h),
+                  padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         product.name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
                           fontSize: 13.sp,
@@ -1181,7 +1193,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                           height: 1.15,
                         ),
                       ),
-                      SizedBox(height: 4.h),
+                      SizedBox(height: 2.h),
                       Text(
                         "₹${product.displayPrice}",
                         style: GoogleFonts.poppins(
