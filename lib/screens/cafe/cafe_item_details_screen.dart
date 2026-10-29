@@ -58,8 +58,11 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLittleH = widget.product.brand == 'littleh';
     final themeColor = Theme.of(context).colorScheme.primary;
+
+    if (Responsive.isExpanded(context)) {
+      return _buildTwoPane(isLittleH, themeColor);
+    }
 
     return CenteredPage(
       child: Scaffold(
@@ -76,57 +79,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               pinned: true,
               backgroundColor: Colors.white,
               elevation: 0,
-              leading: Padding(
-                padding: EdgeInsets.all(8.0.r),
-                child: TactileButton(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
-                      color: Colors.black,
-                      size: 24.sp,
-                    ),
-                  ),
-                ),
-              ),
+              leading: _buildBackButton(),
               actions: [
-                Padding(
-                  padding: EdgeInsets.all(8.0.r),
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final isFav = ref
-                          .watch(wishlistProvider)
-                          .maybeWhen(
-                            data: (list) =>
-                                list.any((p) => p.id == widget.product.id),
-                            orElse: () => false,
-                          );
-                      return TactileButton(
-                        onTap: () => ref
-                            .read(wishlistProvider.notifier)
-                            .toggleFavorite(widget.product),
-                        child: Container(
-                          padding: EdgeInsets.all(10.r),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            isFav
-                                ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
-                                : PhosphorIcons.heart(),
-                            color: isFav ? Colors.redAccent : Colors.black,
-                            size: 24.sp,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                _buildFavButton(),
                 SizedBox(width: 8.w),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -137,220 +92,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.all(24.r),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(36.r),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 6.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: themeColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                          child: Text(
-                            isLittleH ? Brands.bakeryName : Brands.cafeName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.bold,
-                              color: themeColor,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Icon(
-                              PhosphorIcons.star(PhosphorIconsStyle.fill),
-                              color: Colors.amber,
-                              size: 18.sp,
-                            ),
-                            SizedBox(width: 4.w),
-                            Text(
-                              widget.product.averageRating.toStringAsFixed(1),
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      widget.product.name,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      "₹$_currentPrice",
-                      style: GoogleFonts.poppins(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold,
-                        color: themeColor,
-                      ),
-                    ),
-                    // Only when there is one. A "Description" heading over an
-                    // empty space looked broken, and the old stand-in copy
-                    // described every dish the same way.
-                    if ((widget.product.description ?? '')
-                        .trim()
-                        .isNotEmpty) ...[
-                      SizedBox(height: Space.sm.h),
-                      Text(
-                        widget.product.description!.trim(),
-                        style: GoogleFonts.poppins(
-                          color: Colors.black54,
-                          height: 1.5,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                    ],
-                    if (widget.product.sizeOptions.isNotEmpty) ...[
-                      SizedBox(height: 24.h),
-                      Text(
-                        "Select Size",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.sp,
-                        ),
-                      ),
-                      SizedBox(height: 12.h),
-                      Wrap(
-                        spacing: 12,
-                        children: widget.product.sizeOptions.map((opt) {
-                          final isSelected = _selectedSize == opt.size;
-                          return TactileButton(
-                            onTap: () =>
-                                setState(() => _selectedSize = opt.size),
-                            child: AnimatedContainer(
-                              duration: Duration(milliseconds: 200),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20.w,
-                                vertical: 10.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected ? themeColor : Colors.white,
-                                borderRadius: BorderRadius.circular(14.r),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? themeColor
-                                      : Colors.grey.shade200,
-                                ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: themeColor.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          blurRadius: 8,
-                                          offset: Offset(0, 4),
-                                        ),
-                                      ]
-                                    : [],
-                              ),
-                              child: Text(
-                                opt.size,
-                                style: GoogleFonts.poppins(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13.sp,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    if (isLittleH &&
-                        widget.product.cakePricing?.egglessAvailable ==
-                            true) ...[
-                      SizedBox(height: 24.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Eggless Option",
-                                style: GoogleFonts.poppins(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16.sp,
-                                ),
-                              ),
-                              Text(
-                                "+ ₹${widget.product.cakePricing!.egglessExtraCharge}",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12.sp,
-                                  color: Colors.black38,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Switch.adaptive(
-                            value: _isEggless,
-                            activeTrackColor: themeColor,
-                            onChanged: (val) =>
-                                setState(() => _isEggless = val),
-                          ),
-                        ],
-                      ),
-                    ],
-                    SizedBox(height: 24.h),
-                    Text(
-                      "Special Instructions",
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                    TextField(
-                      controller: _customizationController,
-                      decoration: InputDecoration(
-                        hintText: "Add any special requests...",
-                        hintStyle: GoogleFonts.poppins(
-                          fontSize: 13.sp,
-                          color: Colors.black26,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16.r),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      maxLines: 2,
-                    ),
-                    // The action bar is a bottomSheet, so it overlays the scroll
-                    // content. Reserve exactly its height (top pad + button +
-                    // bottom pad) plus the system inset, rather than a magic 120
-                    // that silently breaks if the bar changes.
-                    SizedBox(height: _bottomActionHeight),
-                  ],
-                ),
-              ),
-            ),
+            SliverToBoxAdapter(child: _buildDetailsPanel(themeColor)),
           ],
         ),
         bottomSheet: _buildBottomAction(themeColor),
@@ -362,6 +104,301 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
   /// plus whatever the OS reserves at the bottom (gesture bar / nav bar).
   double get _bottomActionHeight =>
       16.h + 48.h + 24.h + MediaQuery.of(context).viewPadding.bottom;
+
+  Widget _buildBackButton() => Padding(
+    padding: EdgeInsets.all(8.0.r),
+    child: TactileButton(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        child: Icon(
+          PhosphorIcons.caretLeft(PhosphorIconsStyle.bold),
+          color: Colors.black,
+          size: 24.sp,
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildFavButton() => Padding(
+    padding: EdgeInsets.all(8.0.r),
+    child: Consumer(
+      builder: (context, ref, child) {
+        final isFav = ref
+            .watch(wishlistProvider)
+            .maybeWhen(
+              data: (list) => list.any((p) => p.id == widget.product.id),
+              orElse: () => false,
+            );
+        return TactileButton(
+          onTap: () => ref
+              .read(wishlistProvider.notifier)
+              .toggleFavorite(widget.product),
+          child: Container(
+            padding: EdgeInsets.all(10.r),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isFav
+                  ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
+                  : PhosphorIcons.heart(),
+              color: isFav ? Colors.redAccent : Colors.black,
+              size: 24.sp,
+            ),
+          ),
+        );
+      },
+    ),
+  );
+
+  bool get isLittleH => widget.product.brand == 'littleh';
+
+  Widget _buildDetailsPanel(Color themeColor) => Container(
+    padding: EdgeInsets.all(24.r),
+    decoration: BoxDecoration(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      borderRadius: BorderRadius.vertical(top: Radius.circular(36.r)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: themeColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Text(
+                isLittleH ? Brands.bakeryName : Brands.cafeName,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.bold,
+                  color: themeColor,
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Icon(
+                  PhosphorIcons.star(PhosphorIconsStyle.fill),
+                  color: Colors.amber,
+                  size: 18.sp,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  widget.product.averageRating.toStringAsFixed(1),
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        SizedBox(height: 16.h),
+        Text(
+          widget.product.name,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          "₹$_currentPrice",
+          style: GoogleFonts.poppins(
+            fontSize: 24.sp,
+            fontWeight: FontWeight.bold,
+            color: themeColor,
+          ),
+        ),
+        // Only when there is one. A "Description" heading over an
+        // empty space looked broken, and the old stand-in copy
+        // described every dish the same way.
+        if ((widget.product.description ?? '').trim().isNotEmpty) ...[
+          SizedBox(height: Space.sm.h),
+          Text(
+            widget.product.description!.trim(),
+            style: GoogleFonts.poppins(
+              color: Colors.black54,
+              height: 1.5,
+              fontSize: 14.sp,
+            ),
+          ),
+        ],
+        if (widget.product.sizeOptions.isNotEmpty) ...[
+          SizedBox(height: 24.h),
+          Text(
+            "Select Size",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.bold,
+              fontSize: 16.sp,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Wrap(
+            spacing: 12,
+            children: widget.product.sizeOptions.map((opt) {
+              final isSelected = _selectedSize == opt.size;
+              return TactileButton(
+                onTap: () => setState(() => _selectedSize = opt.size),
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: 200),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 10.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected ? themeColor : Colors.white,
+                    borderRadius: BorderRadius.circular(14.r),
+                    border: Border.all(
+                      color: isSelected ? themeColor : Colors.grey.shade200,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: themeColor.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Text(
+                    opt.size,
+                    style: GoogleFonts.poppins(
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+        if (isLittleH &&
+            widget.product.cakePricing?.egglessAvailable == true) ...[
+          SizedBox(height: 24.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Eggless Option",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16.sp,
+                    ),
+                  ),
+                  Text(
+                    "+ ₹${widget.product.cakePricing!.egglessExtraCharge}",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.black38,
+                    ),
+                  ),
+                ],
+              ),
+              Switch.adaptive(
+                value: _isEggless,
+                activeTrackColor: themeColor,
+                onChanged: (val) => setState(() => _isEggless = val),
+              ),
+            ],
+          ),
+        ],
+        SizedBox(height: 24.h),
+        Text(
+          "Special Instructions",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 16.sp,
+          ),
+        ),
+        SizedBox(height: 12.h),
+        TextField(
+          controller: _customizationController,
+          decoration: InputDecoration(
+            hintText: "Add any special requests...",
+            hintStyle: GoogleFonts.poppins(
+              fontSize: 13.sp,
+              color: Colors.black26,
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          maxLines: 2,
+        ),
+        // The action bar is a bottomSheet, so it overlays the scroll
+        // content. Reserve exactly its height (top pad + button +
+        // bottom pad) plus the system inset, rather than a magic 120
+        // that silently breaks if the bar changes.
+        SizedBox(height: _bottomActionHeight),
+      ],
+    ),
+  );
+
+  /// Landscape tablets: photo on the left, details and the add button on the
+  /// right, instead of a phone layout stretched across the screen.
+  Widget _buildTwoPane(bool isLittleH, Color themeColor) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ProductImage(
+                        url: widget.product.image,
+                        isLittleH: isLittleH,
+                        iconSize: 80,
+                      ),
+                      Positioned(top: 8, left: 8, child: _buildBackButton()),
+                      Positioned(top: 8, right: 8, child: _buildFavButton()),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: _buildDetailsPanel(themeColor),
+                    ),
+                  ),
+                  _buildBottomAction(themeColor),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildBottomAction(Color themeColor) {
     return Container(

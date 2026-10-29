@@ -18,7 +18,16 @@ import 'package:tnt_lh/utils/formatters.dart';
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
   final String? brand;
-  const OrderDetailScreen({super.key, required this.orderId, this.brand});
+  const OrderDetailScreen({
+    super.key,
+    required this.orderId,
+    this.brand,
+    this.embedded = false,
+  });
+
+  /// Shown as the right-hand pane of the orders screen on landscape tablets:
+  /// no back button, since the list stays beside it.
+  final bool embedded;
 
   @override
   ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -284,22 +293,26 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           // Always give a way out. When this screen is the only route (e.g. opened
           // straight from a notification), the automatic back button vanishes and
           // the customer is trapped — so fall back to the home menu.
-          leading: IconButton(
-            icon: Icon(PhosphorIcons.caretLeft()),
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const StoreHomeScreen(initialIndex: 0),
-                  ),
-                  (route) => false,
-                );
-              }
-            },
-          ),
+          automaticallyImplyLeading: !widget.embedded,
+          leading: widget.embedded
+              ? null
+              : IconButton(
+                  icon: Icon(PhosphorIcons.caretLeft()),
+                  onPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const StoreHomeScreen(initialIndex: 0),
+                        ),
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
         ),
         body: FutureBuilder<Order>(
           future: _orderFuture,

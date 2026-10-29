@@ -129,6 +129,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final cartState = ref.watch(cartProvider);
 
     return CenteredPage(
+      // Wider on landscape tablets, where the bag is two columns.
+      maxWidth: Responsive.isExpanded(context) ? 1100 : 640,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
@@ -176,7 +178,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 .where((i) => i.brand == 'littleh')
                 .toList();
 
-            return Column(
+            // Landscape tablets: items on the left, the total and checkout
+            // in a column on the right.
+            final expanded = Responsive.isExpanded(context);
+            return Flex(
+              direction: expanded ? Axis.horizontal : Axis.vertical,
+              crossAxisAlignment: expanded
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: ListView(
@@ -207,7 +216,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 ),
 
-                _buildGlobalCheckoutFooter(cart),
+                if (expanded)
+                  SizedBox(
+                    width: 380,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12, right: 12),
+                      child: _buildGlobalCheckoutFooter(cart),
+                    ),
+                  )
+                else
+                  _buildGlobalCheckoutFooter(cart),
               ],
             );
           },

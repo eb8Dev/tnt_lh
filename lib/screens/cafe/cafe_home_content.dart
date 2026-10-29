@@ -383,6 +383,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     final isLittleH = widget.brand == 'littleh';
     final primary = Theme.of(context).colorScheme.primary;
 
+    // Landscape tablets: categories become a sidebar.
+    final expanded = Responsive.isExpanded(context);
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // The Zomato-style "Menu" button — a jump-to-category shortcut so a long
@@ -390,65 +393,151 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       // no categories to jump to. It floats just above the bottom nav (the
       // parent reserves that space, so this sits clear of it).
       floatingActionButton: categoriesAsync.maybeWhen(
-        data: (cats) => cats.isEmpty ? null : _buildMenuButton(cats),
+        // Not on landscape tablets: the category sidebar is always visible.
+        data: (cats) => cats.isEmpty || Responsive.isExpanded(context)
+            ? null
+            : _buildMenuButton(cats),
         orElse: () => null,
       ),
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          onRefresh: _refresh,
-          color: primary,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: _onScrollNotification,
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // Store switcher + wishlist + greeting scroll away — they're
-                // only needed now and then, so browsing reclaims their space.
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: StoreSwitcher(
-                            activeBrand: widget.brand,
-                            onSelect: (b) => widget.onSelectStore?.call(b),
+        child: expanded
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildCategorySidebar(categoriesAsync),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: _refresh,
+                      color: primary,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _onScrollNotification,
+                        child: CustomScrollView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            // Store switcher + wishlist + greeting scroll away — they're
+                            // only needed now and then, so browsing reclaims their space.
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  16.w,
+                                  8.h,
+                                  16.w,
+                                  0,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: StoreSwitcher(
+                                        activeBrand: widget.brand,
+                                        onSelect: (b) =>
+                                            widget.onSelectStore?.call(b),
+                                      ),
+                                    ),
+                                    SizedBox(width: 10.w),
+                                    _buildWishlistButton(context),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: _buildGreeting(isLittleH),
+                            ),
+                            // Search sticks to the very top once you scroll past the header.
+                            SliverPersistentHeader(
+                              pinned: true,
+                              delegate: _PinnedHeaderDelegate(
+                                height: 56.h,
+                                child: Container(
+                                  color: Theme.of(
+                                    context,
+                                  ).scaffoldBackgroundColor,
+                                  padding: EdgeInsets.fromLTRB(
+                                    16.w,
+                                    2.h,
+                                    16.w,
+                                    6.h,
+                                  ),
+                                  child: _buildSearchBar(isLittleH),
+                                ),
+                              ),
+                            ),
+                            // Category chips pin just under the search bar (on landscape
+                            // tablets they are a sidebar instead, see build()).
+                            if (!expanded)
+                              SliverPersistentHeader(
+                                pinned: true,
+                                delegate: _PinnedHeaderDelegate(
+                                  height: 56.h,
+                                  child: _buildCategoryBar(categoriesAsync),
+                                ),
+                              ),
+                            ..._productSlivers(productsAsync),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : RefreshIndicator(
+                onRefresh: _refresh,
+                color: primary,
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _onScrollNotification,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      // Store switcher + wishlist + greeting scroll away — they're
+                      // only needed now and then, so browsing reclaims their space.
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: StoreSwitcher(
+                                  activeBrand: widget.brand,
+                                  onSelect: (b) =>
+                                      widget.onSelectStore?.call(b),
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              _buildWishlistButton(context),
+                            ],
                           ),
                         ),
-                        SizedBox(width: 10.w),
-                        _buildWishlistButton(context),
-                      ],
-                    ),
+                      ),
+                      SliverToBoxAdapter(child: _buildGreeting(isLittleH)),
+                      // Search sticks to the very top once you scroll past the header.
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _PinnedHeaderDelegate(
+                          height: 56.h,
+                          child: Container(
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 6.h),
+                            child: _buildSearchBar(isLittleH),
+                          ),
+                        ),
+                      ),
+                      // Category chips pin just under the search bar (on landscape
+                      // tablets they are a sidebar instead, see build()).
+                      if (!expanded)
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _PinnedHeaderDelegate(
+                            height: 56.h,
+                            child: _buildCategoryBar(categoriesAsync),
+                          ),
+                        ),
+                      ..._productSlivers(productsAsync),
+                    ],
                   ),
                 ),
-                SliverToBoxAdapter(child: _buildGreeting(isLittleH)),
-                // Search sticks to the very top once you scroll past the header.
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _PinnedHeaderDelegate(
-                    height: 56.h,
-                    child: Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 6.h),
-                      child: _buildSearchBar(isLittleH),
-                    ),
-                  ),
-                ),
-                // Category chips pin just under the search bar.
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _PinnedHeaderDelegate(
-                    height: 56.h,
-                    child: _buildCategoryBar(categoriesAsync),
-                  ),
-                ),
-                ..._productSlivers(productsAsync),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }
@@ -636,6 +725,77 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// The pinned category filter. Compact pill chips that stay in reach while the
   /// long menu scrolls — the main findability win over the old 110px circle row
   /// that scrolled away and left the customer with no filter at hand.
+  /// Landscape tablets: the categories as a list down the left, so the full
+  /// width to the right is products.
+  Widget _buildCategorySidebar(AsyncValue<List<Category>> categoriesAsync) {
+    final primary = Theme.of(context).colorScheme.primary;
+    Widget row(String label, bool selected, VoidCallback onTap) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: selected ? primary.withValues(alpha: 0.10) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? primary : Colors.black87,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Container(
+      width: 240,
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+        ),
+      ),
+      child: categoriesAsync.when(
+        loading: () => const SizedBox.shrink(),
+        error: (_, _) => const SizedBox.shrink(),
+        data: (categories) => ListView(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(26, 0, 16, 10),
+              child: Text(
+                'Menu',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: Colors.black45,
+                ),
+              ),
+            ),
+            row(
+              'All',
+              _selectedCategoryIndex == -1,
+              () => _onCategorySelected(-1, null),
+            ),
+            for (var i = 0; i < categories.length; i++)
+              row(
+                categories[i].name,
+                _selectedCategoryId == categories[i].id,
+                () => _onCategorySelected(i, categories[i].id),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategoryBar(AsyncValue<List<Category>> categoriesAsync) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -821,12 +981,20 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           ];
         }
         return [
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 4.h),
-            sliver: SliverGrid.builder(
-              gridDelegate: _gridDelegate(context),
-              itemCount: products.length,
-              itemBuilder: (context, index) => _buildGridCard(products[index]),
+          // The grid's own width, not the screen's: on tablets the rail and the
+          // category sidebar take part of it.
+          SliverLayoutBuilder(
+            builder: (context, constraints) => SliverPadding(
+              padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 4.h),
+              sliver: SliverGrid.builder(
+                gridDelegate: _gridDelegate(
+                  context,
+                  constraints.crossAxisExtent,
+                ),
+                itemCount: products.length,
+                itemBuilder: (context, index) =>
+                    _buildGridCard(products[index]),
+              ),
             ),
           ),
           // The paging footer sits full-width below the grid (a grid can't hold
@@ -946,8 +1114,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// image-over-text column.
   /// 2 columns on a phone, more on an open foldable or tablet. Each tile is
   /// as tall as its 4:3 image plus the one-line name and the price.
-  SliverGridDelegate _gridDelegate(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
+  SliverGridDelegate _gridDelegate(BuildContext context, double width) {
     final columns = Responsive.columnsFor(width, minTileWidth: 175.w);
     final gap = 12.w;
     final tileWidth = (width - 32.w - gap * (columns - 1)) / columns;

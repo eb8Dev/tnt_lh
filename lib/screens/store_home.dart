@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
 import 'package:tnt_lh/widgets/active_order_bar.dart';
@@ -111,9 +112,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                       ),
                       child: Text(
                         'Keep editing',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -134,9 +133,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                       ),
                       child: Text(
                         'Discard',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -193,6 +190,29 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       const CafeProfileScreen(),
     ];
 
+    // Landscape tablets: navigation moves to a rail on the left, so the
+    // content gets the full height.
+    if (Responsive.isExpanded(context)) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Row(
+          children: [
+            _buildSideRail(brand),
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: IndexedStack(index: _selectedIndex, children: pages),
+                  ),
+                  const SafeArea(top: false, child: ActiveOrderBar()),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // IndexedStack keeps every tab's state alive (scroll position, search
@@ -206,10 +226,94 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       // ever hidden behind them.
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          const ActiveOrderBar(),
-          _buildFloatingNav(brand),
-        ],
+        children: [const ActiveOrderBar(), _buildFloatingNav(brand)],
+      ),
+    );
+  }
+
+  Widget _buildSideRail(String brand) {
+    final cartCount = ref.watch(cartProvider).value?.itemCount ?? 0;
+    final primary = Theme.of(context).colorScheme.primary;
+    final label = GoogleFonts.poppins(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+    );
+
+    NavigationRailDestination dest(
+      IconData icon,
+      IconData active,
+      String text, {
+      int badge = 0,
+    }) => NavigationRailDestination(
+      icon: Badge(
+        isLabelVisible: badge > 0,
+        label: Text('$badge'),
+        child: Icon(icon),
+      ),
+      selectedIcon: Badge(
+        isLabelVisible: badge > 0,
+        label: Text('$badge'),
+        child: Icon(active),
+      ),
+      label: Text(text),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          right: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+        ),
+      ),
+      child: SafeArea(
+        right: false,
+        child: NavigationRail(
+          backgroundColor: Colors.white,
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onItemTapped,
+          labelType: NavigationRailLabelType.all,
+          groupAlignment: -0.85,
+          indicatorColor: primary,
+          selectedIconTheme: const IconThemeData(color: Colors.white),
+          unselectedIconTheme: const IconThemeData(color: Colors.black45),
+          selectedLabelTextStyle: label.copyWith(color: primary),
+          unselectedLabelTextStyle: label.copyWith(color: Colors.black54),
+          leading: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            child: SizedBox(
+              width: 64,
+              height: 40,
+              child: Image.asset(Brands.logo(brand), fit: BoxFit.contain),
+            ),
+          ),
+          destinations: [
+            dest(
+              PhosphorIcons.house(),
+              PhosphorIcons.house(PhosphorIconsStyle.fill),
+              'Home',
+            ),
+            dest(
+              brand == 'teasntrees'
+                  ? PhosphorIcons.shoppingBag()
+                  : PhosphorIcons.basket(),
+              brand == 'teasntrees'
+                  ? PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill)
+                  : PhosphorIcons.basket(PhosphorIconsStyle.fill),
+              'Bag',
+              badge: cartCount,
+            ),
+            dest(
+              PhosphorIcons.receipt(),
+              PhosphorIcons.receipt(PhosphorIconsStyle.fill),
+              'Orders',
+            ),
+            dest(
+              PhosphorIcons.user(),
+              PhosphorIcons.user(PhosphorIconsStyle.fill),
+              'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -316,7 +420,10 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                     right: -8,
                     child: Container(
                       padding: EdgeInsets.all(3.r),
-                      constraints: BoxConstraints(minWidth: 16.w, minHeight: 16.w),
+                      constraints: BoxConstraints(
+                        minWidth: 16.w,
+                        minHeight: 16.w,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,

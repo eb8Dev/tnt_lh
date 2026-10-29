@@ -25,6 +25,9 @@ class OrdersScreen extends ConsumerStatefulWidget {
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   final _scrollController = ScrollController();
 
+  /// Landscape tablets: the order shown beside the list.
+  String? _selectedOrderId;
+
   @override
   void initState() {
     super.initState();
@@ -52,55 +55,77 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   Widget build(BuildContext context) {
     final ordersState = ref.watch(orderProvider);
 
-    return CenteredPage(
-      child: Scaffold(
+    final listPage = Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          centerTitle: true,
-          title: Text(
-            "My Orders",
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.black87,
-              fontSize: 20.sp,
-            ),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        title: Text(
+          "My Orders",
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: Colors.black87,
+            fontSize: 20.sp,
           ),
-        ),
-        body: ordersState.when(
-          loading: () => const ProductListSkeleton(count: 4),
-          error: (err, stack) => ErrorRetryView(
-            error: err,
-            onRetry: () => ref.invalidate(orderProvider),
-          ),
-          data: (ordersState) {
-            final orders = ordersState.orders;
-            if (orders.isEmpty) {
-              return _buildEmptyState();
-            }
-            return RefreshIndicator(
-              onRefresh: () => ref.read(orderProvider.notifier).refresh(),
-              color: Theme.of(context).colorScheme.primary,
-              child: ListView.separated(
-                controller: _scrollController,
-                padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
-                // +1 for the "you owe us a rating" nudge, +1 for the footer that
-                // either loads the next page or says we've reached the end.
-                itemCount: orders.length + 2,
-                separatorBuilder: (_, _) => SizedBox(height: 16.h),
-                itemBuilder: (context, index) {
-                  if (index == 0) return _buildRatingNudge();
-                  if (index == orders.length + 1) {
-                    return _buildListFooter(ordersState);
-                  }
-                  return _buildOrderCard(orders[index - 1]);
-                },
-              ),
-            );
-          },
         ),
       ),
+      body: ordersState.when(
+        loading: () => const ProductListSkeleton(count: 4),
+        error: (err, stack) => ErrorRetryView(
+          error: err,
+          onRetry: () => ref.invalidate(orderProvider),
+        ),
+        data: (ordersState) {
+          final orders = ordersState.orders;
+          if (orders.isEmpty) {
+            return _buildEmptyState();
+          }
+          return RefreshIndicator(
+            onRefresh: () => ref.read(orderProvider.notifier).refresh(),
+            color: Theme.of(context).colorScheme.primary,
+            child: ListView.separated(
+              controller: _scrollController,
+              padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
+              // +1 for the "you owe us a rating" nudge, +1 for the footer that
+              // either loads the next page or says we've reached the end.
+              itemCount: orders.length + 2,
+              separatorBuilder: (_, _) => SizedBox(height: 16.h),
+              itemBuilder: (context, index) {
+                if (index == 0) return _buildRatingNudge();
+                if (index == orders.length + 1) {
+                  return _buildListFooter(ordersState);
+                }
+                return _buildOrderCard(orders[index - 1]);
+              },
+            ),
+          );
+        },
+      ),
+    );
+
+    if (!Responsive.isExpanded(context)) return CenteredPage(child: listPage);
+
+    final selected = _selectedOrderId;
+    return Row(
+      children: [
+        SizedBox(width: 440, child: listPage),
+        VerticalDivider(width: 1, color: Colors.black.withValues(alpha: 0.06)),
+        Expanded(
+          child: selected == null
+              ? Center(
+                  child: Text(
+                    'Select an order to see its details',
+                    style: TextStyle(color: Colors.black45, fontSize: 15),
+                  ),
+                )
+              : OrderDetailScreen(
+                  key: ValueKey(selected),
+                  orderId: selected,
+                  embedded: true,
+                ),
+        ),
+      ],
     );
   }
 
@@ -220,6 +245,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
     return TactileButton(
       onTap: () {
+        if (Responsive.isExpanded(context)) {
+          setState(() => _selectedOrderId = order.id);
+          return;
+        }
         Navigator.push(
           context,
           MaterialPageRoute(

@@ -27,6 +27,14 @@ class Responsive {
   static int columnsFor(double width, {double minTileWidth = 175}) =>
       (width / minTileWidth).floor().clamp(2, 6);
 
+  /// Landscape tablets and wide windows: side navigation and two-pane
+  /// layouts. Portrait tablets (600–840) keep the phone structure with more
+  /// columns and centred pages.
+  static const double expandedWidth = 840;
+
+  static bool isExpanded(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= expandedWidth;
+
   /// Widest a form, sheet or detail page should run: beyond this lines get
   /// too long to read and buttons stretch across the screen.
   static const double maxContentWidth = 600;
