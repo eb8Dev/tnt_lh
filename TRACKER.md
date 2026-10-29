@@ -115,7 +115,8 @@ Every screen gets a designed layout in both orientations; none left out. Landsca
 - [x] 8.9 Address picker: map left, form right (landscape)
 - [x] 8.10 Onboarding (picture beside text), login, code entry, register (stores left, form right) — landscape
 - [x] 8.11 Bottom sheets capped at 640 wide
-- [ ] 8.12 Every screen checked by screenshot on the tablet (both orientations) and on a phone
+- [x] 8.12 Every screen checked by screenshot: customer (11 screens + onboarding/login) and rider (4 screens) on a Pixel Tablet in both orientations, customer on iPhone 17; no layout errors (sheets in `docs/design/tablets/`). Not seen: rider live map during a delivery
+- [x] 8.12b Rider app tablet layouts (rail, two-column dashboard and profile, map corner card, centred forms; iPad enabled) — branch `tablets` in tnt_rider
 - [ ] 8.13 iPad: enabled (all four orientations, iPhone stays portrait); needs 13" iPad App Store screenshots and a build
 - [ ] 8.14 Ship as the next version after 1.0.0 (8) is approved
 
