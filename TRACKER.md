@@ -100,6 +100,25 @@ until it is merged to `main` and pushed (which deploys).
 - [x] 7.1 Customer app: spacing on the 4/8/12/16/24 scale, tighter item page, checkout, bag; empty sections hidden; customer-facing order status names; '1 item'; before/after in `docs/design/polish-before-after.png`
 - [ ] 7.2 Ship it: the polish and foldable work are in neither the build under App Store review (1.0.0 (7)) nor Play beta (7); next release
 
+## Phase 8 — Tablets and iPad, portrait and landscape (2026-10-30, branch `tablets`)
+
+Every screen gets a designed layout in both orientations; none left out. Landscape = width >= 840 (`Responsive.isExpanded`).
+
+- [x] 8.1 Shell: side rail in landscape, bottom bar otherwise
+- [x] 8.2 Home: category sidebar + wide grid (landscape); 3–4 columns (portrait); no Menu button where the sidebar shows
+- [x] 8.3 Item details: photo left, details right (landscape)
+- [x] 8.4 Bag: items left, total right (landscape)
+- [x] 8.5 Checkout: form left, summary + place order right (landscape)
+- [x] 8.6 Orders: list left, selected order right (landscape)
+- [x] 8.7 Order details: status left, items + bill right whenever it has >= 760 of width
+- [x] 8.8 Profile: you left, addresses and settings right (landscape)
+- [x] 8.9 Address picker: map left, form right (landscape)
+- [x] 8.10 Onboarding (picture beside text), login, code entry, register (stores left, form right) — landscape
+- [x] 8.11 Bottom sheets capped at 640 wide
+- [ ] 8.12 Every screen checked by screenshot on the tablet (both orientations) and on a phone
+- [ ] 8.13 iPad: enabled (all four orientations, iPhone stays portrait); needs 13" iPad App Store screenshots and a build
+- [ ] 8.14 Ship as the next version after 1.0.0 (8) is approved
+
 ## Phase 6 — Deployment and operations (stays on the Windows VM; no Linux VM available)
 
 - [ ] 6.1 Rotate the credentials exposed in the public backend repo — owner: leave while all users are testers (2026-10-14); do before real customers
@@ -142,3 +161,4 @@ until it is merged to `main` and pushed (which deploys).
 - 2026-10-13 — Backend deployed to production: Cream N Crust wording, stale-order job, rider PIN reset, account deletion, and a fix to social sign-in (the email was trusted from the request body; it now comes from the verified token).
 - 2026-10-13 — Client wants a shorter umbrella app name ("Duobite"-style); name ideas requested. Play/App Store listing text waits on the name.
 - 2026-10-15 — Umbrella name BrewCrust adopted (home screen: BrewCrust / BC Rider). Screenshot runs found and fixed three customer-app bugs (loading placeholder layout, missing Poppins Extra Bold, bag header overflow). Test push to iPhone confirmed.
+- 2026-10-30 — App Review rejected 1.0.0 (7): Sign in with Apple failed. Two backend causes (null-indexed unique keys; Apple's email-only-once), both fixed and deployed; owner confirmed Apple sign-in on an iPhone 16 Plus; 1.0.0 (8) resubmitted.
