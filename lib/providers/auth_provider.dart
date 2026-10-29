@@ -232,16 +232,20 @@ class AuthNotifier extends Notifier<AuthState> {
           e.code == 'canceled' ||
           e.code == 'web-context-canceled' ||
           (e.message ?? '').contains('1001');
+      // The code goes into the message: one generic line for every failure
+      // left nothing to diagnose when review rejected the app on it.
+      debugPrint('Apple sign-in failed: ${e.code} ${e.message}');
       state = state.copyWith(
         isLoading: false,
         error: cancelled
             ? null
-            : 'Apple sign-in failed. Please try phone login.',
+            : 'Apple sign-in failed (${e.code}). Please try phone login.',
       );
     } catch (e) {
+      debugPrint('Apple sign-in failed: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Apple sign-in failed. Please try phone login.',
+        error: 'Apple sign-in failed ($e). Please try phone login.',
       );
     }
   }
