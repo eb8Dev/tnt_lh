@@ -282,6 +282,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final theme = Theme.of(context);
 
     return CenteredPage(
+      // Room for the two-column layout on landscape tablets.
+      maxWidth: Responsive.isExpanded(context) ? 1100 : 640,
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
@@ -346,6 +348,301 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             final isTrackable = !nonTrackable.contains(
               order.status.toLowerCase(),
             );
+            final statusPart = <Widget>[
+              if (isTrackable) LiveTrackingPanel(order: order),
+
+              if (order.status.toLowerCase() == 'delivered' ||
+                  order.status.toLowerCase() == 'completed')
+                _RateOrderSection(order: order),
+
+              _buildOrderActions(order),
+
+              /// Order ID & Status
+              _buildSection(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.orderNumber,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18.sp,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          AppFormatters.formatDateTimeFull(order.createdAt),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppFormatters.getStatusColor(
+                          order.status,
+                        ).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Text(
+                        AppFormatters.statusLabel(order.status).toUpperCase(),
+                        style: TextStyle(
+                          color: AppFormatters.getStatusColor(order.status),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 16.h),
+
+              /// Status Timeline
+              if (order.timeline.isNotEmpty) ...[
+                Text(
+                  "Order Status",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8.h),
+                _buildSection(
+                  child: Column(
+                    children: order.timeline.reversed.map((t) {
+                      final isLast = order.timeline.first == t;
+                      return IntrinsicHeight(
+                        child: Row(
+                          children: [
+                            Column(
+                              children: [
+                                Container(
+                                  width: 12.w,
+                                  height: 12.h,
+                                  decoration: BoxDecoration(
+                                    color: AppFormatters.getStatusColor(
+                                      t.status,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                if (!isLast)
+                                  Expanded(
+                                    child: Container(
+                                      width: 2.w,
+                                      color: Colors.grey[300],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      AppFormatters.statusLabel(t.status),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13.sp,
+                                      ),
+                                    ),
+                                    if (AppFormatters.customerNote(
+                                          t.description,
+                                        ) !=
+                                        null)
+                                      Text(
+                                        AppFormatters.customerNote(
+                                          t.description,
+                                        )!,
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 12.sp,
+                                        ),
+                                      ),
+                                    Text(
+                                      AppFormatters.formatDateTimeFull(
+                                        t.timestamp,
+                                      ),
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 10.sp,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+              ],
+            ];
+            final itemsPart = <Widget>[
+              /// Items List
+              Text(
+                "Order Items",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8.h),
+              _buildSection(
+                child: Column(
+                  children: order.items.map((item) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40.w,
+                            height: 40.h,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Icon(
+                              PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
+                              size: 20.sp,
+                              color: Colors.black,
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                if (item.customization != null)
+                                  Text(
+                                    item.customization!,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            "${item.quantity} x ₹${item.price.toStringAsFixed(0)}",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              SizedBox(height: 16.h),
+
+              /// Delivery Address
+              if (order.deliveryAddress != null) ...[
+                Text(
+                  "Delivery Address",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8.h),
+                _buildSection(
+                  child: Row(
+                    children: [
+                      Icon(
+                        PhosphorIcons.mapPin(),
+                        size: 20.sp,
+                        color: Colors.black,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          order.deliveryAddress!.address,
+                          style: TextStyle(fontSize: 13.sp),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16.h),
+              ],
+
+              /// Payment & Summary
+              Text(
+                "Bill Summary",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8.h),
+              _buildSection(
+                child: Column(
+                  children: [
+                    _buildSummaryRow("Subtotal", order.subtotal),
+                    _buildSummaryRow("Delivery Charge", order.deliveryCharge),
+                    _buildSummaryRow("Tax", order.tax),
+                    Divider(height: 24.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Total Paid",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "₹${order.total.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18.sp,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        Icon(
+                          order.paymentStatus == 'paid'
+                              ? PhosphorIcons.checkCircle(
+                                  PhosphorIconsStyle.duotone,
+                                )
+                              : PhosphorIcons.info(),
+                          size: 16.sp,
+                          color: order.paymentStatus == 'paid'
+                              ? Colors.green
+                              : Colors.orange,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          "Payment: ${order.paymentMethod} (${order.paymentStatus})",
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: order.paymentStatus == 'paid'
+                                ? Colors.green
+                                : Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 32.h),
+            ];
+
             return RefreshIndicator(
               onRefresh: () async {
                 setState(() {
@@ -356,320 +653,29 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 });
                 await _orderFuture;
               },
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(16.r),
-                physics: AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isTrackable) LiveTrackingPanel(order: order),
-
-                    if (order.status.toLowerCase() == 'delivered' ||
-                        order.status.toLowerCase() == 'completed')
-                      _RateOrderSection(order: order),
-
-                    _buildOrderActions(order),
-
-                    /// Order ID & Status
-                    _buildSection(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                order.orderNumber,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18.sp,
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                AppFormatters.formatDateTimeFull(
-                                  order.createdAt,
-                                ),
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12.sp,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12.w,
-                              vertical: 6.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppFormatters.getStatusColor(
-                                order.status,
-                              ).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Text(
-                              AppFormatters.statusLabel(
-                                order.status,
-                              ).toUpperCase(),
-                              style: TextStyle(
-                                color: AppFormatters.getStatusColor(
-                                  order.status,
-                                ),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  Widget column(List<Widget> children) => SingleChildScrollView(
+                    padding: EdgeInsets.all(16.r),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: children,
                     ),
-
-                    SizedBox(height: 16.h),
-
-                    /// Status Timeline
-                    if (order.timeline.isNotEmpty) ...[
-                      Text(
-                        "Order Status",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8.h),
-                      _buildSection(
-                        child: Column(
-                          children: order.timeline.reversed.map((t) {
-                            final isLast = order.timeline.first == t;
-                            return IntrinsicHeight(
-                              child: Row(
-                                children: [
-                                  Column(
-                                    children: [
-                                      Container(
-                                        width: 12.w,
-                                        height: 12.h,
-                                        decoration: BoxDecoration(
-                                          color: AppFormatters.getStatusColor(
-                                            t.status,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      if (!isLast)
-                                        Expanded(
-                                          child: Container(
-                                            width: 2.w,
-                                            color: Colors.grey[300],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  SizedBox(width: 12.w),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: EdgeInsets.only(bottom: 16),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            AppFormatters.statusLabel(t.status),
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13.sp,
-                                            ),
-                                          ),
-                                          if (AppFormatters.customerNote(
-                                                t.description,
-                                              ) !=
-                                              null)
-                                            Text(
-                                              AppFormatters.customerNote(
-                                                t.description,
-                                              )!,
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 12.sp,
-                                              ),
-                                            ),
-                                          Text(
-                                            AppFormatters.formatDateTimeFull(
-                                              t.timestamp,
-                                            ),
-                                            style: TextStyle(
-                                              color: Colors.grey[400],
-                                              fontSize: 10.sp,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                    ],
-
-                    /// Items List
-                    Text(
-                      "Order Items",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8.h),
-                    _buildSection(
-                      child: Column(
-                        children: order.items.map((item) {
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40.w,
-                                  height: 40.h,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[100],
-                                    borderRadius: BorderRadius.circular(8.r),
-                                  ),
-                                  child: Icon(
-                                    PhosphorIcons.coffee(
-                                      PhosphorIconsStyle.duotone,
-                                    ),
-                                    size: 20.sp,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.name,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      if (item.customization != null)
-                                        Text(
-                                          item.customization!,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 12.sp,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  "${item.quantity} x ₹${item.price.toStringAsFixed(0)}",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-
-                    SizedBox(height: 16.h),
-
-                    /// Delivery Address
-                    if (order.deliveryAddress != null) ...[
-                      Text(
-                        "Delivery Address",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 8.h),
-                      _buildSection(
-                        child: Row(
-                          children: [
-                            Icon(
-                              PhosphorIcons.mapPin(),
-                              size: 20.sp,
-                              color: Colors.black,
-                            ),
-                            SizedBox(width: 8.w),
-                            Expanded(
-                              child: Text(
-                                order.deliveryAddress!.address,
-                                style: TextStyle(fontSize: 13.sp),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                    ],
-
-                    /// Payment & Summary
-                    Text(
-                      "Bill Summary",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8.h),
-                    _buildSection(
-                      child: Column(
-                        children: [
-                          _buildSummaryRow("Subtotal", order.subtotal),
-                          _buildSummaryRow(
-                            "Delivery Charge",
-                            order.deliveryCharge,
-                          ),
-                          _buildSummaryRow("Tax", order.tax),
-                          Divider(height: 24.h),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Total Paid",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                "₹${order.total.toStringAsFixed(2)}",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18.sp,
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 12.h),
-                          Row(
-                            children: [
-                              Icon(
-                                order.paymentStatus == 'paid'
-                                    ? PhosphorIcons.checkCircle(
-                                        PhosphorIconsStyle.duotone,
-                                      )
-                                    : PhosphorIcons.info(),
-                                size: 16.sp,
-                                color: order.paymentStatus == 'paid'
-                                    ? Colors.green
-                                    : Colors.orange,
-                              ),
-                              SizedBox(width: 4.w),
-                              Text(
-                                "Payment: ${order.paymentMethod} (${order.paymentStatus})",
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: order.paymentStatus == 'paid'
-                                      ? Colors.green
-                                      : Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 32.h),
-                  ],
-                ),
+                  );
+                  // Wide enough (landscape tablet, or the pane beside the
+                  // orders list): status on the left, items and bill right.
+                  if (box.maxWidth >= 760) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: column(statusPart)),
+                        Expanded(child: column(itemsPart)),
+                      ],
+                    );
+                  }
+                  return column([...statusPart, ...itemsPart]);
+                },
               ),
             );
           },

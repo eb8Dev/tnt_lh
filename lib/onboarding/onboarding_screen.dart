@@ -73,11 +73,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
+  List<Widget> _pageText(int i) => [
+    Text(
+      _pages[i].title,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 28.sp,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    ),
+    SizedBox(height: 20.h),
+    Text(
+      _pages[i].description,
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 16.sp, color: Colors.black54, height: 1.5),
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
     return CenteredPage(
+      // Full width in landscape, where each page is picture-beside-text.
+      maxWidth: Responsive.isExpanded(context) ? double.infinity : 640,
       child: Scaffold(
         body: Stack(
           children: [
@@ -116,36 +136,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     opacity: opacity,
                     child: Padding(
                       padding: EdgeInsets.all(40.r),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            _pages[i].image,
-                            height: size.height * 0.35,
-                            fit: BoxFit.contain,
-                          ),
-                          SizedBox(height: 48.h),
-                          Text(
-                            _pages[i].title,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 28.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                      child: Responsive.isExpanded(context)
+                          // Landscape tablets: picture beside the words.
+                          ? Row(
+                              children: [
+                                Expanded(
+                                  child: Image.asset(
+                                    _pages[i].image,
+                                    height: size.height * 0.5,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                const SizedBox(width: 48),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: _pageText(i),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  _pages[i].image,
+                                  height: size.height * 0.35,
+                                  fit: BoxFit.contain,
+                                ),
+                                SizedBox(height: 48.h),
+                                Text(
+                                  _pages[i].title,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 28.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                SizedBox(height: 20.h),
+                                Text(
+                                  _pages[i].description,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    color: Colors.black54,
+                                    height: 1.5.h,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(height: 20.h),
-                          Text(
-                            _pages[i].description,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              color: Colors.black54,
-                              height: 1.5.h,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 );

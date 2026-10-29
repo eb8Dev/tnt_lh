@@ -32,6 +32,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 // ...
 // Define brand-specific themes
 final ThemeData teasNTreesTheme = ThemeData(
+  // Sheets keep a readable width on tablets instead of spanning the screen.
+  bottomSheetTheme: const BottomSheetThemeData(
+    constraints: BoxConstraints(maxWidth: 640),
+  ),
   useMaterial3: true,
   scaffoldBackgroundColor: const Color(0xFFFCFBF4),
   colorScheme: ColorScheme.fromSeed(
@@ -57,6 +61,10 @@ final ThemeData teasNTreesTheme = ThemeData(
 );
 
 final ThemeData littleHTheme = ThemeData(
+  // Sheets keep a readable width on tablets instead of spanning the screen.
+  bottomSheetTheme: const BottomSheetThemeData(
+    constraints: BoxConstraints(maxWidth: 640),
+  ),
   useMaterial3: true,
   scaffoldBackgroundColor: const Color(0xFFFCFBF4),
   colorScheme: ColorScheme.fromSeed(

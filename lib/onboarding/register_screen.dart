@@ -1,3 +1,4 @@
+import 'package:tnt_lh/widgets/auth_split.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -78,6 +79,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     return CenteredPage(
+      // Full width on landscape tablets, where AuthSplit lays the page out.
+      maxWidth: Responsive.isExpanded(context) ? double.infinity : 640,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -100,120 +103,122 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.all(30.0.r),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Welcome to the Family",
-                  style: GoogleFonts.poppins(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  "Complete your profile to get the most of your premium experience.",
-                  style: GoogleFonts.poppins(
-                    fontSize: 15.sp,
-                    color: Colors.black54,
-                  ),
-                ),
-                SizedBox(height: 40.h),
-
-                _buildInputField(
-                  label: "Mobile Number",
-                  controller: _mobileController,
-                  hint: "9876543210",
-                  readOnly:
-                      widget.initialMobile != null &&
-                      widget.initialMobile!.isNotEmpty,
-                  keyboardType: TextInputType.phone,
-                  icon: PhosphorIcons.deviceMobile(),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'Mobile is required';
-                    }
-                    if (val.trim().length != 10) {
-                      return 'Enter 10 digits';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 24.h),
-
-                _buildInputField(
-                  label: "Full Name",
-                  controller: _nameController,
-                  hint: "John Doe",
-                  icon: PhosphorIcons.user(PhosphorIconsStyle.fill),
-                  validator: (val) => (val == null || val.trim().isEmpty)
-                      ? 'Name is required'
-                      : null,
-                ),
-                SizedBox(height: 24.h),
-
-                _buildInputField(
-                  label: "Email Address",
-                  controller: _emailController,
-                  hint: "john@example.com",
-                  keyboardType: TextInputType.emailAddress,
-                  icon: PhosphorIcons.envelopeSimple(),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'Email is required';
-                    }
-                    if (!val.contains('@')) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 24.h),
-
-                _buildInputField(
-                  label: "Delivery Address",
-                  controller: _addressController,
-                  hint: "Flat, House no, Building, Street",
-                  maxLines: 3,
-                  icon: PhosphorIcons.mapPin(),
-                  validator: (val) => (val == null || val.trim().isEmpty)
-                      ? 'Address is required'
-                      : null,
-                ),
-                SizedBox(height: 48.h),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 58.h,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _completeProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18.r),
-                      ),
-                      elevation: 0,
+        body: AuthSplit(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(30.0.r),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Welcome to the Family",
+                    style: GoogleFonts.poppins(
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      letterSpacing: -0.5,
                     ),
-                    child: isLoading
-                        ? CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            "Continue to Experience",
-                            style: GoogleFonts.poppins(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
-                ),
-                SizedBox(height: 40.h),
-              ],
+                  SizedBox(height: 8.h),
+                  Text(
+                    "Complete your profile to get the most of your premium experience.",
+                    style: GoogleFonts.poppins(
+                      fontSize: 15.sp,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  SizedBox(height: 40.h),
+
+                  _buildInputField(
+                    label: "Mobile Number",
+                    controller: _mobileController,
+                    hint: "9876543210",
+                    readOnly:
+                        widget.initialMobile != null &&
+                        widget.initialMobile!.isNotEmpty,
+                    keyboardType: TextInputType.phone,
+                    icon: PhosphorIcons.deviceMobile(),
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Mobile is required';
+                      }
+                      if (val.trim().length != 10) {
+                        return 'Enter 10 digits';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 24.h),
+
+                  _buildInputField(
+                    label: "Full Name",
+                    controller: _nameController,
+                    hint: "John Doe",
+                    icon: PhosphorIcons.user(PhosphorIconsStyle.fill),
+                    validator: (val) => (val == null || val.trim().isEmpty)
+                        ? 'Name is required'
+                        : null,
+                  ),
+                  SizedBox(height: 24.h),
+
+                  _buildInputField(
+                    label: "Email Address",
+                    controller: _emailController,
+                    hint: "john@example.com",
+                    keyboardType: TextInputType.emailAddress,
+                    icon: PhosphorIcons.envelopeSimple(),
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!val.contains('@')) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 24.h),
+
+                  _buildInputField(
+                    label: "Delivery Address",
+                    controller: _addressController,
+                    hint: "Flat, House no, Building, Street",
+                    maxLines: 3,
+                    icon: PhosphorIcons.mapPin(),
+                    validator: (val) => (val == null || val.trim().isEmpty)
+                        ? 'Address is required'
+                        : null,
+                  ),
+                  SizedBox(height: 48.h),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 58.h,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _completeProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18.r),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isLoading
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              "Continue to Experience",
+                              style: GoogleFonts.poppins(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                  SizedBox(height: 40.h),
+                ],
+              ),
             ),
           ),
         ),

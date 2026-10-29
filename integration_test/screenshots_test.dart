@@ -17,6 +17,9 @@ import 'package:tnt_lh/main.dart' as app;
 
 const _phone = String.fromEnvironment('SHOT_PHONE');
 const _code = String.fromEnvironment('SHOT_CODE');
+// Start from a fresh install (clear the app's data first) to capture the
+// signed-out screens: onboarding and login.
+const _signedOut = bool.fromEnvironment('SHOT_SIGNED_OUT');
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +68,21 @@ void main() {
   testWidgets('store screenshots', (tester) async {
     app.main();
     await settle(tester, 6);
+
+    if (_signedOut) {
+      await shot(tester, '00_onboarding');
+      for (var i = 0; i < 4; i++) {
+        if (find.text('Get Started').evaluate().isNotEmpty) break;
+        await tapIfThere(
+          tester,
+          find.byIcon(PhosphorIcons.caretRight(PhosphorIconsStyle.bold)),
+        );
+      }
+      await tapIfThere(tester, find.text('Get Started'));
+      await settle(tester, 3);
+      await shot(tester, '00_login');
+      return;
+    }
 
     if (FirebaseAuth.instance.currentUser == null) {
       await FirebaseAuth.instance.setSettings(
@@ -136,5 +154,25 @@ void main() {
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -900));
     await settle(tester, 3);
     await shot(tester, '09_profile_lower');
+
+    await tapIfThere(tester, find.text('Add'));
+    await settle(tester, 5);
+    await shot(tester, '10_address_picker');
+    await goBack(tester);
+
+    await tapIfThere(tester, find.byIcon(PhosphorIcons.house()));
+    await settle(tester, 3);
+    final filledHeart = find.byIcon(
+      PhosphorIcons.heart(PhosphorIconsStyle.fill),
+    );
+    await tapIfThere(
+      tester,
+      filledHeart.evaluate().isNotEmpty
+          ? filledHeart
+          : find.byIcon(PhosphorIcons.heart()),
+    );
+    await settle(tester, 4);
+    await shot(tester, '11_wishlist');
+    await goBack(tester);
   });
 }

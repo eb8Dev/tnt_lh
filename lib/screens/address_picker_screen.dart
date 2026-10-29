@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -48,7 +49,8 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
           ? widget.initialLabel!.trim()
           : "Home",
     );
-    _selectedLoc = widget.initialLocation ??
+    _selectedLoc =
+        widget.initialLocation ??
         (widget.initialLat != null && widget.initialLng != null
             ? LatLng(widget.initialLat!, widget.initialLng!)
             : _defaultLoc);
@@ -113,9 +115,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       }
       final loc = LatLng(results.first.latitude, results.first.longitude);
       _selectedLoc = loc;
-      await _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(loc, 16),
-      );
+      await _mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 16));
       await _reverseGeocode(loc);
     } catch (_) {
       _snack("Couldn't find that address. Try adding the area or city.");
@@ -164,14 +164,249 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
 
   void _snack(String msg) {
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final expanded = Responsive.isExpanded(context);
+    final mapButtons = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton(
+          heroTag: "zoom_in",
+          onPressed: () => _mapController?.animateCamera(CameraUpdate.zoomIn()),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          mini: true,
+          child: Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold)),
+        ),
+        SizedBox(height: 8.h),
+        FloatingActionButton(
+          heroTag: "zoom_out",
+          onPressed: () =>
+              _mapController?.animateCamera(CameraUpdate.zoomOut()),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          mini: true,
+          child: Icon(PhosphorIcons.minus(PhosphorIconsStyle.bold)),
+        ),
+        SizedBox(height: 16.h),
+        FloatingActionButton(
+          heroTag: "locate_me",
+          onPressed: _isLoading ? null : _goToCurrentLocation,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          mini: true,
+          child: _isLoading
+              ? SizedBox(
+                  width: 18.w,
+                  height: 18.h,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.black,
+                  ),
+                )
+              : Icon(PhosphorIcons.crosshair()),
+        ),
+      ],
+    );
+    final mapLayers = <Widget>[
+      GoogleMap(
+        initialCameraPosition: CameraPosition(target: _selectedLoc, zoom: 16),
+        onMapCreated: (c) => _mapController = c,
+        myLocationEnabled: true,
+        myLocationButtonEnabled: false,
+        zoomControlsEnabled: false,
+        // Track the map centre as the user pans (no setState per frame),
+        // then reverse-geocode once the camera settles.
+        onCameraMove: (pos) => _selectedLoc = pos.target,
+        onCameraIdle: () => _reverseGeocode(_selectedLoc),
+      ),
+
+      // Fixed centre marker — the point the map is centred on is the
+      // selected delivery location.
+      Center(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 45.h), // tip points at centre
+          child: Icon(
+            PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
+            color: Colors.red,
+            size: 45.sp,
+          ),
+        ),
+      ),
+
+      // Search bar — type an address, the map jumps to it.
+      Positioned(
+        top: 12.h,
+        left: 16.w,
+        right: 16.w,
+        child: Material(
+          elevation: 3,
+          borderRadius: BorderRadius.circular(14.r),
+          child: TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            onSubmitted: _searchAddress,
+            style: GoogleFonts.poppins(fontSize: 13.sp),
+            decoration: InputDecoration(
+              hintText: "Search area, street, landmark…",
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 13.sp,
+                color: Colors.black38,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: Icon(
+                PhosphorIcons.magnifyingGlass(),
+                size: 18.sp,
+                color: Colors.black54,
+              ),
+              suffixIcon: _isSearching
+                  ? Padding(
+                      padding: EdgeInsets.all(12.r),
+                      child: SizedBox(
+                        width: 16.w,
+                        height: 16.h,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : IconButton(
+                      icon: Icon(
+                        PhosphorIcons.arrowRight(),
+                        size: 18.sp,
+                        color: Colors.black54,
+                      ),
+                      onPressed: () => _searchAddress(_searchController.text),
+                    ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14.r),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: EdgeInsets.symmetric(vertical: 12.h),
+            ),
+          ),
+        ),
+      ),
+    ];
+    final addressPanel = Container(
+      padding: EdgeInsets.all(24.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 20,
+            offset: Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Location Name",
+            style: GoogleFonts.poppins(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              hintText: "e.g. Home, Office, Friend's House",
+              filled: true,
+              fillColor: Colors.grey[100],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12.r),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16.w,
+                vertical: 12.h,
+              ),
+            ),
+            style: GoogleFonts.poppins(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            "Address Details",
+            style: GoogleFonts.poppins(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Row(
+            children: [
+              Icon(
+                PhosphorIcons.mapTrifold(),
+                size: 18.sp,
+                color: Colors.black54,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  _addressText,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.sp,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (_isLoading)
+                SizedBox(
+                  width: 20.w,
+                  height: 20.h,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          SizedBox(
+            width: double.infinity,
+            height: 48.h,
+            child: ElevatedButton(
+              onPressed: _isLoading
+                  ? null
+                  : () {
+                      Navigator.pop(context, {
+                        'address': _addressText,
+                        'lat': _selectedLoc.latitude,
+                        'lng': _selectedLoc.longitude,
+                        'name': _nameController.text.trim(),
+                      });
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                "Confirm Location",
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -186,256 +421,39 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
       ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 280.h), // Above the address card
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FloatingActionButton(
-              heroTag: "zoom_in",
-              onPressed: () =>
-                  _mapController?.animateCamera(CameraUpdate.zoomIn()),
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              mini: true,
-              child: Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold)),
+      // On landscape tablets the buttons sit in the map pane instead.
+      floatingActionButton: expanded
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(bottom: 280.h), // Above the address card
+              child: mapButtons,
             ),
-            SizedBox(height: 8.h),
-            FloatingActionButton(
-              heroTag: "zoom_out",
-              onPressed: () =>
-                  _mapController?.animateCamera(CameraUpdate.zoomOut()),
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              mini: true,
-              child: Icon(PhosphorIcons.minus(PhosphorIconsStyle.bold)),
-            ),
-            SizedBox(height: 16.h),
-            FloatingActionButton(
-              heroTag: "locate_me",
-              onPressed: _isLoading ? null : _goToCurrentLocation,
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              mini: true,
-              child: _isLoading
-                  ? SizedBox(
-                      width: 18.w,
-                      height: 18.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
-                    )
-                  : Icon(PhosphorIcons.crosshair()),
-            ),
-          ],
-        ),
-      ),
-      body: Stack(
-        children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _selectedLoc,
-              zoom: 16,
-            ),
-            onMapCreated: (c) => _mapController = c,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            // Track the map centre as the user pans (no setState per frame),
-            // then reverse-geocode once the camera settles.
-            onCameraMove: (pos) => _selectedLoc = pos.target,
-            onCameraIdle: () => _reverseGeocode(_selectedLoc),
-          ),
-
-          // Fixed centre marker — the point the map is centred on is the
-          // selected delivery location.
-          Center(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 45.h), // tip points at centre
-              child: Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.fill), color: Colors.red, size: 45.sp),
-            ),
-          ),
-
-          // Search bar — type an address, the map jumps to it.
-          Positioned(
-            top: 12.h,
-            left: 16.w,
-            right: 16.w,
-            child: Material(
-              elevation: 3,
-              borderRadius: BorderRadius.circular(14.r),
-              child: TextField(
-                controller: _searchController,
-                textInputAction: TextInputAction.search,
-                onSubmitted: _searchAddress,
-                style: GoogleFonts.poppins(fontSize: 13.sp),
-                decoration: InputDecoration(
-                  hintText: "Search area, street, landmark…",
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 13.sp,
-                    color: Colors.black38,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  prefixIcon: Icon(
-                    PhosphorIcons.magnifyingGlass(),
-                    size: 18.sp,
-                    color: Colors.black54,
-                  ),
-                  suffixIcon: _isSearching
-                      ? Padding(
-                          padding: EdgeInsets.all(12.r),
-                          child: SizedBox(
-                            width: 16.w,
-                            height: 16.h,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        )
-                      : IconButton(
-                          icon: Icon(
-                            PhosphorIcons.arrowRight(),
-                            size: 18.sp,
-                            color: Colors.black54,
-                          ),
-                          onPressed: () =>
-                              _searchAddress(_searchController.text),
-                        ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: EdgeInsets.symmetric(vertical: 12.h),
-                ),
-              ),
-            ),
-          ),
-
-          // Address Card
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: EdgeInsets.all(24.r),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 20,
-                    offset: Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Location Name",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      hintText: "e.g. Home, Office, Friend's House",
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16.w,
-                        vertical: 12.h,
-                      ),
-                    ),
-                    style: GoogleFonts.poppins(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Address Details",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
+      body: expanded
+          // Landscape tablets: map on the left (the pin stays centred in what
+          // you can see), the address form on the right.
+          ? Row(
+              children: [
+                Expanded(
+                  child: Stack(
                     children: [
-                      Icon(
-                        PhosphorIcons.mapTrifold(),
-                        size: 18.sp,
-                        color: Colors.black54,
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: Text(
-                          _addressText,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13.sp,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_isLoading)
-                        SizedBox(
-                          width: 20.w,
-                          height: 20.h,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                      ...mapLayers,
+                      Positioned(right: 16, bottom: 24, child: mapButtons),
                     ],
                   ),
-                  SizedBox(height: 24.h),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48.h,
-                    child: ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              Navigator.pop(context, {
-                                'address': _addressText,
-                                'lat': _selectedLoc.latitude,
-                                'lng': _selectedLoc.longitude,
-                                'name': _nameController.text.trim(),
-                              });
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        "Confirm Location",
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(
+                  width: 420,
+                  child: SingleChildScrollView(child: addressPanel),
+                ),
+              ],
+            )
+          : Stack(
+              children: [
+                ...mapLayers,
+                // Address Card
+                Positioned(bottom: 0, left: 0, right: 0, child: addressPanel),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

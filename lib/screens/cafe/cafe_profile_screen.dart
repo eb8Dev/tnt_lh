@@ -352,6 +352,50 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       );
     }
 
+    final you = <Widget>[
+      _buildMembershipCard(user, isLittleH),
+      Gap(Space.lg),
+      _buildDetailsSection(authState),
+    ];
+    final settings = <Widget>[
+      _buildAddressSection(),
+      Gap(Space.lg),
+      _buildPreferencesSection(user),
+      Gap(Space.lg),
+      _buildSupportSection(),
+      Gap(Space.lg),
+      _buildLogoutButton(),
+      Gap(Space.sm),
+      _buildDeleteAccountButton(),
+    ];
+
+    // Landscape tablets: you on the left, addresses and settings on the right.
+    if (Responsive.isExpanded(context)) {
+      Widget column(List<Widget> children) => ListView(
+        padding: EdgeInsets.fromLTRB(20.w, Space.md.h, 20.w, Space.xl.h),
+        children: children,
+      );
+      return CenteredPage(
+        maxWidth: 1100,
+        child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: SafeArea(
+            bottom: false,
+            child: Form(
+              key: _formKey,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: column(you)),
+                  Expanded(child: column(settings)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return CenteredPage(
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -361,21 +405,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
             key: _formKey,
             child: ListView(
               padding: EdgeInsets.fromLTRB(20.w, Space.md.h, 20.w, 120.h),
-              children: [
-                _buildMembershipCard(user, isLittleH),
-                Gap(Space.lg),
-                _buildDetailsSection(authState),
-                Gap(Space.lg),
-                _buildAddressSection(),
-                Gap(Space.lg),
-                _buildPreferencesSection(user),
-                Gap(Space.lg),
-                _buildSupportSection(),
-                Gap(Space.lg),
-                _buildLogoutButton(),
-                Gap(Space.sm),
-                _buildDeleteAccountButton(),
-              ],
+              children: [...you, Gap(Space.lg), ...settings],
             ),
           ),
         ),

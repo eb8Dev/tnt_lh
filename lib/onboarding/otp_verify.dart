@@ -1,3 +1,4 @@
+import 'package:tnt_lh/widgets/auth_split.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -154,6 +155,8 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     }
 
     return CenteredPage(
+      // Full width on landscape tablets, where AuthSplit lays the page out.
+      maxWidth: Responsive.isExpanded(context) ? double.infinity : 640,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -167,106 +170,108 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
             onPressed: widget.onBack,
           ),
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 30.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 20.h),
-              Text(
-                "Verification",
-                style: GoogleFonts.poppins(
-                  fontSize: 32.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  letterSpacing: -0.5,
+        body: AuthSplit(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 30.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 20.h),
+                Text(
+                  "Verification",
+                  style: GoogleFonts.poppins(
+                    fontSize: 32.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                "Enter the code sent to ${widget.phone}",
-                style: GoogleFonts.poppins(
-                  fontSize: 16.sp,
-                  color: Colors.black54,
+                SizedBox(height: 8.h),
+                Text(
+                  "Enter the code sent to ${widget.phone}",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.sp,
+                    color: Colors.black54,
+                  ),
                 ),
-              ),
-              SizedBox(height: 48.h),
+                SizedBox(height: 48.h),
 
-              PinCodeTextField(
-                appContext: context,
-                length: 6,
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                autoDisposeControllers: false,
-                animationType: AnimationType.fade,
-                textStyle: GoogleFonts.poppins(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
+                PinCodeTextField(
+                  appContext: context,
+                  length: 6,
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  autoDisposeControllers: false,
+                  animationType: AnimationType.fade,
+                  textStyle: GoogleFonts.poppins(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  pinTheme: PinTheme(
+                    shape: PinCodeFieldShape.box,
+                    borderRadius: BorderRadius.circular(16.r),
+                    fieldHeight: 56,
+                    fieldWidth: 46,
+                    activeFillColor: Colors.grey.shade50,
+                    inactiveFillColor: Colors.grey.shade50,
+                    selectedFillColor: Colors.white,
+                    activeColor: Color(0xFFA9BCA4),
+                    inactiveColor: Colors.black12,
+                    selectedColor: Color(0xFFA9BCA4),
+                    borderWidth: 1.5,
+                  ),
+                  cursorColor: Colors.black,
+                  enableActiveFill: true,
+                  onChanged: (value) {},
+                  onCompleted: (value) {
+                    _verifyOtp();
+                  },
                 ),
-                pinTheme: PinTheme(
-                  shape: PinCodeFieldShape.box,
-                  borderRadius: BorderRadius.circular(16.r),
-                  fieldHeight: 56,
-                  fieldWidth: 46,
-                  activeFillColor: Colors.grey.shade50,
-                  inactiveFillColor: Colors.grey.shade50,
-                  selectedFillColor: Colors.white,
-                  activeColor: Color(0xFFA9BCA4),
-                  inactiveColor: Colors.black12,
-                  selectedColor: Color(0xFFA9BCA4),
-                  borderWidth: 1.5,
-                ),
-                cursorColor: Colors.black,
-                enableActiveFill: true,
-                onChanged: (value) {},
-                onCompleted: (value) {
-                  _verifyOtp();
-                },
-              ),
 
-              SizedBox(height: 32.h),
+                SizedBox(height: 32.h),
 
-              Center(
-                child: TextButton(
-                  onPressed: _canResend ? _resendOtp : null,
-                  child: Text(
-                    resendText,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: _canResend ? Colors.black : Colors.black26,
+                Center(
+                  child: TextButton(
+                    onPressed: _canResend ? _resendOtp : null,
+                    child: Text(
+                      resendText,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: _canResend ? Colors.black : Colors.black26,
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              SizedBox(height: 40.h),
+                SizedBox(height: 40.h),
 
-              SizedBox(
-                width: double.infinity,
-                height: 58.h,
-                child: ElevatedButton(
-                  onPressed: _isVerifying ? null : _verifyOtp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18.r),
+                SizedBox(
+                  width: double.infinity,
+                  height: 58.h,
+                  child: ElevatedButton(
+                    onPressed: _isVerifying ? null : _verifyOtp,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18.r),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: _isVerifying
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          "Verify & Continue",
-                          style: GoogleFonts.poppins(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
+                    child: _isVerifying
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            "Verify & Continue",
+                            style: GoogleFonts.poppins(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
