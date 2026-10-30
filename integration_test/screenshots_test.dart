@@ -9,6 +9,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -66,6 +67,13 @@ void main() {
   }
 
   testWidgets('store screenshots', (tester) async {
+    // iPad store screenshots are taken in landscape, which shows the
+    // tablet layouts; simulators cannot be rotated from the command line.
+    if (const bool.fromEnvironment('SHOT_LANDSCAPE')) {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+      ]);
+    }
     app.main();
     await settle(tester, 6);
 

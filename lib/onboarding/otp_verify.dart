@@ -155,8 +155,8 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
     }
 
     return CenteredPage(
-      // Full width on landscape tablets, where AuthSplit lays the page out.
-      maxWidth: Responsive.isExpanded(context) ? double.infinity : 640,
+      // Full width on tablets, where AuthSplit lays the page out.
+      maxWidth: Responsive.isTablet(context) ? double.infinity : 640,
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(

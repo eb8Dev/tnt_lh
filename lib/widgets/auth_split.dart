@@ -13,7 +13,47 @@ class AuthSplit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!Responsive.isExpanded(context)) return child;
+    if (!Responsive.isTablet(context)) return child;
+
+    // Portrait tablets: the screen as a card on the brand background, rather
+    // than a phone-sized page with empty bands either side.
+    if (!Responsive.isExpanded(context)) {
+      return Container(
+        decoration: const BoxDecoration(gradient: _brandGradient),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 540,
+                  maxHeight: 1080,
+                ),
+                child: Material(
+                  elevation: 8,
+                  shadowColor: Colors.black26,
+                  borderRadius: BorderRadius.circular(28),
+                  clipBehavior: Clip.antiAlias,
+                  // The sign-in screens size their parts from the screen
+                  // (MediaQuery); inside the card, the card is the screen.
+                  child: LayoutBuilder(
+                    builder: (context, box) => MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        size: box.biggest,
+                        padding: EdgeInsets.zero,
+                        viewPadding: EdgeInsets.zero,
+                      ),
+                      child: child,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Row(
       children: [
         const Expanded(child: _BrandPanel()),
@@ -30,19 +70,19 @@ class AuthSplit extends StatelessWidget {
   }
 }
 
+const _brandGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [Color(0xFFF1F4E8), Color(0xFFF7EDE4)],
+);
+
 class _BrandPanel extends StatelessWidget {
   const _BrandPanel();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF1F4E8), Color(0xFFF7EDE4)],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: _brandGradient),
       padding: const EdgeInsets.all(48),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

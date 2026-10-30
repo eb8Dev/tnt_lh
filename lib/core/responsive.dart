@@ -32,6 +32,12 @@ class Responsive {
   /// columns and centred pages.
   static const double expandedWidth = 840;
 
+  /// Any tablet or wide window, either orientation.
+  static const double tabletWidth = 600;
+
+  static bool isTablet(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= tabletWidth;
+
   static bool isExpanded(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= expandedWidth;
 
