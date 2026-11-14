@@ -428,9 +428,11 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                             ? SizedBox(
                                 height: 11.sp,
                                 width: 11.sp,
-                                child: const CircularProgressIndicator(
+                                child: const CircularProgressIndicator.adaptive(
                                   strokeWidth: 1.6,
-                                  color: Colors.white,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : PhosphorIcon(
@@ -562,8 +564,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                   ? SizedBox(
                       height: 18.h,
                       width: 18.h,
-                      child: const CircularProgressIndicator(
-                        color: Colors.white,
+                      child: const CircularProgressIndicator.adaptive(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         strokeWidth: 2,
                       ),
                     )

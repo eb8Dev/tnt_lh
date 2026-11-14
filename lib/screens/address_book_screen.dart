@@ -94,7 +94,9 @@ class AddressBookScreen extends ConsumerWidget {
                 loading: () => [
                   Padding(
                     padding: EdgeInsets.only(top: Space.xl.h),
-                    child: const Center(child: CircularProgressIndicator.adaptive()),
+                    child: const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    ),
                   ),
                 ],
                 error: (e, _) => [

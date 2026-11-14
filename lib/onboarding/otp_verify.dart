@@ -260,7 +260,11 @@ class _OtpVerifyScreenState extends ConsumerState<OtpVerifyScreen> {
                       elevation: 0,
                     ),
                     child: _isVerifying
-                        ? CircularProgressIndicator(color: Colors.white)
+                        ? CircularProgressIndicator.adaptive(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          )
                         : Text(
                             "Verify & Continue",
                             style: GoogleFonts.poppins(

@@ -346,10 +346,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ? SizedBox(
                                         height: 24.h,
                                         width: 24.w,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
+                                        child:
+                                            CircularProgressIndicator.adaptive(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                              strokeWidth: 2.5,
+                                            ),
                                       )
                                     : Text(
                                         "Continue",

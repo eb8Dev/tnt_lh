@@ -206,7 +206,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         elevation: 0,
                       ),
                       child: isLoading
-                          ? CircularProgressIndicator(color: Colors.white)
+                          ? CircularProgressIndicator.adaptive(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            )
                           : Text(
                               "Continue to Experience",
                               style: GoogleFonts.poppins(

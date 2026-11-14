@@ -1146,9 +1146,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           child: SizedBox(
             width: 22.sp,
             height: 22.sp,
-            child: CircularProgressIndicator(
+            child: CircularProgressIndicator.adaptive(
               strokeWidth: 2,
-              color: Theme.of(context).colorScheme.primary,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
         ),

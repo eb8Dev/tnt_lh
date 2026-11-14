@@ -457,7 +457,9 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
           border: Border.all(color: Colors.blue.shade100, width: 2.5.w),
         ),
         child: Center(
-          child: CircularProgressIndicator(color: const Color(0xFFA9BCA4)),
+          child: CircularProgressIndicator.adaptive(
+            valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFFA9BCA4)),
+          ),
         ),
       );
     }

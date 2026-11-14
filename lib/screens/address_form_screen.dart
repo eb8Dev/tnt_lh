@@ -544,9 +544,11 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                     ? SizedBox(
                         width: 20.r,
                         height: 20.r,
-                        child: const CircularProgressIndicator(
+                        child: const CircularProgressIndicator.adaptive(
                           strokeWidth: 2.4,
-                          color: Colors.white,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(

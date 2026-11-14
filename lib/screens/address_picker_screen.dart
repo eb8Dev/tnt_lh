@@ -282,9 +282,9 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               ? SizedBox(
                   width: 18.w,
                   height: 18.h,
-                  child: CircularProgressIndicator(
+                  child: CircularProgressIndicator.adaptive(
                     strokeWidth: 2,
-                    color: Colors.black,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                   ),
                 )
               : Icon(PhosphorIcons.crosshair()),
@@ -350,7 +350,9 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                       child: SizedBox(
                         width: 16.w,
                         height: 16.h,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
+                        child: const CircularProgressIndicator.adaptive(
+                          strokeWidth: 2,
+                        ),
                       ),
                     )
                   : IconButton(
@@ -464,7 +466,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                 SizedBox(
                   width: 20.w,
                   height: 20.h,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                 ),
             ],
           ),

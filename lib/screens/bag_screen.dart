@@ -695,10 +695,14 @@ class _BagScreenState extends ConsumerState<BagScreen> {
                                 child: SizedBox(
                                   width: 22.r,
                                   height: 22.r,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2.4,
-                                    color: Colors.white,
-                                  ),
+                                  child:
+                                      const CircularProgressIndicator.adaptive(
+                                        strokeWidth: 2.4,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
                                 ),
                               )
                             : Row(
@@ -1570,7 +1574,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
                         ? SizedBox(
                             width: 16.r,
                             height: 16.r,
-                            child: const CircularProgressIndicator(
+                            child: const CircularProgressIndicator.adaptive(
                               strokeWidth: 2,
                             ),
                           )
@@ -1631,9 +1635,10 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
                                 ? SizedBox(
                                     width: 14.r,
                                     height: 14.r,
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
+                                    child:
+                                        const CircularProgressIndicator.adaptive(
+                                          strokeWidth: 2,
+                                        ),
                                   )
                                 : const Text('Apply'),
                           ),

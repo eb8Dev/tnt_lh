@@ -821,9 +821,9 @@ class _ReportIssueSheetState extends State<_ReportIssueSheet> {
                   ? SizedBox(
                       height: 18.h,
                       width: 18.h,
-                      child: const CircularProgressIndicator(
+                      child: const CircularProgressIndicator.adaptive(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : const Text('Submit'),
@@ -989,9 +989,11 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
                     ? SizedBox(
                         height: 18.h,
                         width: 18.h,
-                        child: const CircularProgressIndicator(
+                        child: const CircularProgressIndicator.adaptive(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Text('Submit rating'),

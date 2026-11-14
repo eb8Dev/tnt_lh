@@ -49,9 +49,11 @@ class ProductImage extends StatelessWidget {
       child: SizedBox(
         width: 18.sp,
         height: 18.sp,
-        child: CircularProgressIndicator(
+        child: CircularProgressIndicator.adaptive(
           strokeWidth: 2,
-          color: Colors.black.withValues(alpha: 0.15),
+          valueColor: AlwaysStoppedAnimation<Color>(
+            Colors.black.withValues(alpha: 0.15),
+          ),
         ),
       ),
     );
