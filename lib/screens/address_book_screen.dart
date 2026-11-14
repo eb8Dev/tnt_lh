@@ -245,8 +245,8 @@ class _AddressCard extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(
               Space.md.w,
               Space.sm.h,
-              Space.xxs.w,
-              Space.sm.h,
+              Space.md.w,
+              Space.xs.h,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,29 +334,22 @@ class _AddressCard extends StatelessWidget {
                           ],
                         ),
                       ],
+                      Gap(Space.xs),
+                      // Inline, like Swiggy's address cards; a stock
+                      // three-dot menu read as unfinished.
+                      Row(
+                        children: [
+                          _Action('Edit', onEdit),
+                          if (onDefault != null) ...[
+                            _Dot(),
+                            _Action('Make default', onDefault!),
+                          ],
+                          _Dot(),
+                          _Action('Delete', onDelete, danger: true),
+                        ],
+                      ),
                     ],
                   ),
-                ),
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    PhosphorIcons.dotsThreeVertical(),
-                    size: 20.sp,
-                    color: Colors.black54,
-                  ),
-                  onSelected: (v) => switch (v) {
-                    'edit' => onEdit(),
-                    'default' => onDefault?.call(),
-                    _ => onDelete(),
-                  },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    if (onDefault != null)
-                      const PopupMenuItem(
-                        value: 'default',
-                        child: Text('Make default'),
-                      ),
-                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
                 ),
               ],
             ),
@@ -405,4 +398,45 @@ class _Empty extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Action extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+  const _Action(this.label, this.onTap, {this.danger = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger
+        ? Colors.red.shade700
+        : Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 2.w),
+        child: Text(
+          label.toUpperCase(),
+          style: GoogleFonts.poppins(
+            fontSize: 11.sp,
+            letterSpacing: 0.5,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Dot extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.symmetric(horizontal: Space.xs.w),
+    child: Text(
+      '·',
+      style: TextStyle(color: Colors.black26, fontSize: 14.sp),
+    ),
+  );
 }

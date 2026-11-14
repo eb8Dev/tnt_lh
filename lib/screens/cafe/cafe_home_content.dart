@@ -48,6 +48,25 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   final GlobalKey _selectedChipKey = GlobalKey();
   Timer? _debounce;
 
+  /// A category belongs to one store. Switching store kept the old store's
+  /// category selected; the other store has no such category, so its menu
+  /// came up empty ("Nothing in this category yet. Browse everything").
+  @override
+  void didUpdateWidget(covariant BrandHomeContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.brand != widget.brand) {
+      _debounce?.cancel();
+      _selectedCategoryIndex = -1;
+      _selectedCategoryId = null;
+      _searchQuery = "";
+      _searchController.clear();
+      if (_scrollController.hasClients) _scrollController.jumpTo(0);
+      if (_categoryBarController.hasClients) {
+        _categoryBarController.jumpTo(0);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
