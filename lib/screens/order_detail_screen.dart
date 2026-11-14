@@ -1,6 +1,10 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:tnt_lh/core/spacing.dart';
+import 'package:tnt_lh/core/brand.dart';
+import 'package:tnt_lh/core/theme.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
@@ -82,7 +86,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   /// the order is dispatched (a rider is in play).
   Widget _buildOrderActions(Order order) {
     final status = order.status.toLowerCase();
+    // The server's spelling is out_for_delivery; checking only the hyphenated
+    // one left "Edit address" on while the rider was already on the way.
     const addressLocked = {
+      'out_for_delivery',
       'out-for-delivery',
       'in_transit',
       'delivered',
@@ -90,6 +97,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     };
     const dispatched = {
       'assigned',
+      'out_for_delivery',
       'out-for-delivery',
       'in_transit',
       'arrived',
@@ -310,7 +318,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     _listenForLiveChanges();
-    final theme = Theme.of(context);
 
     return CenteredPage(
       // Room for the two-column layout on landscape tablets.
@@ -387,333 +394,232 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             final isTrackable = !nonTrackable.contains(
               order.status.toLowerCase(),
             );
+            final status = order.status.toLowerCase();
+            final finished = {
+              'delivered',
+              'completed',
+              'cancelled',
+              'rejected',
+              'refunded',
+            }.contains(status);
+            final delivered = status == 'delivered' || status == 'completed';
+            final storeTheme = themeFor(order.brand);
+            final primary = storeTheme.colorScheme.primary;
+
             final statusPart = <Widget>[
-              if (isTrackable) LiveTrackingPanel(order: order),
-
-              if (order.status.toLowerCase() == 'delivered' ||
-                  order.status.toLowerCase() == 'completed')
-                _RateOrderSection(order: order),
-
-              _buildOrderActions(order),
-
-              /// Order ID & Status
+              _OrderHeader(order: order, color: primary),
+              Gap(Space.sm),
+              if (isTrackable) ...[LiveTrackingPanel(order: order)],
+              if (order.timeline.isNotEmpty) ...[
+                _buildSection(
+                  child: _Timeline(
+                    order: order,
+                    color: primary,
+                    // Open while it's happening; folded away once it's done.
+                    collapsed: finished,
+                  ),
+                ),
+                Gap(Space.sm),
+              ],
+            ];
+            final itemsPart = <Widget>[
               _buildSection(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    _SectionTitle(
+                      '${order.items.fold<int>(0, (n, i) => n + i.quantity)} '
+                      '${order.items.fold<int>(0, (n, i) => n + i.quantity) == 1 ? 'item' : 'items'}',
+                    ),
+                    Gap(Space.xs),
+                    for (final item in order.items)
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6.h),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: EdgeInsets.only(top: 1.h),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 6.w,
+                                vertical: 1.h,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(5.r),
+                                border: Border.all(
+                                  color: primary.withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Text(
+                                '${item.quantity}×',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: primary,
+                                ),
+                              ),
+                            ),
+                            GapW(Space.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.name,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  if ((item.customization ?? '').isNotEmpty)
+                                    Text(
+                                      item.customization!,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.black45,
+                                        fontSize: 11.sp,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              AppFormatters.rupees(item.price * item.quantity),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    Divider(height: Space.lg.h, color: Colors.black12),
+                    _billRow('Item total', order.subtotal),
+                    _billRow('Delivery fee', order.deliveryCharge),
+                    _billRow('GST', order.tax),
+                    if (order.discount > 0)
+                      _billRow(
+                        order.couponCode == null
+                            ? 'Discount'
+                            : 'Coupon ${order.couponCode}',
+                        -order.discount,
+                        color: Colors.green.shade700,
+                      ),
+                    Divider(height: Space.md.h, color: Colors.black12),
+                    Row(
                       children: [
-                        Text(
-                          order.orderNumber,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18.sp,
+                        Expanded(
+                          child: Text(
+                            delivered ? 'Paid' : 'To pay',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        SizedBox(height: 4.h),
                         Text(
-                          AppFormatters.formatDateTimeFull(order.createdAt),
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12.sp,
+                          AppFormatters.rupees(order.total),
+                          style: GoogleFonts.poppins(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 6.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppFormatters.getStatusColor(
-                          order.status,
-                        ).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Text(
-                        AppFormatters.statusLabel(order.status).toUpperCase(),
-                        style: TextStyle(
-                          color: AppFormatters.getStatusColor(order.status),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12.sp,
-                        ),
+                    Gap(Space.xxs),
+                    Text(
+                      order.paymentMethod.toUpperCase() == 'COD'
+                          ? (delivered
+                                ? 'Paid in cash on delivery'
+                                : 'Cash on delivery')
+                          : 'Paid online',
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.sp,
+                        color: Colors.black45,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              SizedBox(height: 16.h),
-
-              /// Status Timeline
-              if (order.timeline.isNotEmpty) ...[
-                Text(
-                  "Order Status",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8.h),
+              Gap(Space.sm),
+              if (order.deliveryAddress != null) ...[
                 _buildSection(
-                  child: Column(
-                    children: order.timeline.reversed.map((t) {
-                      final isLast = order.timeline.first == t;
-                      return IntrinsicHeight(
-                        child: Row(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
+                        size: 18.sp,
+                        color: primary,
+                      ),
+                      GapW(Space.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              children: [
-                                Container(
-                                  width: 12.w,
-                                  height: 12.h,
-                                  decoration: BoxDecoration(
-                                    color: AppFormatters.getStatusColor(
-                                      t.status,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                if (!isLast)
-                                  Expanded(
-                                    child: Container(
-                                      width: 2.w,
-                                      color: Colors.grey[300],
-                                    ),
-                                  ),
-                              ],
+                            _SectionTitle(
+                              delivered ? 'Delivered to' : 'Delivering to',
                             ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Padding(
-                                padding: EdgeInsets.only(bottom: 16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      AppFormatters.statusLabel(t.status),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13.sp,
-                                      ),
-                                    ),
-                                    if (AppFormatters.customerNote(
-                                          t.description,
-                                        ) !=
-                                        null)
-                                      Text(
-                                        AppFormatters.customerNote(
-                                          t.description,
-                                        )!,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12.sp,
-                                        ),
-                                      ),
-                                    Text(
-                                      AppFormatters.formatDateTimeFull(
-                                        t.timestamp,
-                                      ),
-                                      style: TextStyle(
-                                        color: Colors.grey[400],
-                                        fontSize: 10.sp,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            Gap(2),
+                            Text(
+                              order.deliveryAddress!.address,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12.sp,
+                                color: Colors.black54,
+                                height: 1.4,
                               ),
                             ),
                           ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                SizedBox(height: 16.h),
-              ],
-            ];
-            final itemsPart = <Widget>[
-              /// Items List
-              Text(
-                "Order Items",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8.h),
-              _buildSection(
-                child: Column(
-                  children: order.items.map((item) {
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40.w,
-                            height: 40.h,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Icon(
-                              PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
-                              size: 20.sp,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                                if (item.customization != null)
-                                  Text(
-                                    item.customization!,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12.sp,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            "${item.quantity} x ${AppFormatters.rupees(item.price)}",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              SizedBox(height: 16.h),
-
-              /// Delivery Address
-              if (order.deliveryAddress != null) ...[
-                Text(
-                  "Delivery Address",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8.h),
-                _buildSection(
-                  child: Row(
-                    children: [
-                      Icon(
-                        PhosphorIcons.mapPin(),
-                        size: 20.sp,
-                        color: Colors.black,
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: Text(
-                          order.deliveryAddress!.address,
-                          style: TextStyle(fontSize: 13.sp),
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 16.h),
+                Gap(Space.sm),
               ],
-
-              /// Payment & Summary
-              Text(
-                "Bill Summary",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8.h),
-              _buildSection(
-                child: Column(
-                  children: [
-                    _buildSummaryRow("Subtotal", order.subtotal),
-                    _buildSummaryRow("Delivery Charge", order.deliveryCharge),
-                    _buildSummaryRow("Tax", order.tax),
-                    Divider(height: 24.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Total Paid",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          AppFormatters.rupees(order.total),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18.sp,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-                    Row(
-                      children: [
-                        Icon(
-                          order.paymentStatus == 'paid'
-                              ? PhosphorIcons.checkCircle(
-                                  PhosphorIconsStyle.duotone,
-                                )
-                              : PhosphorIcons.info(),
-                          size: 16.sp,
-                          color: order.paymentStatus == 'paid'
-                              ? Colors.green
-                              : Colors.orange,
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          "Payment: ${order.paymentMethod} (${order.paymentStatus})",
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: order.paymentStatus == 'paid'
-                                ? Colors.green
-                                : Colors.orange,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 32.h),
+              if (delivered) ...[
+                _RateOrderSection(order: order),
+                Gap(Space.sm),
+              ],
+              _buildOrderActions(order),
+              Gap(Space.xl),
             ];
 
-            return RefreshIndicator(
-              onRefresh: () async {
-                _reload();
-                try {
-                  await _orderFuture;
-                } catch (_) {
-                  // The order stays on screen; nothing else to do.
-                }
-              },
-              child: LayoutBuilder(
-                builder: (context, box) {
-                  Widget column(List<Widget> children) => SingleChildScrollView(
-                    padding: EdgeInsets.all(16.r),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: children,
-                    ),
-                  );
-                  // Wide enough (landscape tablet, or the pane beside the
-                  // orders list): status on the left, items and bill right.
-                  if (box.maxWidth >= 760) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: column(statusPart)),
-                        Expanded(child: column(itemsPart)),
-                      ],
-                    );
+            return Theme(
+              data: storeTheme,
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  _reload();
+                  try {
+                    await _orderFuture;
+                  } catch (_) {
+                    // The order stays on screen; nothing else to do.
                   }
-                  return column([...statusPart, ...itemsPart]);
                 },
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    Widget column(List<Widget> children) =>
+                        SingleChildScrollView(
+                          padding: EdgeInsets.all(16.r),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: children,
+                          ),
+                        );
+                    // Wide enough (landscape tablet, or the pane beside the
+                    // orders list): status on the left, items and bill right.
+                    if (box.maxWidth >= 760) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: column(statusPart)),
+                          Expanded(child: column(itemsPart)),
+                        ],
+                      );
+                    }
+                    return column([...statusPart, ...itemsPart]);
+                  },
+                ),
               ),
             );
           },
@@ -721,6 +627,29 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       ),
     );
   }
+
+  Widget _billRow(String label, double value, {Color? color}) => Padding(
+    padding: EdgeInsets.symmetric(vertical: 2.h),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black54),
+          ),
+        ),
+        Text(
+          value < 0
+              ? '− ${AppFormatters.rupees(-value)}'
+              : AppFormatters.rupees(value),
+          style: GoogleFonts.poppins(
+            fontSize: 12.sp,
+            color: color ?? Colors.black87,
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildSection({required Widget child}) {
     return Container(
@@ -738,19 +667,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ],
       ),
       child: child,
-    );
-  }
-
-  Widget _buildSummaryRow(String label, double value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text(AppFormatters.rupees(value)),
-        ],
-      ),
     );
   }
 }
@@ -1085,5 +1001,276 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
         ],
       ),
     );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: GoogleFonts.poppins(fontSize: 13.sp, fontWeight: FontWeight.w600),
+  );
+}
+
+/// Store, order number, status, and how it went: "Delivered in 41 min".
+class _OrderHeader extends StatelessWidget {
+  final Order order;
+  final Color color;
+  const _OrderHeader({required this.order, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = order.status.toLowerCase();
+    final statusColor = AppFormatters.getStatusColor(order.status);
+    final placed = DateTime.tryParse(order.createdAt ?? '')?.toLocal();
+    final done = DateTime.tryParse(order.deliveredAt ?? '')?.toLocal();
+    String? summary;
+    if ((status == 'delivered' || status == 'completed') &&
+        placed != null &&
+        done != null) {
+      summary = 'Delivered in ${done.difference(placed).inMinutes} min';
+    } else if (status == 'cancelled') {
+      summary = AppFormatters.customerNote(order.cancelReason) ?? 'Cancelled';
+    }
+
+    return Container(
+      padding: EdgeInsets.all(Space.md.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44.r,
+            height: 44.r,
+            padding: EdgeInsets.all(6.r),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Image.asset(Brands.logo(order.brand), fit: BoxFit.contain),
+          ),
+          GapW(Space.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  Brands.name(order.brand),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '#${order.orderNumber} · ${AppFormatters.formatDateTimeFull(order.createdAt)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11.sp,
+                    color: Colors.black54,
+                  ),
+                ),
+                if (summary != null)
+                  Text(
+                    summary,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.sp,
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Text(
+              AppFormatters.statusLabel(order.status),
+              style: GoogleFonts.poppins(
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.sp,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The order's progress. Done steps in the store colour, the latest one
+/// highlighted; a step's note only when it says something the title doesn't
+/// ("Delivered / Delivered" read as a glitch).
+class _Timeline extends StatefulWidget {
+  final Order order;
+  final Color color;
+  final bool collapsed;
+  const _Timeline({
+    required this.order,
+    required this.color,
+    required this.collapsed,
+  });
+
+  @override
+  State<_Timeline> createState() => _TimelineState();
+}
+
+class _TimelineState extends State<_Timeline> {
+  late bool _open = !widget.collapsed;
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = widget.order.timeline.reversed.toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _open = !_open),
+          child: Row(
+            children: [
+              const Expanded(child: _SectionTitle('Order timeline')),
+              AnimatedRotation(
+                turns: _open ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  PhosphorIcons.caretDown(),
+                  size: 16.sp,
+                  color: Colors.black45,
+                ),
+              ),
+            ],
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: !_open
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: EdgeInsets.only(top: Space.sm.h),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < steps.length; i++)
+                        _step(
+                          steps[i],
+                          latest: i == 0,
+                          last: i == steps.length - 1,
+                        ),
+                    ],
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _step(OrderTimeline t, {required bool latest, required bool last}) {
+    final label = AppFormatters.statusLabel(t.status);
+    final note = AppFormatters.customerNote(t.description);
+    final showNote =
+        note != null && note.trim().toLowerCase() != label.toLowerCase();
+    final cancelled = t.status.toLowerCase() == 'cancelled';
+    final dot = cancelled ? Colors.red.shade400 : widget.color;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 16.w,
+            child: Column(
+              children: [
+                Container(
+                  margin: EdgeInsets.only(top: 4.h),
+                  width: latest ? 12.r : 8.r,
+                  height: latest ? 12.r : 8.r,
+                  decoration: BoxDecoration(
+                    color: latest ? dot : dot.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                    boxShadow: latest
+                        ? [
+                            BoxShadow(
+                              color: dot.withValues(alpha: 0.35),
+                              blurRadius: 6,
+                            ),
+                          ]
+                        : null,
+                  ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(
+                      width: 1.5,
+                      color: widget.color.withValues(alpha: 0.2),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          GapW(Space.sm),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: last ? 0 : Space.sm.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12.sp,
+                            fontWeight: latest
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: latest ? Colors.black87 : Colors.black54,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        _time(t.timestamp),
+                        style: GoogleFonts.poppins(
+                          fontSize: 10.sp,
+                          color: Colors.black38,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (showNote)
+                    Text(
+                      note,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11.sp,
+                        color: Colors.black45,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "11:52 PM": the day is in the header already.
+  String _time(String? iso) {
+    final d = DateTime.tryParse(iso ?? '')?.toLocal();
+    if (d == null) return '';
+    final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final m = d.minute.toString().padLeft(2, '0');
+    return '$h:$m ${d.hour < 12 ? 'AM' : 'PM'}';
   }
 }

@@ -9,6 +9,11 @@ class Order {
   final double deliveryCharge;
   final double tax;
   final double total;
+
+  /// Coupon savings; the bill showed none, so a coupon order's lines didn't
+  /// add up to its total.
+  final double discount;
+  final String? couponCode;
   final String? createdAt;
   final String? updatedAt;
   final List<OrderItem> items;
@@ -37,6 +42,8 @@ class Order {
     required this.deliveryCharge,
     required this.tax,
     required this.total,
+    this.discount = 0,
+    this.couponCode,
     this.createdAt,
     this.updatedAt,
     required this.items,
@@ -72,6 +79,8 @@ class Order {
       deliveryCharge: (json['deliveryCharge'] ?? 0).toDouble(),
       tax: (json['tax'] ?? 0).toDouble(),
       total: (json['total'] ?? 0).toDouble(),
+      discount: (json['discount'] ?? 0).toDouble(),
+      couponCode: json['couponCode']?.toString(),
       createdAt: json['createdAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
       items:
