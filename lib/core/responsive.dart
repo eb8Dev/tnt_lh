@@ -16,7 +16,12 @@ class Responsive {
   static const double designHeight = 844;
 
   /// Largest scale a wide screen gets over the phone design.
-  static const double maxScale = 1.15;
+  ///
+  /// 1.0: a bigger phone shows more, not the same thing larger. At 1.15 a
+  /// 430-wide iPhone Plus/Pro Max drew every gap, card and font ~10% bigger
+  /// than designed, which read as padded and childish next to Swiggy or
+  /// Zomato (which keep sizes fixed and fit more on screen).
+  static const double maxScale = 1.0;
 
   /// Design size to give ScreenUtil for a screen of [screen] logical pixels.
   static Size designSizeFor(Size screen) =>

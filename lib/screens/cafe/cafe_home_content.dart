@@ -1228,15 +1228,15 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(22.r),
+              borderRadius: BorderRadius.circular(16.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
-              border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1250,9 +1250,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                     fit: StackFit.expand,
                     children: [
                       Padding(
-                        padding: EdgeInsets.all(6.r),
+                        padding: EdgeInsets.all(4.r),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(18.r),
+                          borderRadius: BorderRadius.circular(12.r),
                           child: Hero(
                             tag: product.id,
                             child: ProductImage(

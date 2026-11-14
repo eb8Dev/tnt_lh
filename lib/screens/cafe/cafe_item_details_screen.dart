@@ -157,10 +157,15 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
   bool get isLittleH => widget.product.brand == 'littleh';
 
   Widget _buildDetailsPanel(Color themeColor) => Container(
-    padding: EdgeInsets.all(24.r),
+    padding: EdgeInsets.fromLTRB(
+      Space.md.w,
+      Space.ml.h,
+      Space.md.w,
+      Space.md.h,
+    ),
     decoration: BoxDecoration(
       color: Theme.of(context).scaffoldBackgroundColor,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(36.r)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,38 +188,41 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 ),
               ),
             ),
-            Row(
-              children: [
-                Icon(
-                  PhosphorIcons.star(PhosphorIconsStyle.fill),
-                  color: Colors.amber,
-                  size: 18.sp,
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  widget.product.averageRating.toStringAsFixed(1),
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.sp,
+            // "★ 0.0" on every new dish read as "rated zero".
+            if (widget.product.averageRating > 0)
+              Row(
+                children: [
+                  Icon(
+                    PhosphorIcons.star(PhosphorIconsStyle.fill),
+                    color: Colors.amber,
+                    size: 16.sp,
                   ),
-                ),
-              ],
-            ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    widget.product.averageRating.toStringAsFixed(1),
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: Space.sm.h),
         Text(
           widget.product.name,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            fontSize: 22.sp,
+            height: 1.2,
           ),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: Space.xxs.h),
         Text(
           AppFormatters.rupees(_currentPrice),
           style: GoogleFonts.poppins(
-            fontSize: 24.sp,
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
             color: themeColor,
           ),
@@ -234,7 +242,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
           ),
         ],
         if (widget.product.sizeOptions.isNotEmpty) ...[
-          SizedBox(height: 24.h),
+          SizedBox(height: Space.ml.h),
           Text(
             "Select Size",
             style: GoogleFonts.poppins(
@@ -286,7 +294,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
         ],
         if (isLittleH &&
             widget.product.cakePricing?.egglessAvailable == true) ...[
-          SizedBox(height: 24.h),
+          SizedBox(height: Space.ml.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -317,7 +325,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
             ],
           ),
         ],
-        SizedBox(height: 24.h),
+        SizedBox(height: Space.ml.h),
         Text(
           "Special Instructions",
           style: GoogleFonts.poppins(
@@ -403,10 +411,15 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
 
   Widget _buildBottomAction(Color themeColor) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(
+        Space.md.w,
+        Space.sm.h,
+        Space.md.w,
+        Space.sm.h + MediaQuery.paddingOf(context).bottom,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -420,8 +433,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
           Container(
             height: 48.h,
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(18.r),
+              color: themeColor.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(color: themeColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -502,24 +516,26 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               },
               child: Container(
                 height: 48.h,
+                // The store's colour, as on the bag's Place order. Black
+                // here and brand colour there felt like two apps.
                 decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(18.r),
+                  color: themeColor,
+                  borderRadius: BorderRadius.circular(14.r),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 15,
-                      offset: Offset(0, 8),
+                      color: themeColor.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  "Add to Bag - ${AppFormatters.rupees(_currentPrice * _quantity)}",
+                  "Add to bag · ${AppFormatters.rupees(_currentPrice * _quantity)}",
                   style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15.sp,
                   ),
                 ),
               ),

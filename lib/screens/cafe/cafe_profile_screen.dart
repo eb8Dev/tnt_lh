@@ -246,16 +246,16 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
 
     final you = <Widget>[
       _buildMembershipCard(user, isLittleH),
-      Gap(Space.lg),
+      Gap(Space.sm),
       _buildDetailsSection(authState),
     ];
     final settings = <Widget>[
       _buildAddressSection(),
-      Gap(Space.lg),
+      Gap(Space.sm),
       _buildPreferencesSection(user),
-      Gap(Space.lg),
+      Gap(Space.sm),
       _buildSupportSection(),
-      Gap(Space.lg),
+      Gap(Space.sm),
       _buildLogoutButton(),
       Gap(Space.sm),
       _buildDeleteAccountButton(),
@@ -297,7 +297,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
             key: _formKey,
             child: ListView(
               padding: EdgeInsets.fromLTRB(20.w, Space.md.h, 20.w, 120.h),
-              children: [...you, Gap(Space.lg), ...settings],
+              children: [...you, Gap(Space.sm), ...settings],
             ),
           ),
         ),
@@ -312,9 +312,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Container(
-      padding: EdgeInsets.all(Space.lg.r),
+      padding: EdgeInsets.all(Space.md.r),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28.r),
+        borderRadius: BorderRadius.circular(20.r),
         gradient: LinearGradient(
           colors: [primary, primary.withValues(alpha: 0.78)],
           begin: Alignment.topLeft,
@@ -452,11 +452,13 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       user?.name?.isNotEmpty == true
                           ? user!.name!
                           : 'Complete your profile',
-                      maxLines: 1,
+                      // Two lines: a full name was cut to "Bhanuprakash Een…".
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
                         color: Colors.white,
-                        fontSize: 19.sp,
+                        fontSize: 17.sp,
+                        height: 1.25,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -488,15 +490,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       padding: EdgeInsets.all(Space.md.r),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22.r),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
