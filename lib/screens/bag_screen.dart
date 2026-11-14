@@ -596,10 +596,12 @@ class _BagScreenState extends ConsumerState<BagScreen> {
                 onSelected: (on) {
                   HapticFeedback.selectionClick();
                   setState(() {
-                    // Ringing and not ringing can't both apply.
-                    if (on && c.contains('ring')) {
-                      _chips.removeWhere((x) => x.contains('ring'));
-                    }
+                    // Ringing and not ringing can't both apply. (This
+                    // compared 'ring' against "Ring the bell", missed the
+                    // capital R, and let both be picked.)
+                    bool aboutBell(String x) =>
+                        x.toLowerCase().contains('ring');
+                    if (on && aboutBell(c)) _chips.removeWhere(aboutBell);
                     on ? _chips.add(c) : _chips.remove(c);
                   });
                 },

@@ -139,17 +139,34 @@ class CartNotifier extends AsyncNotifier<Cart> {
 
   /// An item added moments ago has a placeholder id. Wait for its POST to land,
   /// refetch, and hand back the id the server actually assigned.
+  /// One cart line: a product with a particular set of options. Keying
+  /// optimistic lines by product alone meant an egg and an eggless Tres
+  /// Leches added in quick succession shared one temporary id.
+  static String _lineKey(String productId, String? customization) =>
+      '$productId|${customization ?? ''}';
+
   Future<String?> _resolveItemId(String itemId) async {
     if (!itemId.startsWith(_optimisticPrefix)) return itemId;
-    final productId = itemId.substring(_optimisticPrefix.length);
-    await _inFlightAdds[productId];
+    final key = itemId.substring(_optimisticPrefix.length);
+    final productId = key.split('|').first;
+    final options = key.substring(productId.length + 1);
+    await _inFlightAdds[key];
     // Ask the server for the real id without replacing what's on screen:
     // other edits may still be queued, and the screen is ahead of the server.
     final server = await _fetchCartInternal();
-    final real = server.items
-        .where((i) => i.product.id == productId)
-        .firstOrNull
-        ?.id;
+    final known = state.value?.items.map((i) => i.id).toSet() ?? {};
+    final candidates = server.items
+        .where((i) => i.product.id == productId && !known.contains(i.id))
+        .toList();
+    // The server may word the options its own way ("Eggless" stays
+    // "Eggless"; nothing becomes "1kg | Standard"), so prefer an exact match
+    // and otherwise take the line this screen doesn't know about yet.
+    final real =
+        (candidates
+                    .where((i) => (i.customization ?? '') == options)
+                    .firstOrNull ??
+                candidates.firstOrNull)
+            ?.id;
     final current = state.value;
     if (real != null && current != null) {
       state = AsyncData(
@@ -188,8 +205,12 @@ class CartNotifier extends AsyncNotifier<Cart> {
     // until the refetch returned.
     if (previous != null) {
       final items = [...previous.items];
+      // Same product with different options (egg / eggless, sizes) is a
+      // separate line. Empty and missing options are the same thing.
       final index = items.indexWhere(
-        (i) => i.product.id == product.id && i.customization == customization,
+        (i) =>
+            i.product.id == product.id &&
+            (i.customization ?? '') == (customization ?? ''),
       );
       if (index >= 0) {
         items[index] = items[index].copyWith(
@@ -198,7 +219,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
       } else {
         items.add(
           CartItem(
-            id: '$_optimisticPrefix${product.id}',
+            id: '$_optimisticPrefix${_lineKey(product.id, customization)}',
             product: product,
             quantity: quantity,
             price: product.price,
@@ -217,7 +238,8 @@ class CartNotifier extends AsyncNotifier<Cart> {
       brand: product.brand,
       customization: customization,
     );
-    _inFlightAdds[product.id] = request.then((_) {}).catchError((_) {});
+    final key = _lineKey(product.id, customization);
+    _inFlightAdds[key] = request.then((_) {}).catchError((_) {});
 
     try {
       await request;
@@ -225,7 +247,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
       if (previous != null) state = AsyncData(previous); // roll back
       rethrow;
     } finally {
-      _inFlightAdds.remove(product.id);
+      _inFlightAdds.remove(key);
     }
 
     _scheduleReconcile();
