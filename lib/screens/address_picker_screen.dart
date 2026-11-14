@@ -1,5 +1,8 @@
 import 'package:tnt_lh/core/responsive.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/services/places_service.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -41,6 +44,17 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
   bool _isLoading = false;
   bool _isSearching = false;
 
+  // Places search: suggestions as you type.
+  String _session = PlacesService.newSessionToken();
+  List<PlaceSuggestion> _suggestions = [];
+  Timer? _debounce;
+  int _query = 0;
+  bool _placesDown = false;
+
+  /// A picked place already set the address text; the camera settling on it
+  /// must not replace that with a reverse-geocoded street.
+  bool _keepNextAddress = false;
+
   @override
   void initState() {
     super.initState();
@@ -66,12 +80,17 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
   @override
   void dispose() {
     _mapController?.dispose();
+    _debounce?.cancel();
     _nameController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _reverseGeocode(LatLng loc) async {
+    if (_keepNextAddress) {
+      _keepNextAddress = false;
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       final placemarks = await geo.placemarkFromCoordinates(
@@ -106,9 +125,64 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
   ///
   /// Requested by testers: typing the address and having the map jump to it is
   /// far quicker than dragging the map across the city by hand.
+  void _onSearchChanged(String text) {
+    _debounce?.cancel();
+    if (_placesDown) return;
+    final q = text.trim();
+    if (q.length < 3) {
+      if (_suggestions.isNotEmpty) setState(() => _suggestions = []);
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      final mine = ++_query;
+      try {
+        final list = await PlacesService.autocomplete(
+          q,
+          sessionToken: _session,
+          nearLat: _selectedLoc.latitude,
+          nearLng: _selectedLoc.longitude,
+        );
+        // Only the newest query's answer counts.
+        if (mounted && mine == _query) setState(() => _suggestions = list);
+      } catch (_) {
+        // Places not available (not enabled for the key, offline): the
+        // street-address search below still works on submit.
+        if (mounted) setState(() => _placesDown = true);
+      }
+    });
+  }
+
+  Future<void> _pickSuggestion(PlaceSuggestion s) async {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _suggestions = [];
+      _isSearching = true;
+    });
+    try {
+      final d = await PlacesService.details(s.placeId, sessionToken: _session);
+      _session = PlacesService.newSessionToken(); // the session ends on a pick
+      final loc = LatLng(d.lat, d.lng);
+      _selectedLoc = loc;
+      _keepNextAddress = true;
+      setState(() {
+        _searchController.text = s.title;
+        _addressText = d.name.isNotEmpty && !d.address.startsWith(d.name)
+            ? '${d.name}, ${d.address}'
+            : d.address;
+      });
+      await _mapController?.animateCamera(CameraUpdate.newLatLngZoom(loc, 17));
+    } catch (_) {
+      _snack("Couldn't open that place. Try another result.");
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
   Future<void> _searchAddress(String query) async {
     final q = query.trim();
     if (q.isEmpty) return;
+    // With suggestions showing, Search takes the top one.
+    if (_suggestions.isNotEmpty) return _pickSuggestion(_suggestions.first);
 
     FocusScope.of(context).unfocus();
     setState(() => _isSearching = true);
@@ -255,6 +329,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
             controller: _searchController,
             textInputAction: TextInputAction.search,
             onSubmitted: _searchAddress,
+            onChanged: _onSearchChanged,
             style: GoogleFonts.poppins(fontSize: 13.sp),
             decoration: InputDecoration(
               hintText: "Search area, street, landmark…",
@@ -295,6 +370,52 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
           ),
         ),
       ),
+      if (_suggestions.isNotEmpty)
+        Positioned(
+          top: 64.h,
+          left: 16.w,
+          right: 16.w,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(14.r),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final sug in _suggestions.take(5))
+                  ListTile(
+                    dense: true,
+                    leading: Icon(
+                      PhosphorIcons.mapPin(),
+                      size: 18.sp,
+                      color: Colors.black54,
+                    ),
+                    title: Text(
+                      sug.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: sug.subtitle.isEmpty
+                        ? null
+                        : Text(
+                            sug.subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11.sp,
+                              color: Colors.black54,
+                            ),
+                          ),
+                    onTap: () => _pickSuggestion(sug),
+                  ),
+              ],
+            ),
+          ),
+        ),
     ];
     final addressPanel = Container(
       padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),

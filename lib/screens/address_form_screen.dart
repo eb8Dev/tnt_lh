@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -127,6 +128,34 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       _pinLine = pin.line;
       _street.text = pin.line;
     });
+  }
+
+  /// The phone's own contact picker: no permission to read the address
+  /// book is needed, the customer just chooses one number.
+  Future<void> _pickContact() async {
+    try {
+      final c = await FlutterNativeContactPicker().selectPhoneNumber();
+      if (c == null || !mounted) return;
+      final digits =
+          (c.selectedPhoneNumber ?? c.phoneNumbers?.firstOrNull ?? '')
+              .replaceAll(RegExp(r'\D'), '');
+      // +91 98480 22338, 098480 22338 and 9848022338 are the same number.
+      final phone = digits.length > 10
+          ? digits.substring(digits.length - 10)
+          : digits;
+      setState(() {
+        if ((c.fullName ?? '').trim().isNotEmpty) {
+          _receiverName.text = c.fullName!.trim();
+        }
+        _receiverPhone.text = phone;
+      });
+      HapticFeedback.selectionClick();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't open your contacts")),
+      );
+    }
   }
 
   String get _label => switch (_kind) {
@@ -399,6 +428,49 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                                 ),
                                 child: Column(
                                   children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _pickContact,
+                                        icon: Icon(
+                                          PhosphorIcons.addressBook(),
+                                          size: 18.sp,
+                                        ),
+                                        label: const Text(
+                                          'Choose from contacts',
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: Space.sm.h,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12.r,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Gap(Space.sm),
+                                    Row(
+                                      children: [
+                                        const Expanded(child: Divider()),
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: Space.xs.w,
+                                          ),
+                                          child: Text(
+                                            'or type it in',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11.sp,
+                                              color: Colors.black45,
+                                            ),
+                                          ),
+                                        ),
+                                        const Expanded(child: Divider()),
+                                      ],
+                                    ),
+                                    Gap(Space.sm),
                                     _Field(
                                       controller: _receiverName,
                                       label: "Their name",
