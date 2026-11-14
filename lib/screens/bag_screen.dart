@@ -10,6 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/spacing.dart';
+import 'package:tnt_lh/core/theme.dart';
 import 'package:tnt_lh/models/address_model.dart';
 import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
@@ -208,7 +209,10 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      builder: (_) => _CouponSheet(store: _store!, itemTotal: itemTotal),
+      builder: (_) => Theme(
+        data: themeFor(_store),
+        child: _CouponSheet(store: _store!, itemTotal: itemTotal),
+      ),
     );
     if (result == null || !mounted) return;
     HapticFeedback.mediumImpact();
@@ -226,8 +230,10 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      builder: (_) =>
-          _AddressSheet(addresses: _addresses, selectedId: _address?.id),
+      builder: (_) => Theme(
+        data: themeFor(_store),
+        child: _AddressSheet(addresses: _addresses, selectedId: _address?.id),
+      ),
     );
     if (!mounted) return;
     if (picked is SavedAddress) {
@@ -413,49 +419,54 @@ class _BagScreenState extends ConsumerState<BagScreen> {
     }
 
     final items = all.where((i) => i.brand == _store).toList();
-    final theme = Theme.of(context);
+    // The bag is about one store, so it wears that store's colours even when
+    // the other store is being browsed (a Cream N Crust bag came up green).
+    final theme = themeFor(_store);
 
-    return CenteredPage(
-      child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: AppBar(
+    return Theme(
+      data: theme,
+      child: CenteredPage(
+        child: Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          titleSpacing: 0,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your bag',
-                style: GoogleFonts.poppins(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (_store != null)
+          appBar: AppBar(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            titleSpacing: 0,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  Brands.name(_store),
+                  'Your bag',
                   style: GoogleFonts.poppins(
-                    fontSize: 12.sp,
-                    color: Colors.black54,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
                   ),
+                ),
+                if (_store != null)
+                  Text(
+                    Brands.name(_store),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.black54,
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              if (items.isNotEmpty)
+                IconButton(
+                  tooltip: 'Empty this bag',
+                  icon: Icon(PhosphorIcons.trash(), size: 20.sp),
+                  onPressed: () => _confirmClear(_store!),
                 ),
             ],
           ),
-          actions: [
-            if (items.isNotEmpty)
-              IconButton(
-                tooltip: 'Empty this bag',
-                icon: Icon(PhosphorIcons.trash(), size: 20.sp),
-                onPressed: () => _confirmClear(_store!),
-              ),
-          ],
+          body: items.isEmpty
+              ? _EmptyBag(onBrowse: () => Navigator.pop(context))
+              : _buildBody(items, stores, all),
+          bottomNavigationBar: items.isEmpty ? null : _buildFooter(items),
         ),
-        body: items.isEmpty
-            ? _EmptyBag(onBrowse: () => Navigator.pop(context))
-            : _buildBody(items, stores, all),
-        bottomNavigationBar: items.isEmpty ? null : _buildFooter(items),
       ),
     );
   }
@@ -468,99 +479,114 @@ class _BagScreenState extends ConsumerState<BagScreen> {
     final pricing = _pricing[_store];
     final itemTotal = items.fold<double>(0, (s, i) => s + i.price * i.quantity);
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        Space.md.w,
-        Space.xs.h,
-        Space.md.w,
-        Space.lg.h,
-      ),
-      children: [
-        if (stores.length > 1) ...[
-          _StoreSwitch(
-            stores: stores,
-            selected: _store!,
-            counts: {
-              for (final s in stores)
-                s: all
-                    .where((i) => i.brand == s)
-                    .fold<int>(0, (n, i) => n + i.quantity),
-            },
-            onSelect: _switchStore,
+    // Tapping anywhere outside a field, or scrolling, puts the keyboard away.
+    // Clamped scrolling: the list stops at its ends instead of stretching or
+    // bouncing past them.
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        physics: const ClampingScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+          Space.md.w,
+          Space.xs.h,
+          Space.md.w,
+          Space.lg.h,
+        ),
+        children: [
+          if (stores.length > 1) ...[
+            _StoreSwitch(
+              stores: stores,
+              selected: _store!,
+              counts: {
+                for (final s in stores)
+                  s: all
+                      .where((i) => i.brand == s)
+                      .fold<int>(0, (n, i) => n + i.quantity),
+              },
+              onSelect: _switchStore,
+            ),
+            Gap(Space.sm),
+          ],
+          _Card(
+            child: Column(
+              children: [
+                for (final item in items) ...[
+                  _ItemRow(
+                    item: item,
+                    onChange: (q) => _changeQuantity(item, q),
+                  ),
+                  if (item != items.last)
+                    Divider(height: Space.lg.h, color: Colors.black12),
+                ],
+                Divider(height: Space.lg.h, color: Colors.black12),
+                _LinkRow(
+                  icon: PhosphorIcons.plus(),
+                  text: 'Add more items',
+                  onTap: () {
+                    ref.read(brandProvider.notifier).setBrand(_store!);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
           ),
           Gap(Space.sm),
-        ],
-        _Card(
-          child: Column(
-            children: [
-              for (final item in items) ...[
-                _ItemRow(item: item, onChange: (q) => _changeQuantity(item, q)),
-                if (item != items.last)
-                  Divider(height: Space.lg.h, color: Colors.black12),
-              ],
-              Divider(height: Space.lg.h, color: Colors.black12),
-              _LinkRow(
-                icon: PhosphorIcons.plus(),
-                text: 'Add more items',
-                onTap: () {
-                  ref.read(brandProvider.notifier).setBrand(_store!);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        ),
-        Gap(Space.sm),
-        _Card(
-          padding: EdgeInsets.zero,
-          child: _coupon == null
-              ? _LinkRow(
-                  padding: EdgeInsets.all(Space.md.r),
-                  icon: PhosphorIcons.sealPercent(),
-                  text: 'Apply a coupon',
-                  trailing: Icon(
-                    PhosphorIcons.caretRight(),
-                    size: 16.sp,
-                    color: Colors.black38,
+          _Card(
+            padding: EdgeInsets.zero,
+            child: _coupon == null
+                ? _LinkRow(
+                    padding: EdgeInsets.all(Space.md.r),
+                    icon: PhosphorIcons.sealPercent(),
+                    text: 'Apply a coupon',
+                    trailing: Icon(
+                      PhosphorIcons.caretRight(),
+                      size: 16.sp,
+                      color: Colors.black38,
+                    ),
+                    onTap: () => _openCoupons(itemTotal),
+                  )
+                : _AppliedCoupon(
+                    code: _coupon!,
+                    saving: _discount,
+                    onRemove: () => setState(() {
+                      _coupon = null;
+                      _discount = 0;
+                    }),
                   ),
-                  onTap: () => _openCoupons(itemTotal),
-                )
-              : _AppliedCoupon(
-                  code: _coupon!,
-                  saving: _discount,
-                  onRemove: () => setState(() {
-                    _coupon = null;
-                    _discount = 0;
-                  }),
-                ),
-        ),
-        Gap(Space.sm),
-        _Card(child: _buildInstructions()),
-        Gap(Space.sm),
-        _Card(
-          child: _Bill(
-            itemTotal: itemTotal,
-            pricing: pricing,
-            failed: _pricingFailed,
-            discount: _discount,
-            coupon: _coupon,
-            onRetry: () => _loadPricing(_store!),
           ),
-        ),
-        Gap(Space.sm),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: Space.xs.w),
-          child: Text(
-            'Orders can be cancelled until the store starts preparing them.',
-            style: GoogleFonts.poppins(fontSize: 11.sp, color: Colors.black45),
+          Gap(Space.sm),
+          _Card(child: _buildInstructions()),
+          Gap(Space.sm),
+          _Card(
+            child: _Bill(
+              itemTotal: itemTotal,
+              pricing: pricing,
+              failed: _pricingFailed,
+              discount: _discount,
+              coupon: _coupon,
+              onRetry: () => _loadPricing(_store!),
+            ),
           ),
-        ),
-      ],
+          Gap(Space.sm),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: Space.xs.w),
+            child: Text(
+              'Orders can be cancelled until the store starts preparing them.',
+              style: GoogleFonts.poppins(
+                fontSize: 11.sp,
+                color: Colors.black45,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildInstructions() {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = themeFor(_store).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -625,12 +651,20 @@ class _BagScreenState extends ConsumerState<BagScreen> {
                     hint: 'Another number the rider can call',
                     keyboardType: TextInputType.phone,
                     maxLength: 10,
+                    autofocus: true,
                     errorText: _altPhoneError,
                     onChanged: (_) {
                       if (_altPhoneError != null) {
                         setState(() => _altPhoneError = null);
                       }
                     },
+                    // Changed your mind: close it and forget the number.
+                    onClear: () => setState(() {
+                      _showAltPhone = false;
+                      _altPhoneController.clear();
+                      _altPhoneError = null;
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    }),
                   ),
                 )
               : Padding(
@@ -652,7 +686,7 @@ class _BagScreenState extends ConsumerState<BagScreen> {
     final toPay = pricing == null
         ? null
         : _Bill.total(itemTotal, pricing, _discount);
-    final theme = Theme.of(context);
+    final theme = themeFor(_store);
     final primary = theme.colorScheme.primary;
     final hasAddress = _address != null || _oneOffAddress != null;
 
@@ -1398,6 +1432,10 @@ class _CompactField extends StatelessWidget {
   final TextInputType? keyboardType;
   final String? errorText;
   final ValueChanged<String>? onChanged;
+  final bool autofocus;
+
+  /// Shows an × at the end of the field.
+  final VoidCallback? onClear;
 
   const _CompactField({
     required this.controller,
@@ -1407,6 +1445,8 @@ class _CompactField extends StatelessWidget {
     this.keyboardType,
     this.errorText,
     this.onChanged,
+    this.autofocus = false,
+    this.onClear,
   });
 
   @override
@@ -1422,6 +1462,12 @@ class _CompactField extends StatelessWidget {
       maxLength: maxLength,
       keyboardType: keyboardType,
       onChanged: onChanged,
+      autofocus: autofocus,
+      // A phone keypad has no return key; this puts a Done above it.
+      textInputAction: maxLines > 1
+          ? TextInputAction.newline
+          : TextInputAction.done,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: GoogleFonts.poppins(fontSize: 13.sp),
       decoration: InputDecoration(
         hintText: hint,
@@ -1429,6 +1475,13 @@ class _CompactField extends StatelessWidget {
         isDense: true,
         counterText: '',
         errorText: errorText,
+        suffixIcon: onClear == null
+            ? null
+            : IconButton(
+                tooltip: 'Remove',
+                icon: Icon(PhosphorIcons.x(), size: 16.sp),
+                onPressed: onClear,
+              ),
         contentPadding: EdgeInsets.symmetric(
           horizontal: Space.sm.w,
           vertical: Space.sm.h,
