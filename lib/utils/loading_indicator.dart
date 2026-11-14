@@ -80,8 +80,7 @@ class _HouseOfFlavorsLoaderState extends ConsumerState<HouseOfFlavorsLoader>
       child: AnimatedBuilder(
         animation: Listenable.merge([_rise, _wave, _drift]),
         builder: (context, _) {
-          final tint =
-              widget.color ?? (isLittleH ? _terracotta : _sage);
+          final tint = widget.color ?? (isLittleH ? _terracotta : _sage);
 
           // Held mid-motion when the OS asks us not to animate.
           final rise = reduceMotion
@@ -92,7 +91,12 @@ class _HouseOfFlavorsLoaderState extends ConsumerState<HouseOfFlavorsLoader>
 
           return CustomPaint(
             painter: isLittleH
-                ? _ProofPainter(rise: rise, wobble: wave, flour: drift, color: tint)
+                ? _ProofPainter(
+                    rise: rise,
+                    wobble: wave,
+                    flour: drift,
+                    color: tint,
+                  )
                 : _BrewPainter(
                     fill: 0.25 + 0.5 * rise,
                     wave: wave,
@@ -236,10 +240,7 @@ class _BrewPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.55),
-            color.withValues(alpha: 0.9),
-          ],
+          colors: [color.withValues(alpha: 0.55), color.withValues(alpha: 0.9)],
         ).createShader(Rect.fromLTWH(0, surfaceY, size.width, size.height)),
     );
 
@@ -349,22 +350,26 @@ class _ProofPainter extends CustomPainter {
 
     // Clip to the bowl's mouth so the loaf sits *in* it, not on top of it.
     canvas.save();
-    canvas.clipRect(
-      Rect.fromLTRB(0, 0, size.width, rimY + s * 0.005),
-    );
+    canvas.clipRect(Rect.fromLTRB(0, 0, size.width, rimY + s * 0.005));
     canvas.drawPath(
       dough,
       Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            color.withValues(alpha: 0.55),
-            color.withValues(alpha: 0.92),
-          ],
-        ).createShader(
-          Rect.fromLTWH(cx - domeW / 2, rimY - domeH * 1.1, domeW, domeH * 1.1),
-        ),
+        ..shader =
+            LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                color.withValues(alpha: 0.55),
+                color.withValues(alpha: 0.92),
+              ],
+            ).createShader(
+              Rect.fromLTWH(
+                cx - domeW / 2,
+                rimY - domeH * 1.1,
+                domeW,
+                domeH * 1.1,
+              ),
+            ),
     );
 
     // Baker's scoring — the slashes open up as the loaf proves.
@@ -432,7 +437,8 @@ class _ProofPainter extends CustomPainter {
       final seed = i / 7;
       final t = (flour + seed) % 1.0;
 
-      final x = cx + math.sin(seed * math.pi * 2 + t * math.pi * 1.6) * s * 0.30;
+      final x =
+          cx + math.sin(seed * math.pi * 2 + t * math.pi * 1.6) * s * 0.30;
       final y = s * 0.10 + t * (rimY - s * 0.16);
 
       // Fade in as it falls, out as it lands.

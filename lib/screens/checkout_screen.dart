@@ -3,6 +3,7 @@ import 'package:tnt_lh/core/responsive.dart';
 import 'dart:math';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/utils/formatters.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -760,29 +761,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Its own Material, so the tap highlight shows on top of the card.
             Material(
               type: MaterialType.transparency,
-              child: RadioListTile<String>(
-                value: "COD",
+              child: RadioGroup<String>(
                 groupValue: _paymentMethod,
-                onChanged: (val) =>
-                    setState(() => _paymentMethod = val.toString()),
-                title: Text(
-                  "Cash on Delivery",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15.sp,
+                onChanged: (val) {
+                  if (val != null) setState(() => _paymentMethod = val);
+                },
+                child: RadioListTile<String>(
+                  value: "COD",
+                  title: Text(
+                    "Cash on Delivery",
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15.sp,
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  "Pay when your order arrives",
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.sp,
-                    color: Colors.black38,
+                  subtitle: Text(
+                    "Pay when your order arrives",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.black38,
+                    ),
                   ),
-                ),
-                activeColor: Theme.of(context).colorScheme.primary,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16.w,
-                  vertical: 4.h,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 4.h,
+                  ),
                 ),
               ),
             ),
@@ -815,19 +819,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           children: [
             _buildCouponField(),
             SizedBox(height: 20.h),
-            _buildSummaryRow("Item Total", "₹${subtotal.toStringAsFixed(2)}"),
+            _buildSummaryRow("Item Total", AppFormatters.rupees(subtotal)),
             SizedBox(height: 16.h),
             _buildSummaryRow(
               "Delivery Fee",
-              "₹${_deliveryCharge.toStringAsFixed(2)}",
+              AppFormatters.rupees(_deliveryCharge),
             ),
             SizedBox(height: 16.h),
-            _buildSummaryRow("GST ($_gstRate%)", "₹${tax.toStringAsFixed(2)}"),
+            _buildSummaryRow("GST ($_gstRate%)", AppFormatters.rupees(tax)),
             if (_couponDiscount > 0) ...[
               SizedBox(height: 16.h),
               _buildSummaryRow(
                 "Coupon ($_appliedCoupon)",
-                "- ₹${_couponDiscount.toStringAsFixed(2)}",
+                "- ${AppFormatters.rupees(_couponDiscount)}",
                 valueColor: Colors.green.shade700,
               ),
             ],
@@ -847,7 +851,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
                 Text(
-                  "₹${total.toStringAsFixed(2)}",
+                  AppFormatters.rupees(total),
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 24.sp,
@@ -1042,7 +1046,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             SizedBox(width: 10.w),
             Expanded(
               child: Text(
-                "'$_appliedCoupon' applied — you save ₹${_couponDiscount.toStringAsFixed(2)}",
+                "'$_appliedCoupon' applied — you save ${AppFormatters.rupees(_couponDiscount)}",
                 style: GoogleFonts.poppins(
                   fontSize: 13.sp,
                   fontWeight: FontWeight.w600,

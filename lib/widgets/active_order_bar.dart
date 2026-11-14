@@ -20,17 +20,29 @@ class ActiveOrderBar extends ConsumerWidget {
   ({String text, IconData icon}) _statusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return (text: 'Waiting for the store to confirm', icon: PhosphorIcons.clock());
+        return (
+          text: 'Waiting for the store to confirm',
+          icon: PhosphorIcons.clock(),
+        );
       case 'confirmed':
       case 'preparing':
-        return (text: 'Your order is being prepared', icon: PhosphorIcons.cookingPot());
+        return (
+          text: 'Your order is being prepared',
+          icon: PhosphorIcons.cookingPot(),
+        );
       case 'ready':
-        return (text: 'Ready — waiting for a rider', icon: PhosphorIcons.package());
+        return (
+          text: 'Ready — waiting for a rider',
+          icon: PhosphorIcons.package(),
+        );
       case 'assigned':
       case 'accepted':
       case 'heading_to_pickup':
       case 'arrived_at_pickup':
-        return (text: 'Rider is picking up your order', icon: PhosphorIcons.storefront());
+        return (
+          text: 'Rider is picking up your order',
+          icon: PhosphorIcons.storefront(),
+        );
       case 'picked_up':
       case 'out-for-delivery':
       case 'in_transit':
@@ -97,34 +109,34 @@ class ActiveOrderBar extends ConsumerWidget {
               children: [
                 Icon(label.icon, color: Colors.white, size: 18.sp),
                 SizedBox(width: 10.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label.text,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 12.5.sp,
-                        fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 12.5.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    Text(
-                      delayed
-                          ? 'Order #${order.orderNumber} · tap for details and help'
-                          : 'Order #${order.orderNumber} · tap to track',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 10.5.sp,
+                      Text(
+                        delayed
+                            ? 'Order #${order.orderNumber} · tap for details and help'
+                            : 'Order #${order.orderNumber} · tap to track',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 10.5.sp,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
                 Icon(
                   PhosphorIcons.caretRight(),
                   color: Colors.white,

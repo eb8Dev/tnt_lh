@@ -14,6 +14,8 @@ import 'package:tnt_lh/onboarding/register_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/connectivity_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
+import 'package:tnt_lh/core/navigation.dart';
+import 'package:tnt_lh/utils/formatters.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
 import 'package:tnt_lh/services/notification_service.dart';
@@ -133,6 +135,7 @@ class MyApp extends ConsumerWidget {
       builder: (context, _) => MaterialApp(
         title: 'Teas N Trees & Cream N Crust',
         debugShowCheckedModeBanner: false,
+        navigatorKey: rootNavigatorKey,
         theme: theme,
         builder: (context, child) {
           // Clamp system font scaling so accessibility large-fonts can't
@@ -162,11 +165,15 @@ class GlobalListener extends ConsumerWidget {
     ref.listen<SocketEvent?>(socketEventsProvider, (previous, next) {
       if (next != null) {
         if (next.name == 'order:status-updated') {
-          final status =
-              next.data['status']?.toString().toUpperCase() ?? 'UPDATED';
+          // Was the raw code: "Order is OUT_FOR_DELIVERY".
+          final status = next.data is Map
+              ? next.data['status']?.toString()
+              : null;
           SnackBarUtils.showThemedSnackBar(
             context: context,
-            message: "Order Update: Order is $status",
+            message: status == null
+                ? 'Your order was updated'
+                : 'Order update: ${AppFormatters.statusLabel(status)}',
           );
         }
 

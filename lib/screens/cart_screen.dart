@@ -2,6 +2,7 @@ import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/utils/formatters.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/product_image.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
@@ -427,7 +428,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     ),
                   SizedBox(height: 8.h),
                   Text(
-                    "₹${item.price * item.quantity}",
+                    AppFormatters.rupees(item.price * item.quantity),
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
                       fontSize: 16.sp,
@@ -603,7 +604,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 ),
               ),
               Text(
-                "₹${cart.subtotal}",
+                AppFormatters.rupees(cart.subtotal),
                 style: GoogleFonts.poppins(
                   fontSize: 26.sp,
                   fontWeight: FontWeight.bold,
@@ -635,7 +636,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Checkout All",
+                    // "Checkout All" read oddly for a bag from one store.
+                    cart.items.map((i) => i.brand).toSet().length > 1
+                        ? "Checkout both"
+                        : "Checkout",
                     style: GoogleFonts.poppins(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.bold,

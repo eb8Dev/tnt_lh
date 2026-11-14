@@ -321,7 +321,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        "${order.items.length} ${order.items.length == 1 ? 'item' : 'items'} • ₹${order.total}",
+                        "${order.items.length} ${order.items.length == 1 ? 'item' : 'items'} • ${AppFormatters.rupees(order.total)}",
                         style: GoogleFonts.poppins(
                           fontSize: 14.sp,
                           color: Colors.black54,

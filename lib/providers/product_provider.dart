@@ -123,6 +123,8 @@ class ProductsNotifier extends AsyncNotifier<ProductsState> {
 }
 
 final productsProvider =
-    AsyncNotifierProvider.family<ProductsNotifier, ProductsState, ProductParams>(
-      ProductsNotifier.new,
-    );
+    AsyncNotifierProvider.family<
+      ProductsNotifier,
+      ProductsState,
+      ProductParams
+    >(ProductsNotifier.new);

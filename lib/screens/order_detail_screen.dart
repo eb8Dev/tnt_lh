@@ -14,6 +14,7 @@ import 'package:tnt_lh/components/live_tracking_panel.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/formatters.dart';
+import 'package:tnt_lh/providers/socket_provider.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
@@ -36,10 +37,25 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   late Future<Order> _orderFuture;
 
+  /// The last order successfully shown. A live refresh keeps it on screen while
+  /// the new copy loads (and if that load fails), instead of blanking the page
+  /// to a spinner or an error every time the status moves.
+  Order? _shown;
+
   @override
   void initState() {
     super.initState();
     _orderFuture = _fetchOrder();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrderDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The tablet layout reuses this screen as a side pane and swaps orders in.
+    if (oldWidget.orderId != widget.orderId) {
+      _shown = null;
+      _orderFuture = _fetchOrder();
+    }
   }
 
   Future<Order> _fetchOrder() =>
@@ -47,6 +63,20 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   /// Re-issues the request so a failed load can recover without restarting.
   void _reload() => setState(() => _orderFuture = _fetchOrder());
+
+  /// This screen used to load once and never again: the store accepted the
+  /// order, the rider picked it up, and the status and timeline here stayed
+  /// exactly where they were (while a pop-up announced the change on top).
+  void _listenForLiveChanges() {
+    ref.listen<SocketEvent?>(socketEventsProvider, (_, event) {
+      if (event == null || event.name != 'order:status-updated') return;
+      final data = event.data;
+      final id = data is Map ? data['orderId']?.toString() : null;
+      if (id == widget.orderId) _reload();
+    });
+    // Back from the background, or the connection was restored.
+    ref.listen<int>(liveRefreshProvider, (_, _) => _reload());
+  }
 
   /// Edit-address is allowed until the rider picks up; report-issue appears once
   /// the order is dispatched (a rider is in play).
@@ -279,6 +309,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _listenForLiveChanges();
     final theme = Theme.of(context);
 
     return CenteredPage(
@@ -319,17 +350,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         body: FutureBuilder<Order>(
           future: _orderFuture,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
+            if (snapshot.connectionState == ConnectionState.done &&
+                snapshot.hasData) {
+              _shown = snapshot.data;
             }
-            if (snapshot.hasError) {
-              return ErrorRetryView(error: snapshot.error!, onRetry: _reload);
-            }
-            if (!snapshot.hasData) {
-              return Center(child: Text("Order not found"));
+            // A refresh in progress, or one that failed, keeps the last order
+            // on screen. Only a first load shows the spinner or the error.
+            if (_shown == null) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return ErrorRetryView(error: snapshot.error!, onRetry: _reload);
+              }
+              if (!snapshot.hasData) {
+                return Center(child: Text("Order not found"));
+              }
             }
 
-            final order = snapshot.data!;
+            final order = _shown!;
             // Show tracking for ANY active post-dispatch state. The order's own
             // status lagged the live delivery, and delivery-only statuses
             // ('arrived', 'heading_to_pickup') never appeared on the order — so
@@ -540,7 +579,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                             ),
                           ),
                           Text(
-                            "${item.quantity} x ₹${item.price.toStringAsFixed(0)}",
+                            "${item.quantity} x ${AppFormatters.rupees(item.price)}",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -601,7 +640,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          "₹${order.total.toStringAsFixed(2)}",
+                          AppFormatters.rupees(order.total),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18.sp,
@@ -645,13 +684,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
             return RefreshIndicator(
               onRefresh: () async {
-                setState(() {
-                  _orderFuture = OrderService.getOrderById(
-                    widget.orderId,
-                    brand: widget.brand,
-                  );
-                });
-                await _orderFuture;
+                _reload();
+                try {
+                  await _orderFuture;
+                } catch (_) {
+                  // The order stays on screen; nothing else to do.
+                }
               },
               child: LayoutBuilder(
                 builder: (context, box) {
@@ -710,7 +748,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[600])),
-          Text("₹${value.toStringAsFixed(2)}"),
+          Text(AppFormatters.rupees(value)),
         ],
       ),
     );
@@ -807,19 +845,26 @@ class _ReportIssueSheetState extends State<_ReportIssueSheet> {
             style: TextStyle(fontSize: 12.sp, color: Colors.black45),
           ),
           SizedBox(height: 12.h),
-          ..._reasons.entries.map(
-            (e) => RadioListTile<String>(
-              value: e.key,
-              groupValue: _reason,
-              onChanged: _busy
-                  ? null
-                  : (v) => setState(() {
-                      _reason = v;
-                      _error = null;
-                    }),
-              title: Text(e.value, style: TextStyle(fontSize: 14.sp)),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
+          RadioGroup<String>(
+            groupValue: _reason,
+            onChanged: (v) {
+              if (_busy) return;
+              setState(() {
+                _reason = v;
+                _error = null;
+              });
+            },
+            child: Column(
+              children: [
+                for (final e in _reasons.entries)
+                  RadioListTile<String>(
+                    value: e.key,
+                    enabled: !_busy,
+                    title: Text(e.value, style: TextStyle(fontSize: 14.sp)),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+              ],
             ),
           ),
           SizedBox(height: 8.h),

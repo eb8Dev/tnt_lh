@@ -139,21 +139,21 @@ class _StoreTransitionOverlayState extends State<StoreTransitionOverlay>
                     child: Transform.scale(
                       scale: 0.96 + 0.04 * logoOpacity,
                       child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 26.w,
-                        vertical: 22.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 26.w,
+                          vertical: 22.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
                         child: Image.asset(
                           widget.logoAsset,
                           // Wide enough for the Cream N Crust wordmark; the

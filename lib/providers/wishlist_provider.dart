@@ -8,12 +8,12 @@ import 'package:tnt_lh/providers/brand_provider.dart';
 class WishlistNotifier extends AsyncNotifier<List<Product>> {
   @override
   FutureOr<List<Product>> build() async {
-    final auth = ref.watch(authProvider);
+    final signedIn = ref.watch(authProvider.select((s) => s.isAuthenticated));
     // We don't necessarily filter by brand here if the user wants global favorites,
     // but the API supports brand-based fetching if needed.
     // Let's make it global for now as per "global orders" pattern.
 
-    if (auth.isAuthenticated) {
+    if (signedIn) {
       return _fetchWishlist();
     }
     return [];

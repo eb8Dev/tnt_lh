@@ -31,6 +31,10 @@ class ApiClient {
     });
   }
 
+  /// For callers outside the HTTP path that hold a token the server refused —
+  /// the live-updates socket. Shares the single in-flight refresh above.
+  static Future<String?> refreshSession() => _refresh();
+
   /// Dart's `http` package applies NO timeout by default. A request to a cell
   /// that has gone dead, or through a captive portal that black-holes traffic,
   /// simply never completes — so the customer sat watching a spinner forever,
@@ -71,8 +75,12 @@ class ApiClient {
     if (response.statusCode == 401) {
       final fresh = await _refresh();
       if (fresh == null) {
-        // AuthService.refreshToken already cleared the session when the refresh
-        // token itself was rejected. Nothing left to retry with.
+        // Rejected outright: AuthService.refreshToken has already signed the
+        // customer out, and the app returns to the sign-in screen. Otherwise
+        // the refresh merely failed to get through, and the session is intact.
+        if (await AuthService.hasSession()) {
+          throw "Can't reach the server. Check your connection and try again.";
+        }
         throw 'Your session expired. Please sign in again.';
       }
       response = await _dispatch(method, url, fresh, body, extraHeaders);

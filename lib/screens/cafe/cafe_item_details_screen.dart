@@ -2,6 +2,8 @@ import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/utils/formatters.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +11,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/providers/wishlist_provider.dart';
-import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
 import 'package:tnt_lh/widgets/product_image.dart';
 
@@ -211,7 +212,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
         ),
         SizedBox(height: 8.h),
         Text(
-          "₹$_currentPrice",
+          AppFormatters.rupees(_currentPrice),
           style: GoogleFonts.poppins(
             fontSize: 24.sp,
             fontWeight: FontWeight.bold,
@@ -300,7 +301,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     ),
                   ),
                   Text(
-                    "+ ₹${widget.product.cakePricing!.egglessExtraCharge}",
+                    "+ ${AppFormatters.rupees(widget.product.cakePricing!.egglessExtraCharge)}",
                     style: GoogleFonts.poppins(
                       fontSize: 12.sp,
                       color: Colors.black38,
@@ -496,10 +497,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                       );
                     });
 
-                SnackBarUtils.showThemedSnackBar(
-                  context: context,
-                  message: "Added to your bag!",
-                );
+                HapticFeedback.lightImpact();
                 Navigator.pop(context);
               },
               child: Container(
@@ -517,7 +515,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  "Add to Bag - ₹${_currentPrice * _quantity}",
+                  "Add to Bag - ${AppFormatters.rupees(_currentPrice * _quantity)}",
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

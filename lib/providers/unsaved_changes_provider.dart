@@ -11,6 +11,4 @@ class UnsavedChangesNotifier extends Notifier<bool> {
 }
 
 final profileHasUnsavedChangesProvider =
-    NotifierProvider<UnsavedChangesNotifier, bool>(
-      UnsavedChangesNotifier.new,
-    );
+    NotifierProvider<UnsavedChangesNotifier, bool>(UnsavedChangesNotifier.new);

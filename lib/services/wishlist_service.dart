@@ -3,7 +3,6 @@ import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/services/api_client.dart';
 
 class WishlistService {
-
   static Future<List<dynamic>> getWishlist({String? brand}) async {
     final url = AppConfig.buildUrl('/customer/wishlist', brand: brand);
     try {
@@ -23,7 +22,10 @@ class WishlistService {
   static Future<void> addToWishlist(String productId, {String? brand}) async {
     final url = AppConfig.buildUrl('/customer/wishlist', brand: brand);
     try {
-      final response = await ApiClient.post(url, body: {"productId": productId});
+      final response = await ApiClient.post(
+        url,
+        body: {"productId": productId},
+      );
 
       final data = jsonDecode(response.body);
       if (response.statusCode != 200 && response.statusCode != 201) {

@@ -16,7 +16,6 @@ class CouponResult {
 }
 
 class CouponService {
-
   /// Validate a coupon code against the current order value. Throws with the
   /// backend's reason (expired / min order / wrong brand / …) on failure.
   static Future<CouponResult> validate({
@@ -25,11 +24,14 @@ class CouponService {
     required String brand,
   }) async {
     final url = AppConfig.buildUrl('/customer/coupons/validate', brand: brand);
-    final response = await ApiClient.post(url, body: {
+    final response = await ApiClient.post(
+      url,
+      body: {
         'couponCode': code.trim(),
         'orderValue': orderValue,
         'brand': brand,
-      });
+      },
+    );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 && data['success'] == true) {
       final d = data['data'] ?? {};

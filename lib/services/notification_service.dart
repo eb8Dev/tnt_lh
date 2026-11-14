@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:tnt_lh/services/auth_service.dart';
 import 'package:tnt_lh/core/config.dart';
+import 'package:tnt_lh/core/navigation.dart';
+import 'package:tnt_lh/screens/order_detail_screen.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
@@ -35,22 +37,62 @@ class NotificationService {
     await _localNotifications.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        debugPrint('🖱️ Local Notification Clicked: ${details.payload}');
+        _openFromPayload(details.payload);
       },
     );
 
-    // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint(
-        '📩 Customer App: Foreground Message Received: ${message.notification?.title}',
-      );
+      // Order updates also arrive over the live connection, which already shows
+      // them in the app; a system banner on top announced everything twice.
+      if (message.data['orderId'] != null) return;
       _showLocalNotification(message);
     });
 
-    // Handle background notification clicks
+    // Tapping a notification used to just open the app wherever it was. An
+    // order notification now opens that order.
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('🖱️ Customer App: Notification Clicked: ${message.data}');
+      _openFromData(message.data);
     });
+  }
+
+  static void _openFromPayload(String? payload) {
+    if (payload == null || payload.isEmpty) return;
+    try {
+      final data = json.decode(payload);
+      if (data is Map) _openFromData(data);
+    } catch (_) {}
+  }
+
+  static Future<void> _openFromData(Map<dynamic, dynamic> data) async {
+    final orderId = data['orderId']?.toString();
+    if (orderId == null || orderId.isEmpty) return;
+    // Signed out since the notification was sent: nothing to show them.
+    if (!await AuthService.hasSession()) return;
+    rootNavigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId)),
+    );
+  }
+
+  static bool _launchTapHandled = false;
+
+  /// The app was started by tapping a notification. Handled from the signed-in
+  /// home screen, once there is somewhere to navigate from.
+  static Future<void> _openLaunchNotification() async {
+    if (_launchTapHandled) return;
+    _launchTapHandled = true;
+    try {
+      final initial = await FirebaseMessaging.instance.getInitialMessage();
+      if (initial != null) {
+        await _openFromData(initial.data);
+        return;
+      }
+      final local = await _localNotifications.getNotificationAppLaunchDetails();
+      if (local?.didNotificationLaunchApp == true) {
+        _openFromPayload(local!.notificationResponse?.payload);
+      }
+    } catch (e) {
+      debugPrint('Opening launch notification failed: $e');
+    }
   }
 
   /// Asks for notification permission and registers this device for pushes.
@@ -65,6 +107,7 @@ class NotificationService {
     // Store screenshots (integration_test/screenshots_test.dart) are taken
     // with this set, so the system prompt isn't over every one of them.
     if (const bool.fromEnvironment('SCREENSHOT_MODE')) return;
+    _openLaunchNotification();
     try {
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(alert: true, badge: true, sound: true);

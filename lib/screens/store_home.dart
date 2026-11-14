@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/bump_on_change.dart';
 import 'package:tnt_lh/widgets/active_order_bar.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
@@ -245,15 +246,21 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       String text, {
       int badge = 0,
     }) => NavigationRailDestination(
-      icon: Badge(
-        isLabelVisible: badge > 0,
-        label: Text('$badge'),
-        child: Icon(icon),
+      icon: BumpOnChange(
+        value: badge,
+        child: Badge(
+          isLabelVisible: badge > 0,
+          label: Text('$badge'),
+          child: Icon(icon),
+        ),
       ),
-      selectedIcon: Badge(
-        isLabelVisible: badge > 0,
-        label: Text('$badge'),
-        child: Icon(active),
+      selectedIcon: BumpOnChange(
+        value: badge,
+        child: Badge(
+          isLabelVisible: badge > 0,
+          label: Text('$badge'),
+          child: Icon(active),
+        ),
       ),
       label: Text(text),
     );
@@ -406,44 +413,47 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  isSelected ? activeIcon : inactiveIcon,
-                  color: isSelected ? Colors.white : Colors.black38,
-                  size: 24.sp,
-                ),
-                if (badgeCount > 0)
-                  Positioned(
-                    top: -6,
-                    right: -8,
-                    child: Container(
-                      padding: EdgeInsets.all(3.r),
-                      constraints: BoxConstraints(
-                        minWidth: 16.w,
-                        minHeight: 16.w,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          width: 1,
+            BumpOnChange(
+              value: badgeCount,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    isSelected ? activeIcon : inactiveIcon,
+                    color: isSelected ? Colors.white : Colors.black38,
+                    size: 24.sp,
+                  ),
+                  if (badgeCount > 0)
+                    Positioned(
+                      top: -6,
+                      right: -8,
+                      child: Container(
+                        padding: EdgeInsets.all(3.r),
+                        constraints: BoxConstraints(
+                          minWidth: 16.w,
+                          minHeight: 16.w,
                         ),
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          color: primary,
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.bold,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          '$badgeCount',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            color: primary,
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
             if (isSelected) ...[
               SizedBox(width: 8.w),

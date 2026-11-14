@@ -626,7 +626,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                 ),
               ),
               const Spacer(),
-              if (trailing != null) trailing,
+              ?trailing,
             ],
           ),
           Gap(Space.md),
@@ -918,6 +918,15 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
   }
 
   Widget _switchRow(String title, bool value, ValueChanged<bool> onChanged) {
+    // The card behind it paints a background, which hides a ListTile's tap
+    // highlight; its own transparent Material puts the ink back on top.
+    return Material(
+      type: MaterialType.transparency,
+      child: _switchTile(title, value, onChanged),
+    );
+  }
+
+  Widget _switchTile(String title, bool value, ValueChanged<bool> onChanged) {
     return SwitchListTile(
       title: Text(
         title,

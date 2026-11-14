@@ -4,6 +4,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:tnt_lh/services/auth_service.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/core/config.dart';
+import 'package:tnt_lh/services/api_client.dart';
 
 // Events
 class SocketEvent {
@@ -26,6 +27,25 @@ final socketEventsProvider =
       return SocketEventsNotifier();
     });
 
+/// Bumped whenever the app may have missed live updates: the socket came back
+/// after a drop, or the app returned from the background.
+///
+/// Socket.io does not replay what was sent while a phone was asleep, in a lift
+/// or between towers. Before this, an order that was accepted, prepared and
+/// picked up while the screen was locked stayed on its old status until the
+/// customer pulled to refresh. Anything that shows live server data listens to
+/// this and refetches.
+class LiveRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+final liveRefreshProvider = NotifierProvider<LiveRefreshNotifier, int>(
+  LiveRefreshNotifier.new,
+);
+
 class SocketManager {
   io.Socket? _socket;
 
@@ -42,15 +62,43 @@ class SocketManager {
 
   final Ref ref;
 
+  /// Whether any socket has connected yet in this run of the app. The first
+  /// connection needs no catch-up refresh: everything was just loaded.
+  bool _connectedOnce = false;
+
+  /// When the socket last asked for a token refresh, so a server that keeps
+  /// refusing us can't turn into a refresh loop.
+  DateTime? _lastRefreshAttempt;
+
+  late final AppLifecycleListener _lifecycle;
+
   SocketManager(this.ref) {
-    // Watch auth to connect/disconnect
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next.isAuthenticated) {
+    // Only signing in and out matter here. Watching the whole auth state used
+    // to rebuild on every profile edit and loading flag.
+    ref.listen<bool>(authProvider.select((s) => s.isAuthenticated), (
+      previous,
+      next,
+    ) {
+      if (next) {
         connect();
       } else {
         disconnect();
       }
+    }, fireImmediately: true);
+
+    // Coming back to the app: the socket was very likely dropped while the
+    // phone slept, and whatever happened meanwhile was never delivered.
+    _lifecycle = AppLifecycleListener(onResume: _onResume);
+    ref.onDispose(() {
+      _lifecycle.dispose();
+      disconnect();
     });
+  }
+
+  void _onResume() {
+    if (!ref.read(authProvider).isAuthenticated) return;
+    connect();
+    ref.read(liveRefreshProvider.notifier).bump();
   }
 
   Future<void> connect() async {
@@ -86,7 +134,12 @@ class SocketManager {
 
     _socket!.connect();
 
-    _socket!.onConnect((_) => debugPrint('✅ Socket: Connected'));
+    _socket!.onConnect((_) {
+      debugPrint('✅ Socket: Connected');
+      // A reconnect means there was a gap. Ask the screens to catch up.
+      if (_connectedOnce) ref.read(liveRefreshProvider.notifier).bump();
+      _connectedOnce = true;
+    });
     _socket!.onDisconnect((_) => debugPrint('❌ Socket: Disconnected'));
 
     // An expired token is refused at the handshake. Fetch the current one and
@@ -94,7 +147,25 @@ class SocketManager {
     // token sitting in storage; we were simply still holding the old one.
     _socket!.onConnectError((err) async {
       debugPrint('⚠️ Socket: connect error: $err');
-      final latest = await AuthService.getToken();
+      var latest = await AuthService.getToken();
+
+      // Nothing else has refreshed the token (no API call happened since it
+      // expired, say the app sat on the order screen), so the socket would
+      // retry with the dead one forever. Refresh it ourselves, at most twice a
+      // minute so a server that is down doesn't become a refresh loop.
+      final authProblem =
+          err.toString().toLowerCase().contains('token') ||
+          err.toString().toLowerCase().contains('auth');
+      final now = DateTime.now();
+      if (latest == _token &&
+          authProblem &&
+          (_lastRefreshAttempt == null ||
+              now.difference(_lastRefreshAttempt!) >
+                  const Duration(seconds: 30))) {
+        _lastRefreshAttempt = now;
+        latest = await ApiClient.refreshSession();
+      }
+
       if (latest != null && latest != _token) {
         _teardown();
         connect();

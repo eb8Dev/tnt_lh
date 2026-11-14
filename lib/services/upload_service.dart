@@ -6,7 +6,11 @@ import 'package:tnt_lh/services/auth_service.dart';
 
 class UploadService {
   /// Upload a single image and get back its hosted URL.
-  static Future<String> uploadImage(File file, {String? folder, String? brand}) async {
+  static Future<String> uploadImage(
+    File file, {
+    String? folder,
+    String? brand,
+  }) async {
     final url = AppConfig.buildUrl(
       '/customer/upload/image',
       brand: brand,

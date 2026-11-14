@@ -50,7 +50,16 @@ class OrderNotifier extends AsyncNotifier<OrdersState> {
 
   @override
   FutureOr<OrdersState> build() async {
-    final auth = ref.watch(authProvider);
+    // Signing in or out is what matters. Watching the whole auth state reloaded
+    // the list (and threw away every page loaded past the first) whenever the
+    // profile was edited or a loading flag flipped.
+    final signedIn = ref.watch(authProvider.select((s) => s.isAuthenticated));
+
+    // Back from the background, or the socket reconnected: updates may have
+    // been missed, so reload quietly.
+    ref.listen<int>(liveRefreshProvider, (_, _) {
+      if (signedIn) refresh(background: true);
+    });
 
     // Real-time updates. A new order, or a status change, makes the first page
     // stale — reload from the top rather than trying to patch the middle.
@@ -63,7 +72,7 @@ class OrderNotifier extends AsyncNotifier<OrdersState> {
       }
     });
 
-    if (!auth.isAuthenticated) {
+    if (!signedIn) {
       return const OrdersState(orders: []);
     }
     return _loadFirstPage();
@@ -82,7 +91,11 @@ class OrderNotifier extends AsyncNotifier<OrdersState> {
   /// Pull-to-refresh, and the socket's "something changed" path.
   Future<void> refresh({bool background = false}) async {
     if (!background) state = const AsyncValue.loading();
-    state = await AsyncValue.guard(_loadFirstPage);
+    final result = await AsyncValue.guard(_loadFirstPage);
+    // A quiet refresh that fails (a flaky signal on resume) must not replace
+    // the orders on screen with an error page.
+    if (background && result is AsyncError && state.hasValue) return;
+    state = result;
   }
 
   /// Append the next page. Safe to call repeatedly — it no-ops while a page is
@@ -141,17 +154,18 @@ typedef ActiveOrder = ({Order order, bool delayed});
 const _delayedAfter = Duration(hours: 3);
 const _abandonedAfter = Duration(hours: 24);
 
+/// Ticks once a minute, so the "delayed" and "abandoned" cut-offs below are
+/// re-checked as time passes, not only when the order list happens to reload.
+final _minuteTickProvider = StreamProvider<int>(
+  (ref) => Stream.periodic(const Duration(minutes: 1), (i) => i),
+);
+
 final activeOrderProvider = Provider<ActiveOrder?>((ref) {
+  ref.watch(_minuteTickProvider);
   final orders = ref.watch(orderProvider).value?.orders ?? const <Order>[];
 
   // Terminal states — anything else is still live.
-  const done = {
-    'delivered',
-    'completed',
-    'cancelled',
-    'rejected',
-    'refunded',
-  };
+  const done = {'delivered', 'completed', 'cancelled', 'rejected', 'refunded'};
 
   final now = DateTime.now();
   for (final o in orders) {

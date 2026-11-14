@@ -20,7 +20,7 @@ class ContactService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'firstName': firstName,
-          if (lastName != null) 'lastName': lastName,
+          'lastName': ?lastName,
           'email': email,
           'subject': subject,
           'message': message,

@@ -1,6 +1,8 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/utils/formatters.dart';
+import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -341,13 +343,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       return;
     }
 
-    // Direct add. The cart provider updates optimistically, so the bag badge
-    // and this confirmation land immediately; a failure rolls back and tells
-    // the user rather than silently leaving a phantom item.
-    SnackBarUtils.showThemedSnackBar(
-      context: context,
-      message: "${product.name} added to bag!",
-    );
+    // Direct add. The cart updates optimistically, so the bag icon hops and its
+    // count changes at once (with a light tap); a failure rolls back and says
+    // so. A "added to bag!" message for every tap only covered the menu.
+    HapticFeedback.lightImpact();
     _addDirectly(product);
   }
 
@@ -1362,7 +1361,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        "₹${product.displayPrice}",
+                        AppFormatters.rupees(product.displayPrice),
                         style: GoogleFonts.poppins(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.w800,
@@ -1501,12 +1500,9 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
     final notifier = ref.read(cartProvider.notifier);
     final productName = widget.product.name;
 
-    // Confirm and close immediately. The cart updates optimistically, so
-    // awaiting the network here just froze the sheet for a couple of seconds.
-    SnackBarUtils.showThemedSnackBar(
-      context: context,
-      message: "$productName has been added to your bag!",
-    );
+    // Close immediately. The cart updates optimistically (the bag icon hops),
+    // so awaiting the network here just froze the sheet for a couple of seconds.
+    HapticFeedback.lightImpact();
     Navigator.pop(context);
 
     // Reconcile in the background; surface a failure instead of swallowing it.
@@ -1601,7 +1597,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
                       ),
                     ),
                     Text(
-                      "₹$_currentPrice",
+                      AppFormatters.rupees(_currentPrice),
                       style: GoogleFonts.poppins(
                         color: themeColor,
                         fontWeight: FontWeight.bold,
@@ -1663,7 +1659,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Eggless Option (+₹${widget.product.cakePricing!.egglessExtraCharge})",
+                  "Eggless Option (+${AppFormatters.rupees(widget.product.cakePricing!.egglessExtraCharge)})",
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     fontSize: 14.sp,
@@ -1743,7 +1739,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
               ),
               alignment: Alignment.center,
               child: Text(
-                "Add to Bag - ₹${_currentPrice * _quantity}",
+                "Add to Bag - ${AppFormatters.rupees(_currentPrice * _quantity)}",
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

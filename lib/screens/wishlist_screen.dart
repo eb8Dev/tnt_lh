@@ -1,5 +1,6 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/utils/formatters.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/product_image.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
@@ -219,7 +220,7 @@ class WishlistScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "₹${product.displayPrice}",
+                        AppFormatters.rupees(product.displayPrice),
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           fontSize: 15.sp,

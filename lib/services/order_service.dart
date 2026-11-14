@@ -41,6 +41,7 @@ class OrderService {
     int page = 1,
     int limit = 20,
     String? brand,
+
     /// Return every brand's orders in ONE correctly sorted, correctly paginated
     /// list. The app used to fetch each brand separately and merge them on the
     /// phone, which cannot be paginated: page 2 of a brand with three orders is
@@ -114,6 +115,7 @@ class OrderService {
     String? brand,
     List<Map<String, dynamic>>? items,
     String? couponCode,
+
     /// Stable across retries of the SAME checkout. Lets the server recognise a
     /// replay and hand back the order it already made, instead of making
     /// another one. See CheckoutScreen, which holds the key until success.
@@ -128,7 +130,6 @@ class OrderService {
 
     final url = AppConfig.buildUrl(path, brand: brand);
     try {
-
       final bool hasCoords = latitude != null && longitude != null;
       // The two endpoints disagree on where the point lives: /cart/checkout
       // reads deliveryAddress.location, /orders reads the top-level location.
@@ -145,10 +146,9 @@ class OrderService {
             ? {"address": deliveryAddress, "location": point}
             : deliveryAddress,
         "paymentMethod": paymentMethod,
-        if (deliveryInstructions != null)
-          "deliveryInstructions": deliveryInstructions,
-        if (point != null) "location": point,
-        if (items != null) "items": items,
+        "deliveryInstructions": ?deliveryInstructions,
+        "location": ?point,
+        "items": ?items,
         if (couponCode != null && couponCode.isNotEmpty)
           "couponCode": couponCode,
         if (alternatePhone != null && alternatePhone.isNotEmpty)
@@ -229,7 +229,10 @@ class OrderService {
       '/customer/orders/$orderId/complaint',
       brand: brand,
     );
-    final response = await ApiClient.post(url, body: {'reason': reason, if (notes != null) 'notes': notes});
+    final response = await ApiClient.post(
+      url,
+      body: {'reason': reason, 'notes': ?notes},
+    );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) return data;
     throw Exception(data['message'] ?? 'Could not submit your issue');
@@ -249,14 +252,17 @@ class OrderService {
       brand: brand,
     );
     final hasCoords = latitude != null && longitude != null;
-    final response = await ApiClient.patch(url, body: {
+    final response = await ApiClient.patch(
+      url,
+      body: {
         'address': address,
         if (hasCoords)
           'location': {
             'type': 'Point',
             'coordinates': [longitude, latitude],
           },
-      });
+      },
+    );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200) return data;
     throw Exception(data['message'] ?? 'Could not update the address');

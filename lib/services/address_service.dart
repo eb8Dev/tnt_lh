@@ -4,7 +4,6 @@ import 'package:tnt_lh/services/api_client.dart';
 import 'package:tnt_lh/models/address_model.dart';
 
 class AddressService {
-
   static Future<List<SavedAddress>> getAddresses({String? brand}) async {
     final url = AppConfig.buildUrl('/customer/address', brand: brand);
     final response = await ApiClient.get(url);
@@ -28,7 +27,9 @@ class AddressService {
   }) async {
     final url = AppConfig.buildUrl('/customer/address', brand: brand);
     final hasCoords = latitude != null && longitude != null;
-    final response = await ApiClient.post(url, body: {
+    final response = await ApiClient.post(
+      url,
+      body: {
         'label': label,
         'addressLine': addressLine,
         'isDefault': isDefault,
@@ -37,7 +38,8 @@ class AddressService {
             'type': 'Point',
             'coordinates': [longitude, latitude],
           },
-      });
+      },
+    );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) {
       final addr = data['data'] ?? data['address'];
@@ -62,15 +64,18 @@ class AddressService {
       brand: brand,
     );
     final hasCoords = latitude != null && longitude != null;
-    final response = await ApiClient.put(url, body: {
-      'label': label,
-      'addressLine': addressLine,
-      if (hasCoords)
-        'location': {
-          'type': 'Point',
-          'coordinates': [longitude, latitude],
-        },
-    });
+    final response = await ApiClient.put(
+      url,
+      body: {
+        'label': label,
+        'addressLine': addressLine,
+        if (hasCoords)
+          'location': {
+            'type': 'Point',
+            'coordinates': [longitude, latitude],
+          },
+      },
+    );
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) {
       final addr = data['data'] ?? data['address'];

@@ -27,9 +27,7 @@ class StoreSwitcher extends StatelessWidget {
         decoration: BoxDecoration(
           color: primary.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: primary.withValues(alpha: 0.08),
-          ),
+          border: Border.all(color: primary.withValues(alpha: 0.08)),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -66,9 +64,7 @@ class StoreSwitcher extends StatelessWidget {
                         context,
                         brand: 'teasntrees',
                         label: Brands.cafeName,
-                        icon: PhosphorIcons.coffee(
-                          PhosphorIconsStyle.fill,
-                        ),
+                        icon: PhosphorIcons.coffee(PhosphorIconsStyle.fill),
                         active: isTnt,
                         primary: primary,
                       ),
@@ -78,9 +74,7 @@ class StoreSwitcher extends StatelessWidget {
                         context,
                         brand: 'littleh',
                         label: Brands.bakeryName,
-                        icon: PhosphorIcons.cake(
-                          PhosphorIconsStyle.fill,
-                        ),
+                        icon: PhosphorIcons.cake(PhosphorIconsStyle.fill),
                         active: !isTnt,
                         primary: primary,
                       ),
@@ -132,11 +126,7 @@ class StoreSwitcher extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 6.w),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           ),
         ),

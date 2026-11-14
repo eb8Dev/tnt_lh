@@ -13,6 +13,14 @@ class AppFormatters {
 
   /// What a customer should read for an order status. The raw values
   /// (`in_transit`, `out-for-delivery`) were printed as-is.
+  /// A price the way people write it: ₹189, ₹189.50. Prices used to print
+  /// straight from a double ("₹189.0", "₹378.0") or with forced paise
+  /// ("₹40.00") depending on the screen.
+  static String rupees(num amount) {
+    final whole = amount == amount.roundToDouble();
+    return whole ? '₹${amount.round()}' : '₹${amount.toStringAsFixed(2)}';
+  }
+
   static String statusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'pending':

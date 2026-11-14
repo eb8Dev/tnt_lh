@@ -5,6 +5,7 @@ import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/services/cart_service.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
+import 'package:tnt_lh/providers/socket_provider.dart';
 
 /// Carries the message from a cart write that failed *after* the UI had already
 /// moved optimistically. Screens listen to this and show a snackbar, so a failed
@@ -32,8 +33,17 @@ class CartNotifier extends AsyncNotifier<Cart> {
 
   @override
   FutureOr<Cart> build() async {
-    final auth = ref.watch(authProvider);
-    ref.watch(brandProvider);
+    // Only signing in or out rebuilds the cart. It used to watch the whole auth
+    // state and the selected store too, and every rebuild runs onDispose below,
+    // which cancels the debounced quantity writes still waiting to be sent: edit
+    // your profile, or switch store, within a moment of changing a quantity and
+    // the change was silently lost. The cart is one cart across both stores, so
+    // switching store needs no refetch.
+    final signedIn = ref.watch(authProvider.select((s) => s.isAuthenticated));
+
+    ref.listen<int>(liveRefreshProvider, (_, _) {
+      if (signedIn && _writeTimers.isEmpty) fetchCart(background: true);
+    });
 
     ref.onDispose(() {
       for (final t in _writeTimers.values) {
@@ -43,7 +53,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
       _reconcileTimer?.cancel();
     });
 
-    if (auth.isAuthenticated) {
+    if (signedIn) {
       return _fetchCartInternal();
     }
     return Cart(items: [], subtotal: 0, itemCount: 0);
@@ -203,10 +213,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
     state = AsyncData(_recalculate(items));
 
     final brand = previous.items
-        .firstWhere(
-          (i) => i.id == itemId,
-          orElse: () => previous.items.first,
-        )
+        .firstWhere((i) => i.id == itemId, orElse: () => previous.items.first)
         .brand;
 
     _debounceWrite(itemId, () async {

@@ -128,11 +128,8 @@ class RemoteIcon extends StatelessWidget {
       imageUrl: url!,
       color: color,
       memCacheWidth: (size * 2 * dpr).round().clamp(48, 256),
-      placeholder: (context, _) => Icon(
-        fallback,
-        color: color.withValues(alpha: 0.35),
-        size: size,
-      ),
+      placeholder: (context, _) =>
+          Icon(fallback, color: color.withValues(alpha: 0.35), size: size),
       errorWidget: (context, _, _) => Icon(fallback, color: color, size: size),
     );
   }

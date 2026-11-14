@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tnt_lh/core/config.dart';
@@ -23,10 +24,7 @@ class AuthService {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'idToken': idToken,
-          if (mobile != null) 'mobile': mobile,
-        }),
+        body: jsonEncode({'idToken': idToken, 'mobile': ?mobile}),
       );
 
       final data = jsonDecode(response.body);
@@ -57,8 +55,8 @@ class AuthService {
         body: jsonEncode({
           'idToken': idToken,
           'email': email,
-          if (name != null) 'name': name,
-          if (photoURL != null) 'photoURL': photoURL,
+          'name': ?name,
+          'photoURL': ?photoURL,
         }),
       );
 
@@ -84,25 +82,41 @@ class AuthService {
       brand: brand,
     );
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': refreshToken}),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': refreshToken}),
+          )
+          .timeout(const Duration(seconds: 20));
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
-        await _saveTokens(data['data']['token'], data['data']['refreshToken']);
-        return data['data']['token'];
-      } else {
-        await logout(brand: brand);
-        return null;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          await _saveTokens(
+            data['data']['token'],
+            data['data']['refreshToken'],
+          );
+          return data['data']['token'];
+        }
       }
+
+      // Only the server refusing the refresh token itself ends the session.
+      // This used to sign the customer out on ANY failure: a 502 while a
+      // deploy restarted the server, or a 429 from the rate limiter, threw
+      // away a perfectly good session and dumped them on the sign-in screen.
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        await logout(brand: brand);
+      }
+      return null;
     } catch (e) {
       return null;
     }
   }
+
+  /// Whether a session is still stored on this phone.
+  static Future<bool> hasSession() async =>
+      await _storage.read(key: _refreshTokenKey) != null;
 
   static Future<String?> getToken() async {
     return await _storage.read(key: _accessTokenKey);
@@ -171,12 +185,11 @@ class AuthService {
     try {
       final headers = await _getAuthHeaders();
       final body = {
-        if (name != null) "name": name,
-        if (email != null) "email": email,
-        if (address != null) "address": address,
-        if (profileImage != null) "profileImage": profileImage,
-        if (notificationPreferences != null)
-          "notificationPreferences": notificationPreferences,
+        "name": ?name,
+        "email": ?email,
+        "address": ?address,
+        "profileImage": ?profileImage,
+        "notificationPreferences": ?notificationPreferences,
       };
 
       final response = await http.put(
@@ -215,8 +228,8 @@ class AuthService {
         "name": name,
         "email": email,
         "address": address,
-        if (mobile != null) "mobile": mobile,
-        if (location != null) "location": location,
+        "mobile": ?mobile,
+        "location": ?location,
       };
 
       final response = await http.post(
@@ -339,6 +352,13 @@ class AuthService {
         // Ignore errors during remote logout/revocation
       }
     }
+
+    // Drop this phone's push token, so the next person to sign in here gets
+    // a fresh one and the previous customer's notifications stop arriving.
+    // (The server also forgets it on logout.)
+    try {
+      await FirebaseMessaging.instance.deleteToken();
+    } catch (_) {}
 
     await firebase_auth.FirebaseAuth.instance.signOut();
 

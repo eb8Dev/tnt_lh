@@ -4,7 +4,6 @@ import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/services/api_client.dart';
 
 class CartService {
-
   static Future<Map<String, dynamic>> getCart({String? brand}) async {
     final url = AppConfig.buildUrl('/customer/cart', brand: brand);
     try {
@@ -51,8 +50,8 @@ class CartService {
       final body = {
         "productId": productId,
         "quantity": quantity,
-        if (brand != null) "brand": brand,
-        if (customization != null) "customization": customization,
+        "brand": ?brand,
+        "customization": ?customization,
       };
 
       final response = await ApiClient.post(url, body: body);

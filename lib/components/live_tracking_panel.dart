@@ -10,7 +10,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
-import 'package:tnt_lh/services/auth_service.dart';
+import 'package:tnt_lh/services/api_client.dart';
 import 'package:tnt_lh/utils/map_markers.dart';
 
 class LiveTrackingPanel extends ConsumerStatefulWidget {
@@ -36,7 +36,8 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
 
   String _riderName = "Rider Assigned";
   String _deliveryStatus = "Rider is heading to pickup...";
-  String? _deliveryOtp; // shown persistently so a swiped notification isn't lost
+  String?
+  _deliveryOtp; // shown persistently so a swiped notification isn't lost
 
   DateTime? _lastRouteFetch;
   double _apiDurationMinutes = 0.0;
@@ -80,7 +81,8 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     final lat2 = b.latitude * math.pi / 180;
     final dLon = (b.longitude - a.longitude) * math.pi / 180;
     final y = math.sin(dLon) * math.cos(lat2);
-    final x = math.cos(lat1) * math.sin(lat2) -
+    final x =
+        math.cos(lat1) * math.sin(lat2) -
         math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
     return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
   }
@@ -91,27 +93,41 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     _fetchActiveDelivery();
   }
 
+  /// The order moved on (rider assigned, picked up, arriving): the delivery
+  /// record behind this panel changed with it, so fetch it again. Before, the
+  /// panel kept whatever it loaded first, and could miss the rider entirely
+  /// if it opened just before one was assigned.
+  @override
+  void didUpdateWidget(covariant LiveTrackingPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.order.status != widget.order.status ||
+        oldWidget.order.id != widget.order.id) {
+      _fetchActiveDelivery();
+    }
+  }
+
   @override
   void dispose() {
     _mapController?.dispose();
     super.dispose();
   }
 
-  double _metersBetween(LatLng a, LatLng b) =>
-      Geolocator.distanceBetween(a.latitude, a.longitude, b.latitude, b.longitude);
+  double _metersBetween(LatLng a, LatLng b) => Geolocator.distanceBetween(
+    a.latitude,
+    a.longitude,
+    b.latitude,
+    b.longitude,
+  );
 
   Future<void> _fetchActiveDelivery() async {
     try {
-      final token = await AuthService.getToken();
-      if (token == null) return;
-
+      // Through ApiClient, so an access token that expired during the delivery
+      // is refreshed rather than the map silently failing to appear (and so the
+      // request can't hang forever on a dead connection).
       final url = AppConfig.buildUrl(
         '/customer/deliveries/order/${widget.order.id}',
       );
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await ApiClient.get(url);
 
       if (response.statusCode != 200) {
         if (mounted) setState(() => _isLoading = false);
@@ -146,7 +162,15 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
               ? otp.toString()
               : null;
           _pickupLoc = parse(pickup) ?? _defaultLoc;
-          _deliveryLoc = parse(delivery) ?? const LatLng(16.3090, 80.4309);
+          // Without a delivery point from the server, use the address on the
+          // order. The old fallback was a fixed spot in Guntur (the bakery's
+          // own location), which put the customer's pin somewhere they aren't.
+          final addr = widget.order.deliveryAddress?.coordinates;
+          _deliveryLoc =
+              parse(delivery) ??
+              (addr != null && addr.length >= 2
+                  ? LatLng(addr[1], addr[0])
+                  : _pickupLoc);
           _riderLoc = parse(riderData?['currentLocation']) ?? _pickupLoc;
           _updateStatusText();
           _isLoading = false;
@@ -287,36 +311,42 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
   Set<Marker> _buildMarkers() {
     final markers = <Marker>{};
     if (_riderLoc != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('rider'),
-        position: _riderLoc!,
-        icon: _riderIcon ?? BitmapDescriptor.defaultMarker,
-        rotation: _riderBearing,
-        anchor: const Offset(0.5, 0.5),
-        flat: true,
-        zIndexInt: 3,
-        infoWindow: InfoWindow(title: _riderName),
-      ));
+      markers.add(
+        Marker(
+          markerId: const MarkerId('rider'),
+          position: _riderLoc!,
+          icon: _riderIcon ?? BitmapDescriptor.defaultMarker,
+          rotation: _riderBearing,
+          anchor: const Offset(0.5, 0.5),
+          flat: true,
+          zIndexInt: 3,
+          infoWindow: InfoWindow(title: _riderName),
+        ),
+      );
     }
     if (_pickupLoc != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('pickup'),
-        position: _pickupLoc!,
-        icon: _storeIcon ?? BitmapDescriptor.defaultMarker,
-        anchor: const Offset(0.5, 1.0),
-        zIndexInt: 1,
-        infoWindow: const InfoWindow(title: 'Your order was picked up here'),
-      ));
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup'),
+          position: _pickupLoc!,
+          icon: _storeIcon ?? BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: 1,
+          infoWindow: const InfoWindow(title: 'Your order was picked up here'),
+        ),
+      );
     }
     if (_deliveryLoc != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('delivery'),
-        position: _deliveryLoc!,
-        icon: _destIcon ?? BitmapDescriptor.defaultMarker,
-        anchor: const Offset(0.5, 1.0),
-        zIndexInt: 2,
-        infoWindow: const InfoWindow(title: 'Your address'),
-      ));
+      markers.add(
+        Marker(
+          markerId: const MarkerId('delivery'),
+          position: _deliveryLoc!,
+          icon: _destIcon ?? BitmapDescriptor.defaultMarker,
+          anchor: const Offset(0.5, 1.0),
+          zIndexInt: 2,
+          infoWindow: const InfoWindow(title: 'Your address'),
+        ),
+      );
     }
     return markers;
   }
