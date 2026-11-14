@@ -86,7 +86,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             color: Theme.of(context).colorScheme.primary,
             child: ListView.separated(
               controller: _scrollController,
-              padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
+              padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 24.h),
               // +1 for the "you owe us a rating" nudge, +1 for the footer that
               // either loads the next page or says we've reached the end.
               itemCount: orders.length + 2,

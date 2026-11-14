@@ -129,7 +129,7 @@ class ProductListSkeleton extends StatelessWidget {
     // state rendered as nothing at all.
     return ListView.separated(
       shrinkWrap: true,
-      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 100.h),
+      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
       physics: const NeverScrollableScrollPhysics(),
       itemCount: count,
       separatorBuilder: (_, _) => SizedBox(height: 16.h),

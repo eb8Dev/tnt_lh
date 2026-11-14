@@ -296,7 +296,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: EdgeInsets.fromLTRB(20.w, Space.md.h, 20.w, 120.h),
+              padding: EdgeInsets.fromLTRB(16.w, Space.md.h, 16.w, Space.lg.h),
               children: [...you, Gap(Space.sm), ...settings],
             ),
           ),
