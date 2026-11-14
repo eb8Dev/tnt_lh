@@ -78,7 +78,7 @@ class AddressBookScreen extends ConsumerWidget {
             ),
           ),
         ),
-        body: RefreshIndicator(
+        body: RefreshIndicator.adaptive(
           onRefresh: () => ref.read(addressBookProvider.notifier).refresh(),
           child: ListView(
             padding: EdgeInsets.fromLTRB(
@@ -94,7 +94,7 @@ class AddressBookScreen extends ConsumerWidget {
                 loading: () => [
                   Padding(
                     padding: EdgeInsets.only(top: Space.xl.h),
-                    child: const Center(child: CircularProgressIndicator()),
+                    child: const Center(child: CircularProgressIndicator.adaptive()),
                   ),
                 ],
                 error: (e, _) => [

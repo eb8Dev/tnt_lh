@@ -365,7 +365,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             // on screen. Only a first load shows the spinner or the error.
             if (_shown == null) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
+                return Center(child: CircularProgressIndicator.adaptive());
               }
               if (snapshot.hasError) {
                 return ErrorRetryView(error: snapshot.error!, onRetry: _reload);
@@ -586,7 +586,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
             return Theme(
               data: storeTheme,
-              child: RefreshIndicator(
+              child: RefreshIndicator.adaptive(
                 onRefresh: () async {
                   _reload();
                   try {

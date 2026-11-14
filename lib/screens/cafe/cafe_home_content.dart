@@ -436,7 +436,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 children: [
                   _buildCategorySidebar(categoriesAsync),
                   Expanded(
-                    child: RefreshIndicator(
+                    child: RefreshIndicator.adaptive(
                       onRefresh: _refresh,
                       color: primary,
                       child: NotificationListener<ScrollNotification>(
@@ -529,7 +529,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                   ),
                 ],
               )
-            : RefreshIndicator(
+            : RefreshIndicator.adaptive(
                 onRefresh: _refresh,
                 color: primary,
                 child: NotificationListener<ScrollNotification>(

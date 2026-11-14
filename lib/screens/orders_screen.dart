@@ -81,7 +81,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           if (orders.isEmpty) {
             return _buildEmptyState();
           }
-          return RefreshIndicator(
+          return RefreshIndicator.adaptive(
             onRefresh: () => ref.read(orderProvider.notifier).refresh(),
             color: Theme.of(context).colorScheme.primary,
             child: ListView.separated(
