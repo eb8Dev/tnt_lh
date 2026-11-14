@@ -1,3 +1,4 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -64,7 +65,7 @@ class MapMarkers {
 
     final descriptor = await _bubble(
       ratio: ratio,
-      accent: isBakery ? const Color(0xFFC0764F) : const Color(0xFF3E5138),
+      accent: isBakery ? Brands.bakeryColor : const Color(0xFF3E5138),
       builder: (canvas, centre, d) => _drawGlyph(
         canvas,
         centre,

@@ -68,26 +68,50 @@ final ThemeData littleHTheme = ThemeData(
     constraints: BoxConstraints(maxWidth: 640),
   ),
   useMaterial3: true,
-  scaffoldBackgroundColor: const Color(0xFFFCFBF4),
+  // Colours from the Cream N Crust logo; see Brands.
+  scaffoldBackgroundColor: Brands.bakeryCream,
   colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFFF2F0D5), // Cream/Light Yellow
-    primary: Brands.bakeryColor, // Chocolate brown
-    onPrimary: const Color(0xFFF2F0D5),
-    secondary: const Color(0xFFE56B8F), // Strawberry pink
+    seedColor: Brands.bakeryColor,
+    primary: Brands.bakeryColor,
+    onPrimary: Colors.white,
+    secondary: Brands.bakeryChocolate,
     onSecondary: Colors.white,
-    tertiary: const Color(0xFFF9E3EA), // Light pink
-    onTertiary: Colors.black,
-    surface: const Color(0xFFFCFBF4),
+    tertiary: Brands.bakeryIcing,
+    onTertiary: Brands.bakeryChocolate,
+    primaryContainer: Brands.bakeryIcingLight,
+    onPrimaryContainer: Brands.bakeryChocolate,
+    surface: Brands.bakeryCream,
     onSurface: Colors.black,
   ),
   textTheme: GoogleFonts.poppinsTextTheme().copyWith(
-    displayLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-    displayMedium: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-    displaySmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-    headlineLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-    headlineMedium: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-    headlineSmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold),
-    titleLarge: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w600),
+    displayLarge: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      color: Brands.bakeryChocolate,
+    ),
+    displayMedium: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      color: Brands.bakeryChocolate,
+    ),
+    displaySmall: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      color: Brands.bakeryChocolate,
+    ),
+    headlineLarge: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      color: Brands.bakeryChocolate,
+    ),
+    headlineMedium: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      color: Brands.bakeryChocolate,
+    ),
+    headlineSmall: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.bold,
+      color: Brands.bakeryChocolate,
+    ),
+    titleLarge: GoogleFonts.playfairDisplay(
+      fontWeight: FontWeight.w600,
+      color: Brands.bakeryChocolate,
+    ),
   ),
 );
 

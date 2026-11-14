@@ -1,7 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
-import 'package:tnt_lh/widgets/bump_on_change.dart';
+import 'package:tnt_lh/widgets/view_bag_bar.dart';
 import 'package:tnt_lh/widgets/active_order_bar.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/services.dart';
@@ -9,11 +9,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
-import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/providers/unsaved_changes_provider.dart';
 import 'package:tnt_lh/screens/cafe/cafe_home_content.dart';
 import 'package:tnt_lh/screens/cafe/cafe_profile_screen.dart';
-import 'package:tnt_lh/screens/cart_screen.dart';
 import 'package:tnt_lh/screens/orders_screen.dart';
 import 'package:tnt_lh/services/notification_service.dart';
 import 'package:tnt_lh/services/update_service.dart';
@@ -24,6 +22,10 @@ class StoreHomeScreen extends ConsumerStatefulWidget {
   final int initialIndex;
   const StoreHomeScreen({super.key, this.initialIndex = 0});
 
+  static const int homeTab = 0;
+  static const int ordersTab = 1;
+  static const int profileTab = 2;
+
   @override
   ConsumerState<StoreHomeScreen> createState() => _StoreHomeScreenState();
 }
@@ -31,9 +33,9 @@ class StoreHomeScreen extends ConsumerStatefulWidget {
 class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   int _selectedIndex = 0;
 
-  // The four tabs map directly to page indices now that the centre store-switch
-  // FAB is gone (the switch moved to a top segmented control on the home tab).
-  static const int _profileTab = 3;
+  // Home, Orders, Profile. The bag is no longer a tab: it's the ViewBagBar
+  // over the menu, opening the bag page, as food apps do.
+  static const int _profileTab = StoreHomeScreen.profileTab;
 
   @override
   void initState() {
@@ -186,7 +188,6 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
 
     final List<Widget> pages = [
       BrandHomeContent(brand: brand, onSelectStore: _switchToBrand),
-      const CartScreen(),
       const OrdersScreen(),
       const CafeProfileScreen(),
     ];
@@ -205,7 +206,17 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                   Expanded(
                     child: IndexedStack(index: _selectedIndex, children: pages),
                   ),
-                  const SafeArea(top: false, child: ActiveOrderBar()),
+                  SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_selectedIndex == StoreHomeScreen.homeTab)
+                          const ViewBagBar(),
+                        const ActiveOrderBar(),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -227,13 +238,17 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       // ever hidden behind them.
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [const ActiveOrderBar(), _buildFloatingNav(brand)],
+        children: [
+          // On the menu, the bag rides above everything else.
+          if (_selectedIndex == StoreHomeScreen.homeTab) const ViewBagBar(),
+          const ActiveOrderBar(),
+          _buildFloatingNav(brand),
+        ],
       ),
     );
   }
 
   Widget _buildSideRail(String brand) {
-    final cartCount = ref.watch(cartProvider).value?.itemCount ?? 0;
     final primary = Theme.of(context).colorScheme.primary;
     final label = GoogleFonts.poppins(
       fontSize: 11,
@@ -243,25 +258,10 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     NavigationRailDestination dest(
       IconData icon,
       IconData active,
-      String text, {
-      int badge = 0,
-    }) => NavigationRailDestination(
-      icon: BumpOnChange(
-        value: badge,
-        child: Badge(
-          isLabelVisible: badge > 0,
-          label: Text('$badge'),
-          child: Icon(icon),
-        ),
-      ),
-      selectedIcon: BumpOnChange(
-        value: badge,
-        child: Badge(
-          isLabelVisible: badge > 0,
-          label: Text('$badge'),
-          child: Icon(active),
-        ),
-      ),
+      String text,
+    ) => NavigationRailDestination(
+      icon: Icon(icon),
+      selectedIcon: Icon(active),
       label: Text(text),
     );
 
@@ -300,16 +300,6 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               'Home',
             ),
             dest(
-              brand == 'teasntrees'
-                  ? PhosphorIcons.shoppingBag()
-                  : PhosphorIcons.basket(),
-              brand == 'teasntrees'
-                  ? PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill)
-                  : PhosphorIcons.basket(PhosphorIconsStyle.fill),
-              'Bag',
-              badge: cartCount,
-            ),
-            dest(
               PhosphorIcons.receipt(),
               PhosphorIcons.receipt(PhosphorIconsStyle.fill),
               'Orders',
@@ -326,8 +316,6 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   }
 
   Widget _buildFloatingNav(String brand) {
-    final cartCount = ref.watch(cartProvider).value?.itemCount ?? 0;
-
     return SafeArea(
       top: false,
       child: Container(
@@ -356,24 +344,13 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
               "Home",
             ),
             _buildNavItem(
-              1,
-              brand == 'teasntrees'
-                  ? PhosphorIcons.shoppingBag(PhosphorIconsStyle.fill)
-                  : PhosphorIcons.basket(PhosphorIconsStyle.fill),
-              brand == 'teasntrees'
-                  ? PhosphorIcons.shoppingBag()
-                  : PhosphorIcons.basket(),
-              "Bag",
-              badgeCount: cartCount,
-            ),
-            _buildNavItem(
-              2,
+              StoreHomeScreen.ordersTab,
               PhosphorIcons.receipt(PhosphorIconsStyle.fill),
               PhosphorIcons.receipt(),
               "Orders",
             ),
             _buildNavItem(
-              3,
+              StoreHomeScreen.profileTab,
               PhosphorIcons.user(PhosphorIconsStyle.fill),
               PhosphorIcons.user(),
               "Profile",
@@ -391,9 +368,8 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     int index,
     IconData activeIcon,
     IconData inactiveIcon,
-    String label, {
-    int badgeCount = 0,
-  }) {
+    String label,
+  ) {
     final isSelected = _selectedIndex == index;
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -413,47 +389,10 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BumpOnChange(
-              value: badgeCount,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    isSelected ? activeIcon : inactiveIcon,
-                    color: isSelected ? Colors.white : Colors.black38,
-                    size: 24.sp,
-                  ),
-                  if (badgeCount > 0)
-                    Positioned(
-                      top: -6,
-                      right: -8,
-                      child: Container(
-                        padding: EdgeInsets.all(3.r),
-                        constraints: BoxConstraints(
-                          minWidth: 16.w,
-                          minHeight: 16.w,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          '$badgeCount',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            color: primary,
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+            Icon(
+              isSelected ? activeIcon : inactiveIcon,
+              color: isSelected ? Colors.white : Colors.black38,
+              size: 24.sp,
             ),
             if (isSelected) ...[
               SizedBox(width: 8.w),

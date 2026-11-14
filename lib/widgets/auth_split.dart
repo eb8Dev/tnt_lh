@@ -73,7 +73,7 @@ class AuthSplit extends StatelessWidget {
 const _brandGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFFF1F4E8), Color(0xFFF7EDE4)],
+  colors: [Color(0xFFF1F4E8), Color(0xFFFCE4EC)],
 );
 
 class _BrandPanel extends StatelessWidget {

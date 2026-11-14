@@ -48,13 +48,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       description:
           "An artisan bakery. Freshly baked happiness, made with love.",
       image: Brands.bakeryLogo,
-      gradient: [Theme.of(context).colorScheme.surface, Color(0xFFF3D4C2)],
+      gradient: [Brands.bakeryCream, Brands.bakeryIcingLight],
     ),
     _OnboardData(
       title: "Sweet Moments",
       description: "Desserts that make every moment special.",
       image: Brands.bakeryLogo,
-      gradient: [Color(0xFFF5D6C6), Color(0xFFF0BFAE)],
+      gradient: [Color(0xFFFDEEF3), Color(0xFFF9C9D8)],
     ),
   ];
 

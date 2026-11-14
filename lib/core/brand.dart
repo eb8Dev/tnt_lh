@@ -16,8 +16,20 @@ class Brands {
   static const String bakeryName = 'Cream N Crust';
 
   static const Color cafeColor = Color(0xFF57733C);
-  // The chocolate brown of the Cream N Crust wordmark.
-  static const Color bakeryColor = Color(0xFF63290C);
+
+  // Cream N Crust, taken from its logo: the strawberry-pink iced cake, the
+  // chocolate lettering, cream. The app used to paint the bakery in the
+  // chocolate alone, which read as the old brown Little H.
+  /// Buttons, selected states, prices. Deep enough for white text (5.3:1).
+  static const Color bakeryColor = Color(0xFFC92A60);
+
+  /// The wordmark's chocolate: headings and strong text.
+  static const Color bakeryChocolate = Color(0xFF4A1D0A);
+
+  /// The cake's icing, for tints, chips and highlights.
+  static const Color bakeryIcing = Color(0xFFF9B4CB);
+  static const Color bakeryIcingLight = Color(0xFFFCE4EC);
+  static const Color bakeryCream = Color(0xFFFFF8F3);
 
   static const String cafeLogo = 'assets/images/teas_n_trees_no_bg.png';
   // Cut from the supplied artwork; swap for the SVG when it arrives.

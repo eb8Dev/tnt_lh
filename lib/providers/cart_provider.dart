@@ -82,12 +82,29 @@ class CartNotifier extends AsyncNotifier<Cart> {
     return Cart(items: [], subtotal: 0, itemCount: 0);
   }
 
+  /// Bumped on every local (optimistic) change.
+  int _localEdits = 0;
+
+  bool get _settling => _writeTimers.isNotEmpty || _inFlightAdds.isNotEmpty;
+
   Future<void> fetchCart({bool background = false}) async {
     if (!background) state = const AsyncValue.loading();
+    final editsAtStart = _localEdits;
     final result = await AsyncValue.guard(() => _fetchCartInternal());
     // A background refresh that fails must not replace a good cart with an
     // error screen (e.g. a flaky refresh right after a successful add).
     if (background && result is AsyncError && state.hasValue) {
+      return;
+    }
+    // The bag couldn't keep up with quick edits: tap + four times and the
+    // count went 2, 3, 2, 4, 5 as reconciling fetches landed, each carrying
+    // the server's view from before the latest taps. A background fetch that
+    // started before a local edit, or lands while writes are still queued, is
+    // stale by definition. Drop it and reconcile once things settle.
+    if (background &&
+        state.hasValue &&
+        (editsAtStart != _localEdits || _settling)) {
+      _scheduleReconcile();
       return;
     }
     state = result;
@@ -126,11 +143,23 @@ class CartNotifier extends AsyncNotifier<Cart> {
     if (!itemId.startsWith(_optimisticPrefix)) return itemId;
     final productId = itemId.substring(_optimisticPrefix.length);
     await _inFlightAdds[productId];
-    await fetchCart(background: true);
-    final matches =
-        state.value?.items.where((i) => i.product.id == productId).toList() ??
-        [];
-    return matches.isEmpty ? null : matches.first.id;
+    // Ask the server for the real id without replacing what's on screen:
+    // other edits may still be queued, and the screen is ahead of the server.
+    final server = await _fetchCartInternal();
+    final real = server.items
+        .where((i) => i.product.id == productId)
+        .firstOrNull
+        ?.id;
+    final current = state.value;
+    if (real != null && current != null) {
+      state = AsyncData(
+        _recalculate([
+          for (final i in current.items)
+            i.id == itemId ? i.copyWith(id: real) : i,
+        ]),
+      );
+    }
+    return real;
   }
 
   /// Helper to get items for a specific brand
@@ -179,6 +208,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
         );
       }
       state = AsyncData(_recalculate(items));
+      _localEdits++;
     }
 
     final request = CartService.addToCart(
@@ -211,6 +241,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
         .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
         .toList();
     state = AsyncData(_recalculate(items));
+    _localEdits++;
 
     final brand = previous.items
         .firstWhere((i) => i.id == itemId, orElse: () => previous.items.first)
@@ -233,6 +264,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
     state = AsyncData(
       _recalculate(previous.items.where((i) => i.id != itemId).toList()),
     );
+    _localEdits++;
 
     // A pending debounced quantity write for this item is now meaningless.
     _writeTimers.remove(itemId)?.cancel();
