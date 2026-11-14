@@ -190,6 +190,13 @@ class SocketManager {
     // already wired to feed that into riderTrackingProvider — but this socket
     // never subscribed to the event, so it was dropped on the floor and the
     // tracking map sat frozen while the rider was actually moving.
+    // An admin published or changed a banner/offer.
+    _socket!.on('promotions:updated', (data) {
+      ref
+          .read(socketEventsProvider.notifier)
+          .emitEvent(SocketEvent('promotions:updated', data));
+    });
+
     _socket!.on('rider:location-update', (data) {
       ref
           .read(socketEventsProvider.notifier)

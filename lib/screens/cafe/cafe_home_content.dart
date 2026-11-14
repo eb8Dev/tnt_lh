@@ -1,6 +1,8 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/promotions.dart';
+import 'package:tnt_lh/providers/promotion_provider.dart';
 import 'package:tnt_lh/widgets/deliver_to_header.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:flutter/services.dart';
@@ -83,6 +85,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
         _searchQuery = query;
       });
     });
+  }
+
+  /// A banner that opens a category.
+  void _openCategoryById(String id) {
+    final cats = ref.read(categoriesProvider(widget.brand)).value ?? const [];
+    final i = cats.indexWhere((c) => c.id == id);
+    if (i < 0) return; // not in this store (or since removed)
+    _onCategorySelected(i, id);
   }
 
   void _onCategorySelected(int index, String? id) {
@@ -474,6 +484,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                             SliverToBoxAdapter(
                               child: _buildGreeting(isLittleH),
                             ),
+                            // Banners, announcements and offers the store has
+                            // published (nothing shows when there are none).
+                            SliverToBoxAdapter(
+                              child: PromotionsSection(
+                                brand: widget.brand,
+                                onCategory: _openCategoryById,
+                              ),
+                            ),
                             // Search sticks to the very top once you scroll past the header.
                             SliverPersistentHeader(
                               pinned: true,
@@ -548,6 +566,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                         ),
                       ),
                       SliverToBoxAdapter(child: _buildGreeting(isLittleH)),
+                      // Banners, announcements and offers the store has
+                      // published (nothing shows when there are none).
+                      SliverToBoxAdapter(
+                        child: PromotionsSection(
+                          brand: widget.brand,
+                          onCategory: _openCategoryById,
+                        ),
+                      ),
                       // Search sticks to the very top once you scroll past the header.
                       SliverPersistentHeader(
                         pinned: true,
@@ -1103,6 +1129,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       brand: widget.brand,
     );
     ref.invalidate(categoriesProvider(widget.brand));
+    ref.invalidate(promotionsProvider(widget.brand));
     ref.invalidate(productsProvider(params));
     // Await the new fetch so the refresh spinner tracks real work.
     await ref.read(productsProvider(params).future);
