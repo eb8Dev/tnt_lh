@@ -2,6 +2,8 @@ import 'package:tnt_lh/core/responsive.dart';
 import 'dart:io';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/providers/address_provider.dart';
+import 'package:tnt_lh/screens/address_book_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,14 +11,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tnt_lh/core/spacing.dart';
-import 'package:tnt_lh/models/address_model.dart';
 import 'package:tnt_lh/models/user_model.dart';
 import 'package:tnt_lh/onboarding/onboarding_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/unsaved_changes_provider.dart';
-import 'package:tnt_lh/screens/address_picker_screen.dart';
-import 'package:tnt_lh/services/address_service.dart';
 import 'package:tnt_lh/services/contact_service.dart';
 import 'package:tnt_lh/services/upload_service.dart';
 import 'package:tnt_lh/utils/loading_indicator.dart';
@@ -41,8 +40,6 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
 
   // Saved addresses replace the old free-text "Delivery Address" box: checkout
   // already lets people keep several, so the profile has to manage the same set.
-  List<SavedAddress> _addresses = [];
-  bool _loadingAddresses = true;
 
   @override
   void initState() {
@@ -56,7 +53,6 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
         _nameController.text = user.name ?? '';
         _emailController.text = user.email ?? '';
       }
-      _loadAddresses();
     });
 
     // Any keystroke while editing marks the profile dirty, so the shell can
@@ -93,110 +89,6 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     _nameController.text = user?.name ?? '';
     _emailController.text = user?.email ?? '';
     _setEditing(false);
-  }
-
-  // ---------------------------------------------------------------- addresses
-
-  Future<void> _loadAddresses() async {
-    try {
-      final brand = ref.read(brandProvider);
-      final list = await AddressService.getAddresses(brand: brand);
-      if (!mounted) return;
-      setState(() {
-        _addresses = list;
-        _loadingAddresses = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loadingAddresses = false);
-    }
-  }
-
-  Future<void> _addAddress() async {
-    final picked = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(builder: (_) => const AddressPickerScreen()),
-    );
-    if (picked == null || !mounted) return;
-
-    final label = (picked['name'] as String?)?.trim() ?? '';
-    final line = (picked['address'] as String?)?.trim() ?? '';
-    try {
-      await AddressService.addAddress(
-        label: label.isEmpty ? 'Home' : label,
-        addressLine: line,
-        latitude: picked['lat'] as double?,
-        longitude: picked['lng'] as double?,
-        isDefault: _addresses.isEmpty,
-        brand: ref.read(brandProvider),
-      );
-      await _loadAddresses();
-      if (!mounted) return;
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: 'Address saved.',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: e.toString().replaceFirst('Exception: ', ''),
-        isError: true,
-      );
-    }
-  }
-
-  /// Edit an existing address. You could add and remove but not correct one, so
-  /// a typo'd flat number meant deleting and starting over. Opens the picker
-  /// seeded with the current pin, then PUTs the change.
-  Future<void> _editAddress(SavedAddress a) async {
-    final picked = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddressPickerScreen(
-          initialLat: a.latitude,
-          initialLng: a.longitude,
-          initialLabel: a.label,
-          initialAddress: a.addressLine,
-        ),
-      ),
-    );
-    if (picked == null || !mounted) return;
-
-    final label = (picked['name'] as String?)?.trim() ?? '';
-    final line = (picked['address'] as String?)?.trim() ?? '';
-    try {
-      await AddressService.updateAddress(
-        addressId: a.id,
-        label: label.isEmpty ? a.label : label,
-        addressLine: line,
-        latitude: picked['lat'] as double?,
-        longitude: picked['lng'] as double?,
-        brand: ref.read(brandProvider),
-      );
-      await _loadAddresses();
-      if (!mounted) return;
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: 'Address updated.',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: e.toString().replaceFirst('Exception: ', ''),
-        isError: true,
-      );
-    }
-  }
-
-  Future<void> _makeDefault(SavedAddress a) async {
-    await AddressService.setDefault(a.id, brand: ref.read(brandProvider));
-    await _loadAddresses();
-  }
-
-  Future<void> _deleteAddress(SavedAddress a) async {
-    await AddressService.deleteAddress(a.id, brand: ref.read(brandProvider));
-    await _loadAddresses();
   }
 
   // ------------------------------------------------------------------ profile
@@ -748,142 +640,59 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     );
   }
 
+  /// The address book lives on its own screen now (add, edit, default,
+  /// delete, receiver details), shared with the bag and the home header.
   Widget _buildAddressSection() {
+    final book = ref.watch(addressBookProvider).value;
+    final count = book?.addresses.length ?? 0;
+    final main = book?.addresses.where((a) => a.isDefault).firstOrNull;
     return _sectionCard(
-      title: 'Delivery addresses',
+      title: 'Saved addresses',
       icon: PhosphorIcons.mapPin(),
-      trailing: TactileButton(
-        onTap: _addAddress,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PhosphorIcon(
-              PhosphorIcons.plus(PhosphorIconsStyle.bold),
-              size: 13.sp,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            GapW(Space.xxs),
-            Text(
-              'Add',
-              style: GoogleFonts.poppins(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
       children: [
-        if (_loadingAddresses)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: Space.md.h),
-            child: const Center(child: CircularProgressIndicator()),
-          )
-        else if (_addresses.isEmpty)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: Space.xs.h),
-            child: Text(
-              'No addresses saved yet. Add one and it\'ll be ready at checkout.',
-              style: GoogleFonts.poppins(
-                fontSize: 13.sp,
-                color: Colors.black45,
-              ),
-            ),
-          )
-        else
-          ..._addresses.map(_addressTile),
-      ],
-    );
-  }
-
-  Widget _addressTile(SavedAddress a) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: Space.xs.h),
-      child: Container(
-        padding: EdgeInsets.all(Space.sm.r),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF9F7F2),
-          borderRadius: BorderRadius.circular(14.r),
-          border: Border.all(
-            color: a.isDefault
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)
-                : Colors.transparent,
+        InkWell(
+          borderRadius: BorderRadius.circular(12.r),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddressBookScreen()),
           ),
-        ),
-        child: Row(
-          children: [
-            PhosphorIcon(
-              a.isDefault
-                  ? PhosphorIcons.house(PhosphorIconsStyle.fill)
-                  : PhosphorIcons.house(),
-              size: 17.sp,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            GapW(Space.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count == 0
+                          ? 'Add home, work and other places'
+                          : '$count saved ${count == 1 ? 'address' : 'addresses'}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (main != null)
                       Text(
-                        a.label.isEmpty ? 'Address' : a.label,
+                        '${main.label}: ${main.fullText}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          fontSize: 12.sp,
+                          color: Colors.black54,
                         ),
                       ),
-                      if (a.isDefault) ...[
-                        GapW(Space.xs),
-                        Text(
-                          'Default',
-                          style: GoogleFonts.poppins(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  Text(
-                    a.addressLine,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.sp,
-                      color: Colors.black45,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            PopupMenuButton<String>(
-              icon: PhosphorIcon(
-                PhosphorIcons.dotsThreeVertical(PhosphorIconsStyle.bold),
-                size: 17.sp,
+              Icon(
+                PhosphorIcons.caretRight(),
+                size: 16.sp,
                 color: Colors.black38,
               ),
-              onSelected: (v) {
-                if (v == 'edit') _editAddress(a);
-                if (v == 'default') _makeDefault(a);
-                if (v == 'delete') _deleteAddress(a);
-              },
-              itemBuilder: (_) => [
-                const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                if (!a.isDefault)
-                  const PopupMenuItem(
-                    value: 'default',
-                    child: Text('Set as default'),
-                  ),
-                const PopupMenuItem(value: 'delete', child: Text('Remove')),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

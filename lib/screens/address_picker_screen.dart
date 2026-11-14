@@ -81,8 +81,13 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       if (placemarks.isNotEmpty && mounted) {
         final p = placemarks.first;
         setState(() {
-          _addressText =
-              "${p.street}, ${p.subLocality}, ${p.locality}, ${p.postalCode}";
+          // Skip the empty parts; this used to read "null, null, Guntur".
+          _addressText = [
+            p.street,
+            p.subLocality,
+            p.locality,
+            p.postalCode,
+          ].where((x) => x != null && x.trim().isNotEmpty).toSet().join(', ');
         });
       }
     } catch (_) {
@@ -292,10 +297,10 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       ),
     ];
     final addressPanel = Container(
-      padding: EdgeInsets.all(24.r),
+      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
@@ -308,45 +313,13 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Naming the place (Home, Work...) and the flat and floor come on
+          // the next screen; this one is only about where the pin goes.
           Text(
-            "Location Name",
-            style: GoogleFonts.poppins(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
+            "Move the map to put the pin on your door",
+            style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black54),
           ),
           SizedBox(height: 8.h),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              hintText: "e.g. Home, Office, Friend's House",
-              filled: true,
-              fillColor: Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16.w,
-                vertical: 12.h,
-              ),
-            ),
-            style: GoogleFonts.poppins(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            "Address Details",
-            style: GoogleFonts.poppins(
-              fontSize: 12.sp,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          SizedBox(height: 4.h),
           Row(
             children: [
               Icon(
@@ -374,7 +347,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                 ),
             ],
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 16.h),
           SizedBox(
             width: double.infinity,
             height: 48.h,
@@ -390,15 +363,15 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                       });
                     },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.r),
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
                 elevation: 0,
               ),
               child: Text(
-                "Confirm Location",
+                "Confirm location",
                 style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
               ),
             ),
@@ -410,7 +383,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Select Delivery Location",
+          "Choose delivery location",
           style: GoogleFonts.poppins(
             fontSize: 16.sp,
             fontWeight: FontWeight.bold,
@@ -425,7 +398,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       floatingActionButton: expanded
           ? null
           : Padding(
-              padding: EdgeInsets.only(bottom: 280.h), // Above the address card
+              padding: EdgeInsets.only(bottom: 170.h), // Above the address card
               child: mapButtons,
             ),
       body: expanded
@@ -451,7 +424,15 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               children: [
                 ...mapLayers,
                 // Address Card
-                Positioned(bottom: 0, left: 0, right: 0, child: addressPanel),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: ColoredBox(
+                    color: Colors.white,
+                    child: SafeArea(top: false, child: addressPanel),
+                  ),
+                ),
               ],
             ),
     );

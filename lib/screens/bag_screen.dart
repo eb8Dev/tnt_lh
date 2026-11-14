@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:tnt_lh/core/responsive.dart';
@@ -16,9 +15,10 @@ import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/providers/status_provider.dart';
-import 'package:tnt_lh/screens/address_picker_screen.dart';
+import 'package:tnt_lh/providers/address_provider.dart';
+import 'package:tnt_lh/screens/address_book_screen.dart';
+import 'package:tnt_lh/screens/address_form_screen.dart';
 import 'package:tnt_lh/screens/order_placed_screen.dart';
-import 'package:tnt_lh/services/address_service.dart';
 import 'package:tnt_lh/services/coupon_service.dart';
 import 'package:tnt_lh/services/order_service.dart';
 import 'package:tnt_lh/utils/formatters.dart';
@@ -65,12 +65,9 @@ class _BagScreenState extends ConsumerState<BagScreen> {
   final Map<String, _StorePricing> _pricing = {};
   bool _pricingFailed = false;
 
-  List<SavedAddress> _addresses = [];
-  bool _loadingAddresses = true;
-  SavedAddress? _address;
-
-  /// A one-off map pick that couldn't be saved to the address book.
-  ({String line, double? lat, double? lng})? _oneOffAddress;
+  /// Where this order goes: the "Deliver to" choice shared with the home
+  /// header and the address book.
+  SavedAddress? get _address => ref.read(addressBookProvider).value?.selected;
 
   final Set<String> _chips = {};
   final _noteController = TextEditingController();
@@ -87,12 +84,6 @@ class _BagScreenState extends ConsumerState<BagScreen> {
   /// after the server already took the order must not let "Place order" create
   /// a second one.
   String? _idempotencyKey;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAddresses();
-  }
 
   @override
   void dispose() {
@@ -117,26 +108,6 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       });
     } catch (_) {
       if (mounted) setState(() => _pricingFailed = true);
-    }
-  }
-
-  Future<void> _loadAddresses({String? select}) async {
-    try {
-      final list = await AddressService.getAddresses(
-        brand: _store ?? ref.read(brandProvider),
-      );
-      if (!mounted) return;
-      setState(() {
-        _addresses = list;
-        _loadingAddresses = false;
-        if (select != null) {
-          _address = list.where((a) => a.id == select).firstOrNull;
-        }
-        _address ??=
-            list.where((a) => a.isDefault).firstOrNull ?? list.firstOrNull;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loadingAddresses = false);
     }
   }
 
@@ -223,67 +194,21 @@ class _BagScreenState extends ConsumerState<BagScreen> {
   }
 
   Future<void> _chooseAddress() async {
-    final picked = await showModalBottomSheet<Object>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      builder: (_) => Theme(
-        data: themeFor(_store),
-        child: _AddressSheet(addresses: _addresses, selectedId: _address?.id),
-      ),
-    );
-    if (!mounted) return;
-    if (picked is SavedAddress) {
-      setState(() {
-        _address = picked;
-        _oneOffAddress = null;
-      });
-    } else if (picked == _AddressSheet.addNew) {
-      await _addAddress();
+    final book = ref.read(addressBookProvider).value;
+    // Nothing saved yet: straight to adding one.
+    if (book == null || book.addresses.isEmpty) {
+      await openAddressEditor(context);
+      return;
     }
-  }
-
-  Future<void> _addAddress() async {
-    final result = await Navigator.push<Map<String, dynamic>>(
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AddressPickerScreen(
-          initialLocation:
-              _address?.latitude != null && _address?.longitude != null
-              ? LatLng(_address!.latitude!, _address!.longitude!)
-              : null,
+        builder: (_) => Theme(
+          data: themeFor(_store),
+          child: const AddressBookScreen(choosing: true),
         ),
       ),
     );
-    if (result == null || !mounted) return;
-
-    final label = (result['name'] as String?)?.trim() ?? '';
-    final line = (result['address'] as String?)?.trim() ?? '';
-    final lat = result['lat'] as double?;
-    final lng = result['lng'] as double?;
-    try {
-      final saved = await AddressService.addAddress(
-        label: label.isEmpty ? 'Home' : label,
-        addressLine: line,
-        latitude: lat,
-        longitude: lng,
-        isDefault: _addresses.isEmpty,
-        brand: _store,
-      );
-      if (!mounted) return;
-      await _loadAddresses(select: saved?.id);
-      if (mounted) setState(() => _oneOffAddress = null);
-    } catch (_) {
-      // Couldn't save it to the book; still deliver there.
-      if (!mounted) return;
-      setState(() {
-        _address = null;
-        _oneOffAddress = (line: line, lat: lat, lng: lng);
-      });
-    }
   }
 
   String get _instructions {
@@ -294,12 +219,8 @@ class _BagScreenState extends ConsumerState<BagScreen> {
   }
 
   Future<void> _placeOrder(List<CartItem> items) async {
-    final addressLine = _address != null
-        ? (_address!.label.isEmpty
-              ? _address!.addressLine
-              : '${_address!.label}, ${_address!.addressLine}')
-        : _oneOffAddress?.line;
-    if (addressLine == null || addressLine.isEmpty) {
+    final address = _address;
+    if (address == null) {
       _chooseAddress();
       return;
     }
@@ -314,14 +235,26 @@ class _BagScreenState extends ConsumerState<BagScreen> {
     _idempotencyKey ??= _newKey();
     final store = _store!;
 
+    // Ordering for someone else: the rider asks for them and calls them.
+    final receiver = [
+      address.receiverName,
+      address.receiverPhone,
+    ].where((x) => x.isNotEmpty).join(', ');
+    final instructions = [
+      if (receiver.isNotEmpty) 'Deliver to $receiver',
+      if (_instructions.isNotEmpty) _instructions,
+    ].join('. ');
+
     try {
       final result = await OrderService.createOrder(
-        deliveryAddress: addressLine,
-        deliveryInstructions: _instructions,
-        alternatePhone: alt.isEmpty ? null : alt,
+        deliveryAddress: address.fullText,
+        deliveryInstructions: instructions,
+        alternatePhone: alt.isNotEmpty
+            ? alt
+            : (address.receiverPhone.isNotEmpty ? address.receiverPhone : null),
         paymentMethod: 'COD',
-        latitude: _address?.latitude ?? _oneOffAddress?.lat,
-        longitude: _address?.longitude ?? _oneOffAddress?.lng,
+        latitude: address.latitude,
+        longitude: address.longitude,
         brand: store,
         items: [
           for (final i in items)
@@ -480,14 +413,11 @@ class _BagScreenState extends ConsumerState<BagScreen> {
     final itemTotal = items.fold<double>(0, (s, i) => s + i.price * i.quantity);
 
     // Tapping anywhere outside a field, or scrolling, puts the keyboard away.
-    // Clamped scrolling: the list stops at its ends instead of stretching or
-    // bouncing past them.
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: ListView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const ClampingScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           Space.md.w,
           Space.xs.h,
@@ -688,7 +618,8 @@ class _BagScreenState extends ConsumerState<BagScreen> {
         : _Bill.total(itemTotal, pricing, _discount);
     final theme = themeFor(_store);
     final primary = theme.colorScheme.primary;
-    final hasAddress = _address != null || _oneOffAddress != null;
+    final addresses = ref.watch(addressBookProvider);
+    final hasAddress = addresses.value?.selected != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -714,9 +645,8 @@ class _BagScreenState extends ConsumerState<BagScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _AddressStrip(
-                loading: _loadingAddresses,
-                address: _address,
-                oneOff: _oneOffAddress?.line,
+                loading: addresses.isLoading && !addresses.hasValue,
+                address: addresses.value?.selected,
                 onTap: _chooseAddress,
               ),
               Gap(Space.sm),
@@ -1352,13 +1282,11 @@ class _Bill extends StatelessWidget {
 class _AddressStrip extends StatelessWidget {
   final bool loading;
   final SavedAddress? address;
-  final String? oneOff;
   final VoidCallback onTap;
 
   const _AddressStrip({
     required this.loading,
     required this.address,
-    required this.oneOff,
     required this.onTap,
   });
 
@@ -1367,10 +1295,8 @@ class _AddressStrip extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final title = address != null
         ? 'Delivering to ${address!.label.isEmpty ? 'this address' : address!.label}'
-        : oneOff != null
-        ? 'Delivering to'
         : 'Where should we deliver?';
-    final line = address?.addressLine ?? oneOff;
+    final line = address?.fullText;
 
     return InkWell(
       onTap: loading ? null : onTap,
@@ -1715,152 +1641,6 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
                       ),
                     ),
                   ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AddressSheet extends StatelessWidget {
-  /// Returned when the customer wants to add a new address.
-  static const addNew = 'add-new';
-
-  final List<SavedAddress> addresses;
-  final String? selectedId;
-
-  const _AddressSheet({required this.addresses, required this.selectedId});
-
-  static IconData iconFor(String label) {
-    final l = label.toLowerCase();
-    if (l.contains('home')) return PhosphorIcons.house();
-    if (l.contains('work') || l.contains('office')) {
-      return PhosphorIcons.briefcase();
-    }
-    return PhosphorIcons.mapPin();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(Space.md.r),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Deliver to',
-                style: GoogleFonts.poppins(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Gap(Space.sm),
-              InkWell(
-                onTap: () => Navigator.pop(context, addNew),
-                borderRadius: BorderRadius.circular(12.r),
-                child: Container(
-                  padding: EdgeInsets.all(Space.sm.r),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(color: primary.withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(PhosphorIcons.plus(), color: primary, size: 18.sp),
-                      GapW(Space.xs),
-                      Text(
-                        'Add a new address',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                          color: primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (addresses.isNotEmpty) ...[
-                Gap(Space.md),
-                Text(
-                  'SAVED ADDRESSES',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11.sp,
-                    letterSpacing: 0.6,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black45,
-                  ),
-                ),
-                Gap(Space.xs),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: addresses.length,
-                    separatorBuilder: (_, _) =>
-                        Divider(height: 1, color: Colors.black12),
-                    itemBuilder: (_, i) {
-                      final a = addresses[i];
-                      final selected = a.id == selectedId;
-                      return InkWell(
-                        onTap: () => Navigator.pop(context, a),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: Space.sm.h),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                iconFor(a.label),
-                                size: 20.sp,
-                                color: selected ? primary : Colors.black54,
-                              ),
-                              GapW(Space.sm),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      a.label.isEmpty ? 'Address' : a.label,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Text(
-                                      a.addressLine,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12.sp,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (selected)
-                                Icon(
-                                  PhosphorIcons.checkCircle(
-                                    PhosphorIconsStyle.fill,
-                                  ),
-                                  color: primary,
-                                  size: 20.sp,
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
               ],
             ],
           ),

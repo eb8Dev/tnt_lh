@@ -17,12 +17,31 @@ class AddressService {
         .toList();
   }
 
+  static Map<String, dynamic> _details({
+    String? flatNo,
+    String? floor,
+    String? landmark,
+    String? receiverName,
+    String? receiverPhone,
+  }) => {
+    'flatNo': ?flatNo,
+    'floor': ?floor,
+    'landmark': ?landmark,
+    'receiverName': ?receiverName,
+    'receiverPhone': ?receiverPhone,
+  };
+
   static Future<SavedAddress?> addAddress({
     required String label,
     required String addressLine,
     double? latitude,
     double? longitude,
     bool isDefault = false,
+    String? flatNo,
+    String? floor,
+    String? landmark,
+    String? receiverName,
+    String? receiverPhone,
     String? brand,
   }) async {
     final url = AppConfig.buildUrl('/customer/address', brand: brand);
@@ -33,6 +52,13 @@ class AddressService {
         'label': label,
         'addressLine': addressLine,
         'isDefault': isDefault,
+        ..._details(
+          flatNo: flatNo,
+          floor: floor,
+          landmark: landmark,
+          receiverName: receiverName,
+          receiverPhone: receiverPhone,
+        ),
         if (hasCoords)
           'location': {
             'type': 'Point',
@@ -57,6 +83,12 @@ class AddressService {
     required String addressLine,
     double? latitude,
     double? longitude,
+    bool? isDefault,
+    String? flatNo,
+    String? floor,
+    String? landmark,
+    String? receiverName,
+    String? receiverPhone,
     String? brand,
   }) async {
     final url = AppConfig.buildUrl(
@@ -69,6 +101,14 @@ class AddressService {
       body: {
         'label': label,
         'addressLine': addressLine,
+        'isDefault': ?isDefault,
+        ..._details(
+          flatNo: flatNo,
+          floor: floor,
+          landmark: landmark,
+          receiverName: receiverName,
+          receiverPhone: receiverPhone,
+        ),
         if (hasCoords)
           'location': {
             'type': 'Point',
@@ -79,6 +119,13 @@ class AddressService {
     final data = jsonDecode(response.body);
     if (response.statusCode == 200 || response.statusCode == 201) {
       final addr = data['data'] ?? data['address'];
+      // The server answers an edit with the whole list.
+      if (addr is List) {
+        final match = addr.whereType<Map<String, dynamic>>().where(
+          (a) => (a['_id'] ?? a['id']).toString() == addressId,
+        );
+        return match.isEmpty ? null : SavedAddress.fromJson(match.first);
+      }
       return addr is Map<String, dynamic> ? SavedAddress.fromJson(addr) : null;
     }
     throw Exception(data['message'] ?? 'Could not update the address');
@@ -89,7 +136,10 @@ class AddressService {
       '/customer/address/$addressId/default',
       brand: brand,
     );
-    await ApiClient.put(url);
+    final response = await ApiClient.put(url);
+    if (response.statusCode != 200) {
+      throw Exception("Couldn't change the default address");
+    }
   }
 
   static Future<void> deleteAddress(String addressId, {String? brand}) async {
@@ -97,6 +147,9 @@ class AddressService {
       '/customer/address/$addressId',
       brand: brand,
     );
-    await ApiClient.delete(url);
+    final response = await ApiClient.delete(url);
+    if (response.statusCode != 200) {
+      throw Exception("Couldn't delete that address");
+    }
   }
 }

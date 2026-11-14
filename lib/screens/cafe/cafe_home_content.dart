@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/deliver_to_header.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -415,6 +416,17 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                           controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
                           slivers: [
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  16.w,
+                                  8.h,
+                                  16.w,
+                                  0,
+                                ),
+                                child: const DeliverToHeader(),
+                              ),
+                            ),
                             // Store switcher + wishlist + greeting scroll away — they're
                             // only needed now and then, so browsing reclaims their space.
                             SliverToBoxAdapter(
@@ -489,6 +501,13 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
+                      // Where the order goes, as in every delivery app.
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                          child: const DeliverToHeader(),
+                        ),
+                      ),
                       // Store switcher + wishlist + greeting scroll away — they're
                       // only needed now and then, so browsing reclaims their space.
                       SliverToBoxAdapter(
