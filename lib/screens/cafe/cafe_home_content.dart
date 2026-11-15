@@ -1,6 +1,9 @@
+import 'package:tnt_lh/core/brand.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import 'package:tnt_lh/widgets/motion.dart';
 import 'package:flutter/rendering.dart';
 import 'package:tnt_lh/widgets/promotions.dart';
 import 'package:tnt_lh/providers/promotion_provider.dart';
@@ -626,14 +629,14 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// visible. Scrolls away with the content.
   Widget _buildGreeting(bool isLittleH) {
     final hour = DateTime.now().hour;
-    String title;
-    if (hour < 12) {
-      title = isLittleH ? "Fresh from the oven" : "Good morning";
-    } else if (hour < 17) {
-      title = isLittleH ? "Midday bakes" : "Good afternoon";
-    } else {
-      title = isLittleH ? "Evening treats" : "Good evening";
-    }
+    // A lead and a script-style accent word, which gets the sparkles.
+    final (String lead, String accent) = hour < 12
+        ? (isLittleH
+              ? ('Fresh from the', 'oven')
+              : ('Good morning,', 'coffee?'))
+        : hour < 17
+        ? (isLittleH ? ('Time for a', 'treat') : ('Good afternoon,', 'chai?'))
+        : (isLittleH ? ('Evening', 'desserts') : ('Good evening,', 'unwind'));
     final subtitle = isLittleH
         ? "Handcrafted, baked fresh today"
         : "Freshly brewed, just for you";
@@ -643,34 +646,24 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.5.sp,
-                    color: Colors.black38,
-                  ),
-                ),
-              ],
+            child: SparkleGreeting(
+              lead: lead,
+              accent: accent,
+              subtitle: subtitle,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          Icon(
-            isLittleH
-                ? PhosphorIcons.cookie(PhosphorIconsStyle.duotone)
-                : PhosphorIcons.coffee(PhosphorIconsStyle.duotone),
-            size: 30.sp,
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          // The store's own mark rather than a stock cake or cookie icon.
+          SizedBox(
+            width: 52.w,
+            height: 34.h,
+            child: Opacity(
+              opacity: 0.9,
+              child: Image.asset(
+                Brands.logo(widget.brand),
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
         ],
       ),
@@ -692,39 +685,70 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           ),
         ],
       ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: _onSearchChanged,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: isLittleH
-              ? "Search cakes, breads, pastries..."
-              : "Search coffee, tea, snacks...",
-          hintStyle: GoogleFonts.poppins(
-            color: Colors.black26,
-            fontSize: 13.5.sp,
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          // Real menu items, cycling, while the field is empty.
+          Positioned.fill(
+            left: 48.w,
+            right: 40.w,
+            child: IgnorePointer(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final menu =
+                      ref.watch(storeMenuProvider(widget.brand)).value ??
+                      const {};
+                  final names = [
+                    for (final list in menu.values) ...list.map((p) => p.name),
+                  ]..shuffle(math.Random(widget.brand.hashCode));
+                  return RotatingHint(
+                    words: names.take(10).toList(),
+                    fallback: isLittleH
+                        ? "Search cakes, breads, pastries..."
+                        : "Search coffee, tea, snacks...",
+                    controller: _searchController,
+                    style: GoogleFonts.poppins(
+                      color: Colors.black26,
+                      fontSize: 13.5.sp,
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-          prefixIcon: Icon(
-            PhosphorIcons.magnifyingGlass(),
-            color: Colors.black45,
-            size: 20.sp,
+          TextField(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: null,
+              hintStyle: GoogleFonts.poppins(
+                color: Colors.black26,
+                fontSize: 13.5.sp,
+              ),
+              prefixIcon: Icon(
+                PhosphorIcons.magnifyingGlass(),
+                color: Colors.black45,
+                size: 20.sp,
+              ),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        PhosphorIcons.x(PhosphorIconsStyle.bold),
+                        size: 18.sp,
+                        color: Colors.black45,
+                      ),
+                      onPressed: () {
+                        _searchController.clear();
+                        _onSearchChanged('');
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+            ),
           ),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(
-                    PhosphorIcons.x(PhosphorIconsStyle.bold),
-                    size: 18.sp,
-                    color: Colors.black45,
-                  ),
-                  onPressed: () {
-                    _searchController.clear();
-                    _onSearchChanged('');
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 14.h),
-        ),
+        ],
       ),
     );
   }
@@ -1387,7 +1411,13 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// twice on screen (Bestsellers and its own section); two identical Hero
   /// tags on one page throw when either is opened.
   Widget _buildGridCard(Product product, {String heroPrefix = ''}) =>
-      RepaintBoundary(child: _gridCard(product, heroPrefix: heroPrefix));
+      RepaintBoundary(
+        child: EntranceOnce(
+          id: '$heroPrefix${product.id}',
+          index: product.id.hashCode,
+          child: _gridCard(product, heroPrefix: heroPrefix),
+        ),
+      );
 
   Widget _gridCard(Product product, {String heroPrefix = ''}) {
     final isLittleH = widget.brand == 'littleh';
@@ -1520,16 +1550,19 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                                     ),
                                   ],
                                 ),
-                                child: Icon(
-                                  isFav
-                                      ? PhosphorIcons.heart(
-                                          PhosphorIconsStyle.fill,
-                                        )
-                                      : PhosphorIcons.heart(),
-                                  size: 14.sp,
-                                  color: isFav
-                                      ? Colors.redAccent
-                                      : Colors.black54,
+                                child: PopOnActivate(
+                                  active: isFav,
+                                  child: Icon(
+                                    isFav
+                                        ? PhosphorIcons.heart(
+                                            PhosphorIconsStyle.fill,
+                                          )
+                                        : PhosphorIcons.heart(),
+                                    size: 14.sp,
+                                    color: isFav
+                                        ? Colors.redAccent
+                                        : Colors.black54,
+                                  ),
                                 ),
                               ),
                             );
@@ -1540,60 +1573,80 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                       Positioned(
                         bottom: 10,
                         right: 10,
-                        child: cartQty > 0
-                            ? _gridStepper(
-                                qty: cartQty,
-                                primary: primary,
-                                onMinus: () {
-                                  if (cartItemId == null) return;
-                                  if (cartQty == 1) {
-                                    ref
-                                        .read(cartProvider.notifier)
-                                        .removeItem(
-                                          cartItemId,
-                                          brand: product.brand,
-                                        );
-                                  } else {
-                                    ref
-                                        .read(cartProvider.notifier)
-                                        .updateQuantity(
-                                          cartItemId,
-                                          cartQty - 1,
-                                        );
-                                  }
-                                },
-                                onPlus: () {
-                                  if (cartItemId == null) return;
-                                  ref
-                                      .read(cartProvider.notifier)
-                                      .updateQuantity(cartItemId, cartQty + 1);
-                                },
-                              )
-                            : TactileButton(
-                                onTap: () => _handleQuickAdd(product),
-                                child: Container(
-                                  height: 34.w,
-                                  width: 34.w,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
+                        // The + grows into the stepper, and back.
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 260),
+                          switchInCurve: Curves.easeOutBack,
+                          switchOutCurve: Curves.easeIn,
+                          transitionBuilder: (child, anim) => ScaleTransition(
+                            scale: anim,
+                            alignment: Alignment.centerRight,
+                            child: FadeTransition(opacity: anim, child: child),
+                          ),
+                          child: cartQty > 0
+                              ? KeyedSubtree(
+                                  key: const ValueKey('stepper'),
+                                  child: _gridStepper(
+                                    qty: cartQty,
+                                    primary: primary,
+                                    onMinus: () {
+                                      if (cartItemId == null) return;
+                                      if (cartQty == 1) {
+                                        ref
+                                            .read(cartProvider.notifier)
+                                            .removeItem(
+                                              cartItemId,
+                                              brand: product.brand,
+                                            );
+                                      } else {
+                                        ref
+                                            .read(cartProvider.notifier)
+                                            .updateQuantity(
+                                              cartItemId,
+                                              cartQty - 1,
+                                            );
+                                      }
+                                    },
+                                    onPlus: () {
+                                      if (cartItemId == null) return;
+                                      ref
+                                          .read(cartProvider.notifier)
+                                          .updateQuantity(
+                                            cartItemId,
+                                            cartQty + 1,
+                                          );
+                                    },
                                   ),
-                                  child: Icon(
-                                    PhosphorIcons.plus(PhosphorIconsStyle.bold),
-                                    color: primary,
-                                    size: 18.sp,
+                                )
+                              : TactileButton(
+                                  key: const ValueKey('add'),
+                                  onTap: () => _handleQuickAdd(product),
+                                  child: Container(
+                                    height: 34.w,
+                                    width: 34.w,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      PhosphorIcons.plus(
+                                        PhosphorIconsStyle.bold,
+                                      ),
+                                      color: primary,
+                                      size: 18.sp,
+                                    ),
                                   ),
                                 ),
-                              ),
+                        ),
                       ),
                     ],
                   ),
