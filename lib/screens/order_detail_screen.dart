@@ -53,6 +53,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   /// Distance / time to the customer, from the live map.
   final _eta = ValueNotifier<String?>(null);
 
+  /// Whether the page's own top bar is hidden (live view). Kept in state and
+  /// updated when the order changes: computed straight from the order, the
+  /// bar lagged one load behind, so the live view had two back buttons and
+  /// the delivered page none.
+  bool _barHidden = false;
+
   /// While a rider has the order, a phone shows the map-first live view.
   bool _liveLayout(BuildContext context) =>
       !widget.embedded &&
@@ -452,7 +458,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       maxWidth: Responsive.isExpanded(context) ? 1100 : 640,
       child: Scaffold(
         backgroundColor: Colors.grey[50],
-        appBar: _liveLayout(context)
+        appBar: _barHidden
             ? null
             : AppBar(
                 title: Text(
@@ -497,6 +503,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             if (snapshot.connectionState == ConnectionState.done &&
                 snapshot.hasData) {
               _shown = snapshot.data;
+            }
+            final live = _liveLayout(context);
+            if (live != _barHidden) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _barHidden = live);
+              });
             }
             // A refresh in progress, or one that failed, keeps the last order
             // on screen. Only a first load shows the spinner or the error.

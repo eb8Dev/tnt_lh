@@ -70,6 +70,18 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
   BitmapDescriptor? _destIcon;
   bool _iconsRequested = false;
 
+  /// The order has left the store: show only the rider's way to the
+  /// customer. Before that, only their way to the store.
+  bool get _pickedUp => const {
+    'picked_up',
+    'out-for-delivery',
+    'in_transit',
+    'arrived',
+    'delivered',
+  }.contains((widget.order.displayStatus as String).toLowerCase());
+
+  LatLng? get _target => _pickedUp ? _deliveryLoc : _pickupLoc;
+
   bool get _isBakery =>
       (widget.order.brand ?? '').toString().toLowerCase().contains('littleh');
 
@@ -119,7 +131,11 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
   void didUpdateWidget(covariant LiveTrackingPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.order.status != widget.order.status ||
+        oldWidget.order.displayStatus != widget.order.displayStatus ||
         oldWidget.order.id != widget.order.id) {
+      // Picked up: the line switches from "to the store" to "to you"
+      // (reloading the delivery fetches the new route).
+      _routeCoords = [];
       _fetchActiveDelivery();
     }
   }
@@ -202,15 +218,18 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
   }
 
   Future<void> _fetchRoadRoute() async {
-    if (_riderLoc == null || _pickupLoc == null || _deliveryLoc == null) return;
+    final target = _target;
+    if (_riderLoc == null || target == null) return;
 
     try {
+      // One leg only: rider to the store, or (once picked up) rider to you.
+      // It used to run rider -> store -> you all the way, so after pickup the
+      // customer still saw a line back through the store.
       final origin = '${_riderLoc!.latitude},${_riderLoc!.longitude}';
-      final dest = '${_deliveryLoc!.latitude},${_deliveryLoc!.longitude}';
-      final waypoint = '${_pickupLoc!.latitude},${_pickupLoc!.longitude}';
+      final dest = '${target.latitude},${target.longitude}';
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/directions/json'
-        '?origin=$origin&destination=$dest&waypoints=$waypoint'
+        '?origin=$origin&destination=$dest'
         '&mode=driving&key=${AppConfig.googleMapsApiKey}',
       );
       final response = await http.get(url);
@@ -345,7 +364,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
         ),
       );
     }
-    if (_pickupLoc != null) {
+    if (_pickupLoc != null && !_pickedUp) {
       markers.add(
         Marker(
           markerId: const MarkerId('pickup'),
@@ -383,11 +402,11 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
         ),
       };
     }
-    if (_pickupLoc != null && _deliveryLoc != null) {
+    if (_riderLoc != null && _target != null) {
       return {
         Polyline(
           polylineId: const PolylineId('route'),
-          points: [_pickupLoc!, _deliveryLoc!],
+          points: [_riderLoc!, _target!],
           width: 4,
           color: _accent.withValues(alpha: 0.3),
         ),
