@@ -1158,7 +1158,7 @@ class _OrderHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = order.status.toLowerCase();
-    final statusColor = AppFormatters.getStatusColor(order.status);
+    final statusColor = AppFormatters.getStatusColor(order.displayStatus);
     final placed = DateTime.tryParse(order.createdAt ?? '')?.toLocal();
     final done = DateTime.tryParse(order.deliveredAt ?? '')?.toLocal();
     String? summary;
@@ -1229,7 +1229,7 @@ class _OrderHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(
-              AppFormatters.statusLabel(order.status),
+              AppFormatters.statusLabel(order.displayStatus),
               style: GoogleFonts.poppins(
                 color: statusColor,
                 fontWeight: FontWeight.w700,

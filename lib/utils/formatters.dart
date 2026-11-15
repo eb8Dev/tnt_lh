@@ -34,11 +34,19 @@ class AppFormatters {
       case 'waiting_for_rider':
         return 'Finding a rider';
       case 'assigned':
+      case 'accepted':
         return 'Rider assigned';
+      case 'heading_to_pickup':
+        return 'Rider heading to store';
+      case 'arrived_at_pickup':
+        return 'Rider at the store';
       case 'out-for-delivery':
+      case 'picked_up':
         return 'Picked up';
       case 'in_transit':
         return 'On the way';
+      case 'arrived':
+        return 'Rider has arrived';
       case 'delivered':
         return 'Delivered';
       case 'cancelled':

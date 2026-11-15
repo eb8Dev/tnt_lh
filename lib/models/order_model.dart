@@ -33,6 +33,34 @@ class Order {
   final String? cancelReason;
   final List<OrderTimeline> timeline;
 
+  /// What the rider is doing (heading_to_pickup, arrived_at_pickup, picked_up,
+  /// in_transit, arrived...), when a rider has the order. Finer than [status],
+  /// which stays "assigned" while the rider waits at the store and "on the way"
+  /// after they reach the door.
+  final String? deliveryStatus;
+
+  static const _riderSteps = {
+    'accepted',
+    'heading_to_pickup',
+    'arrived_at_pickup',
+    'picked_up',
+    'in_transit',
+    'arrived',
+  };
+
+  /// The status to show the customer.
+  String get displayStatus {
+    final s = status.toLowerCase();
+    final d = deliveryStatus?.toLowerCase();
+    if (d != null &&
+        _riderSteps.contains(d) &&
+        s != 'delivered' &&
+        s != 'cancelled') {
+      return d;
+    }
+    return status;
+  }
+
   Order({
     required this.id,
     required this.orderNumber,
@@ -62,6 +90,7 @@ class Order {
     this.cancelledAt,
     this.cancelReason,
     required this.timeline,
+    this.deliveryStatus,
   });
 
   /// When this order last moved (its last status change), falling back to when
@@ -108,6 +137,9 @@ class Order {
       deliveredAt: json['deliveredAt']?.toString(),
       cancelledAt: json['cancelledAt']?.toString(),
       cancelReason: json['cancelReason']?.toString(),
+      deliveryStatus: json['delivery'] is Map
+          ? (json['delivery'] as Map)['status']?.toString()
+          : null,
       timeline:
           (json['timeline'] as List?)
               ?.map((t) => OrderTimeline.fromJson(t))

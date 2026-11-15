@@ -38,9 +38,13 @@ class ActiveOrderBar extends ConsumerWidget {
       case 'assigned':
       case 'accepted':
       case 'heading_to_pickup':
+        return (
+          text: 'Rider is on the way to the store',
+          icon: PhosphorIcons.moped(),
+        );
       case 'arrived_at_pickup':
         return (
-          text: 'Rider is picking up your order',
+          text: 'Rider is at the store, collecting your order',
           icon: PhosphorIcons.storefront(),
         );
       case 'picked_up':
@@ -77,7 +81,7 @@ class ActiveOrderBar extends ConsumerWidget {
             text: 'This order is taking longer than usual',
             icon: PhosphorIcons.warningCircle(),
           )
-        : _statusLabel(order.status);
+        : _statusLabel(order.displayStatus);
 
     return Container(
       margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 8.h),

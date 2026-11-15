@@ -245,7 +245,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 
   Widget _buildOrderCard(Order order) {
-    final statusColor = _getStatusColor(order.status);
+    final statusColor = _getStatusColor(order.displayStatus);
     final isTeas = order.brand == 'teasntrees';
     final storeColor = Brands.color(order.brand);
 
@@ -318,7 +318,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
-                    AppFormatters.statusLabel(order.status),
+                    AppFormatters.statusLabel(order.displayStatus),
                     style: GoogleFonts.poppins(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w700,
