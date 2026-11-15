@@ -319,17 +319,18 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
     return SafeArea(
       top: false,
       child: Container(
-        margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-        height: 64.h,
-        padding: EdgeInsets.symmetric(horizontal: 8.w),
+        // Compact: 52 high, closer to the edges and the home indicator.
+        margin: EdgeInsets.fromLTRB(20.w, 0, 20.w, 4.h),
+        height: 52.h,
+        padding: EdgeInsets.symmetric(horizontal: 6.w),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24.r),
+          borderRadius: BorderRadius.circular(18.r),
           border: Border.all(color: Colors.black.withValues(alpha: 0.03)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.10),
-              blurRadius: 24,
+              blurRadius: 16,
               offset: const Offset(0, 8),
             ),
           ],
@@ -379,12 +380,12 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16.w : 12.w,
-          vertical: 10.h,
+          horizontal: isSelected ? 14.w : 12.w,
+          vertical: 8.h,
         ),
         decoration: BoxDecoration(
           color: isSelected ? primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(13.r),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -392,7 +393,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
             Icon(
               isSelected ? activeIcon : inactiveIcon,
               color: isSelected ? Colors.white : Colors.black38,
-              size: 24.sp,
+              size: 21.sp,
             ),
             if (isSelected) ...[
               SizedBox(width: 8.w),
@@ -400,7 +401,7 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
                 label,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
-                  fontSize: 13.sp,
+                  fontSize: 12.5.sp,
                   fontWeight: FontWeight.w700,
                 ),
               ),
