@@ -331,7 +331,7 @@ class _CarouselState extends State<_Carousel> {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     widget.onSeen(widget.banners[_page.clamp(0, widget.banners.length - 1)]);
-    return Column(
+    final carousel = Column(
       children: [
         AspectRatio(
           // Upload banners at 2:1, e.g. 1200 × 600.
@@ -395,6 +395,40 @@ class _CarouselState extends State<_Carousel> {
           ),
         ],
       ],
+    );
+    // A soft wash of the campaign's colour behind the banners that blends
+    // into the next one's as you swipe, so each campaign sets the mood.
+    return AnimatedBuilder(
+      animation: _pc,
+      builder: (context, child) {
+        Color at(int i) =>
+            widget.banners[i.clamp(0, widget.banners.length - 1)].color ??
+            primary;
+        final page = _pc.hasClients && _pc.position.haveDimensions
+            ? (_pc.page ?? _page.toDouble())
+            : _page.toDouble();
+        final lo = page.floor();
+        final tint = Color.lerp(at(lo), at(lo + 1), page - lo)!;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                tint.withValues(alpha: 0.0),
+                tint.withValues(alpha: 0.14),
+                tint.withValues(alpha: 0.0),
+              ],
+              stops: const [0.0, 0.55, 1.0],
+            ),
+          ),
+          child: child,
+        );
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 6.h),
+        child: carousel,
+      ),
     );
   }
 }
@@ -679,4 +713,130 @@ Future<void> _maybeShowPopup(
       ),
     ),
   );
+}
+
+// -------------------------------------------------------------- flip chip ---
+
+/// A small tile at the start of the category chips that flips through the
+/// store's live offers, so a deal stays in sight after the banners have
+/// scrolled away. Nothing shows when there are no offers.
+class OfferFlipChip extends ConsumerStatefulWidget {
+  final String brand;
+  final ValueChanged<String> onCategory;
+  const OfferFlipChip({
+    super.key,
+    required this.brand,
+    required this.onCategory,
+  });
+
+  @override
+  ConsumerState<OfferFlipChip> createState() => _OfferFlipChipState();
+}
+
+class _OfferFlipChipState extends ConsumerState<OfferFlipChip> {
+  Timer? _timer;
+  int _i = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 3200), (_) {
+      if (mounted) setState(() => _i++);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final offers =
+        (ref.watch(promotionsProvider(widget.brand)).value ??
+                const <Promotion>[])
+            .where((p) => p.kind == PromoKind.offer)
+            .toList();
+    if (offers.isEmpty) return const SizedBox.shrink();
+    final o = offers[_i % offers.length];
+    final color = o.color ?? Theme.of(context).colorScheme.primary;
+    final still = reduceMotion(context) || offers.length < 2;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.only(right: 10.w),
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            trackPromotion(widget.brand, o.id, 'tap');
+            openPromotion(context, o, widget.brand, widget.onCategory);
+          },
+          child: AnimatedSwitcher(
+            duration: Duration(milliseconds: still ? 0 : 520),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.center,
+              children: [...previous, ?current],
+            ),
+            transitionBuilder: (child, anim) {
+              final incoming = child.key == ValueKey(o.id);
+              return AnimatedBuilder(
+                animation: anim,
+                child: child,
+                builder: (_, c) {
+                  // The outgoing face turns away, the new one turns in:
+                  // a card flipping over on its horizontal axis.
+                  final turn = (1 - anim.value) * (math.pi / 2);
+                  return Opacity(
+                    opacity: anim.value < 0.5 ? 0 : 1,
+                    child: Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.identity()
+                        ..setEntry(3, 2, 0.002)
+                        ..rotateX(incoming ? turn : -turn),
+                      child: c,
+                    ),
+                  );
+                },
+              );
+            },
+            child: Container(
+              key: ValueKey(o.id),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              constraints: BoxConstraints(maxWidth: 170.w),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: color.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    PhosphorIcons.sealPercent(PhosphorIconsStyle.fill),
+                    size: 16.sp,
+                    color: color,
+                  ),
+                  SizedBox(width: 6.w),
+                  Flexible(
+                    child: Text(
+                      o.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -508,6 +508,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                             SliverPersistentHeader(
                               pinned: true,
                               delegate: _PinnedHeaderDelegate(
+                                shadow: expanded,
                                 height: 56.h,
                                 child: Container(
                                   color: Theme.of(
@@ -529,6 +530,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                               SliverPersistentHeader(
                                 pinned: true,
                                 delegate: _PinnedHeaderDelegate(
+                                  shadow: true,
                                   height: 56.h,
                                   child: ValueListenableBuilder<String?>(
                                     valueListenable: _spy,
@@ -600,10 +602,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                         pinned: true,
                         delegate: _PinnedHeaderDelegate(
                           height: 56.h,
-                          child: Container(
+                          minHeight: 50.h,
+                          shadow: expanded,
+                          builder: (context, t) => Container(
                             color: Theme.of(context).scaffoldBackgroundColor,
                             padding: EdgeInsets.fromLTRB(16.w, 2.h, 16.w, 6.h),
-                            child: _buildSearchBar(isLittleH),
+                            child: _buildSearchBar(isLittleH, t: t),
                           ),
                         ),
                       ),
@@ -613,6 +617,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                         SliverPersistentHeader(
                           pinned: true,
                           delegate: _PinnedHeaderDelegate(
+                            shadow: true,
                             height: 56.h,
                             child: ValueListenableBuilder<String?>(
                               valueListenable: _spy,
@@ -702,9 +707,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     );
   }
 
-  Widget _buildSearchBar(bool isLittleH) {
+  Widget _buildSearchBar(bool isLittleH, {double t = 0}) {
+    // t: how far the pinned header has collapsed (0 open, 1 compact).
+    final h = 48.h - 6.h * t;
     return Container(
-      height: 48.h,
+      height: h,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
@@ -777,7 +784,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                     )
                   : null,
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+              contentPadding: EdgeInsets.symmetric(vertical: 14.h - 3.h * t),
             ),
           ),
         ],
@@ -950,6 +957,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           final allSelected =
               _selectedCategoryIndex == -1 && _spyCategoryId == null;
           final chips = <Widget>[
+            OfferFlipChip(brand: widget.brand, onCategory: _openCategoryById),
             _buildCategoryChip(
               key: allSelected ? _selectedChipKey : null,
               label: "All",
@@ -2099,13 +2107,27 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
 /// of the scroll view, so it stays in reach no matter how far down the menu the
 /// customer has scrolled.
 class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  final double height;
+  final Widget? child;
 
-  _PinnedHeaderDelegate({required this.child, required this.height});
+  /// Builds the header for how far it has collapsed (0 open, 1 compact),
+  /// for headers whose [minHeight] is below [height].
+  final Widget Function(BuildContext context, double t)? builder;
+  final double height;
+  final double? minHeight;
+
+  /// A soft shadow under the header once the menu slides beneath it.
+  final bool shadow;
+
+  _PinnedHeaderDelegate({
+    this.child,
+    this.builder,
+    required this.height,
+    this.minHeight,
+    this.shadow = false,
+  }) : assert(child != null || builder != null);
 
   @override
-  double get minExtent => height;
+  double get minExtent => minHeight ?? height;
 
   @override
   double get maxExtent => height;
@@ -2116,13 +2138,29 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return SizedBox.expand(child: child);
+    final range = maxExtent - minExtent;
+    final t = range <= 0 ? 0.0 : (shrinkOffset / range).clamp(0.0, 1.0);
+    final content = builder?.call(context, t) ?? child!;
+    if (!shadow) return SizedBox.expand(child: content);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        boxShadow: overlapsContent
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : const [],
+      ),
+      child: SizedBox.expand(child: content),
+    );
   }
 
   @override
-  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
-    return oldDelegate.height != height || oldDelegate.child != child;
-  }
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) => true;
 }
 
 /// A category in the Menu sheet: its picture (or, until one is uploaded, an
