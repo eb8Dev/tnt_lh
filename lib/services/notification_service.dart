@@ -56,12 +56,10 @@ class NotificationService {
         >()
         ?.createNotificationChannel(_channel);
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // Order updates also arrive over the live connection, which already shows
-      // them in the app; a system banner on top announced everything twice.
-      if (message.data['orderId'] != null) return;
-      _showLocalNotification(message);
-    });
+    // With the app open the push still shows as a banner: there is no
+    // in-app pop-up any more (the screens just update), so without it a
+    // customer looking at another screen would miss "Order accepted".
+    FirebaseMessaging.onMessage.listen(_showLocalNotification);
 
     // Tapping a notification used to just open the app wherever it was. An
     // order notification now opens that order.
