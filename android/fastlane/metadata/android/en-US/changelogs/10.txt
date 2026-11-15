@@ -1,0 +1,5 @@
+Live order tracking, redesigned: full-screen map, rider steps from store to your door, delivery PIN and a call button.
+Order updates arrive as notifications even with the app open.
+Menu by category with bestsellers, quicker search, compact bottom bar.
+Cancel an order before the store accepts it, with a reason; undo when removing from the bag.
+New profile page, and many fixes to cart, orders and live updates.
