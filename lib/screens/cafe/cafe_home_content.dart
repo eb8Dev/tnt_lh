@@ -1061,7 +1061,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
         .where((c) => (c.productCount ?? 1) > 0)
         .toList();
     if (categoriesAsync.isLoading && cats.isEmpty) {
-      return [const SliverToBoxAdapter(child: ProductListSkeleton())];
+      return [const SliverToBoxAdapter(child: MenuGridSkeleton())];
     }
     return [
       SliverToBoxAdapter(child: _buildBestsellers()),
@@ -1158,12 +1158,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
               ),
               SizedBox(height: 8.h),
               if (!async.hasValue)
-                SizedBox(
-                  height: 120.h,
-                  child: const Center(
-                    child: CircularProgressIndicator.adaptive(),
-                  ),
-                )
+                // Two shimmering cards rather than a spinner.
+                const MenuGridSkeleton(cards: 2, title: false, inset: false)
               else
                 LayoutBuilder(
                   builder: (context, box) => AnimatedSize(
@@ -1223,7 +1219,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
 
   List<Widget> _productSlivers(AsyncValue<ProductsState> productsAsync) {
     return productsAsync.when(
-      loading: () => [const SliverToBoxAdapter(child: ProductListSkeleton())],
+      loading: () => [
+        const SliverToBoxAdapter(child: MenuGridSkeleton(title: false)),
+      ],
       error: (err, _) => [
         SliverFillRemaining(
           hasScrollBody: false,

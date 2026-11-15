@@ -137,3 +137,82 @@ class ProductListSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// The menu while it loads, shaped like the real thing: a section title and
+/// two columns of cards (4:3 photo, name, price). A list of rows used to
+/// stand in for a grid, so the screen jumped when the menu arrived.
+class MenuGridSkeleton extends StatelessWidget {
+  final int cards;
+  final bool title;
+
+  /// Off when it sits inside something that already has side margins.
+  final bool inset;
+  const MenuGridSkeleton({
+    super.key,
+    this.cards = 6,
+    this.title = true,
+    this.inset = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: inset
+          ? EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h)
+          : EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title) ...[
+            Skeleton(width: 130.w, height: 16.h),
+            SizedBox(height: 12.h),
+          ],
+          LayoutBuilder(
+            builder: (context, box) {
+              final w = (box.maxWidth - 12.w) / 2;
+              return Wrap(
+                spacing: 12.w,
+                runSpacing: 12.h,
+                children: [
+                  for (var i = 0; i < cards; i++)
+                    Container(
+                      width: w,
+                      padding: EdgeInsets.all(4.r),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: Colors.black.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Skeleton(
+                            width: w,
+                            height: (w - 8.r) * 3 / 4,
+                            radius: 12,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(6.w, 10.h, 6.w, 8.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Skeleton(width: w * 0.7, height: 12.h),
+                                SizedBox(height: 8.h),
+                                Skeleton(width: w * 0.35, height: 12.h),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
