@@ -210,7 +210,6 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// predates that field they're simply omitted.
   void _openCategorySheet(List<Category> categories) {
     final primary = Theme.of(context).colorScheme.primary;
-    final cats = categories.where((c) => (c.productCount ?? 1) > 0).toList();
 
     showModalBottomSheet(
       context: context,
@@ -266,28 +265,40 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 ),
               ),
               Expanded(
-                child: GridView.builder(
-                  controller: scrollController,
-                  padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 12.h,
-                    crossAxisSpacing: 10.w,
-                    // Square picture + two lines of name + item count.
-                    childAspectRatio: 0.66,
-                  ),
-                  itemCount: cats.length,
-                  itemBuilder: (_, i) {
-                    final cat = cats[i];
-                    final index = categories.indexOf(cat);
-                    return _CategoryTile(
-                      category: cat,
-                      selected: _selectedCategoryId == cat.id,
-                      color: primary,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.pop(sheetContext);
-                        _onCategorySelected(index, cat.id);
+                // Follows the live list: a new picture or item count shows
+                // while the sheet is open, not only the next time it opens.
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final live =
+                        ref.watch(categoriesProvider(widget.brand)).value ??
+                        categories;
+                    final cats = live
+                        .where((c) => (c.productCount ?? 1) > 0)
+                        .toList();
+                    return GridView.builder(
+                      controller: scrollController,
+                      padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 12.h,
+                        crossAxisSpacing: 10.w,
+                        // Square picture + two lines of name + item count.
+                        childAspectRatio: 0.66,
+                      ),
+                      itemCount: cats.length,
+                      itemBuilder: (_, i) {
+                        final cat = cats[i];
+                        final index = live.indexOf(cat);
+                        return _CategoryTile(
+                          category: cat,
+                          selected: _selectedCategoryId == cat.id,
+                          color: primary,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            Navigator.pop(sheetContext);
+                            _onCategorySelected(index, cat.id);
+                          },
+                        );
                       },
                     );
                   },
