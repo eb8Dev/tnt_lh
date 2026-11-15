@@ -137,8 +137,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   /// exactly where they were (while a pop-up announced the change on top).
   void _listenForLiveChanges() {
     ref.listen<SocketEvent?>(socketEventsProvider, (_, event) {
-      if (event == null || event.name != 'order:status-updated') return;
+      if (event == null) return;
       final data = event.data;
+      // The journey event carries a version: only a newer state reloads.
+      if (event.name == 'order:update' && data is Map) {
+        final id = data['orderId']?.toString();
+        final v = (data['stageVersion'] as num?)?.toInt() ?? 0;
+        debugPrint('[live] order:update $id -> ${data['stage']} v$v');
+        if (id == widget.orderId && v > (_shown?.stageVersion ?? -1)) _reload();
+        return;
+      }
+      if (event.name != 'order:status-updated') return;
       final id = data is Map ? data['orderId']?.toString() : null;
       debugPrint(
         '[live] order:status-updated $id -> ${data is Map ? data['status'] : '?'}',
@@ -1509,11 +1518,13 @@ class _LiveOrderView extends StatelessWidget {
   int get _step {
     switch (order.displayStatus.toLowerCase()) {
       case 'arrived_at_pickup':
+      case 'at_store':
         return 1;
       case 'picked_up':
       case 'out-for-delivery':
         return 2; // has the order, not yet riding to the customer
       case 'in_transit':
+      case 'on_the_way':
         return 3;
       case 'arrived':
         return 4;
@@ -1532,6 +1543,7 @@ class _LiveOrderView extends StatelessWidget {
           sub: '$who is on the way to pick up your order',
         );
       case 'arrived_at_pickup':
+      case 'at_store':
         return (title: 'At the store', sub: '$who is collecting your order');
       case 'picked_up':
       case 'out-for-delivery':
@@ -1540,6 +1552,7 @@ class _LiveOrderView extends StatelessWidget {
           sub: '$who will set off towards you shortly',
         );
       case 'in_transit':
+      case 'on_the_way':
         return (title: 'On the way to you', sub: '$who has your order');
       case 'arrived':
         return (

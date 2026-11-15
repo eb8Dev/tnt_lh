@@ -66,6 +66,7 @@ class OrderNotifier extends AsyncNotifier<OrdersState> {
     ref.listen<SocketEvent?>(socketEventsProvider, (prev, next) {
       if (next != null) {
         if (next.name == 'order:status-updated' ||
+            next.name == 'order:update' ||
             next.name == 'order:created') {
           refresh(background: true);
         }

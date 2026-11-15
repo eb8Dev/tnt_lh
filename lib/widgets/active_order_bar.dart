@@ -20,6 +20,7 @@ class ActiveOrderBar extends ConsumerWidget {
   ({String text, IconData icon}) _statusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
+      case 'placed':
         return (
           text: 'Waiting for the store to confirm',
           icon: PhosphorIcons.clock(),
@@ -36,6 +37,7 @@ class ActiveOrderBar extends ConsumerWidget {
           icon: PhosphorIcons.package(),
         );
       case 'assigned':
+      case 'rider_assigned':
       case 'accepted':
       case 'heading_to_pickup':
         return (
@@ -43,6 +45,7 @@ class ActiveOrderBar extends ConsumerWidget {
           icon: PhosphorIcons.moped(),
         );
       case 'arrived_at_pickup':
+      case 'at_store':
         return (
           text: 'Rider is at the store, collecting your order',
           icon: PhosphorIcons.storefront(),
@@ -54,6 +57,7 @@ class ActiveOrderBar extends ConsumerWidget {
           icon: PhosphorIcons.package(),
         );
       case 'in_transit':
+      case 'on_the_way':
         return (text: 'On the way to you', icon: PhosphorIcons.moped());
       case 'arrived':
         return (text: 'Your rider has arrived', icon: PhosphorIcons.mapPin());

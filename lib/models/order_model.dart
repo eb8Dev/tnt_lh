@@ -55,6 +55,9 @@ class Order {
   /// A rider has the order and it isn't finished: the live, map-first view.
   bool get isRiderPhase {
     const steps = {
+      'rider_assigned',
+      'at_store',
+      'on_the_way',
       'assigned',
       'accepted',
       'heading_to_pickup',
@@ -76,8 +79,15 @@ class Order {
     'arrived',
   };
 
+  /// The journey stage from the server (placed, preparing, ready,
+  /// rider_assigned, at_store, picked_up, on_the_way, arrived, delivered,
+  /// cancelled) and its version: a newer version is a newer state.
+  final String? stage;
+  final int stageVersion;
+
   /// The status to show the customer.
   String get displayStatus {
+    if (stage != null && stage!.isNotEmpty) return stage!;
     final s = status.toLowerCase();
     final d = deliveryStatus?.toLowerCase();
     if (d != null &&
@@ -119,6 +129,8 @@ class Order {
     this.cancelReason,
     required this.timeline,
     this.deliveryStatus,
+    this.stage,
+    this.stageVersion = 0,
     this.riderName,
     this.riderPhone,
     this.deliveryOtp,
@@ -171,11 +183,17 @@ class Order {
       deliveryStatus: json['delivery'] is Map
           ? (json['delivery'] as Map)['status']?.toString()
           : null,
+      stage: json['stage']?.toString(),
+      stageVersion: (json['stageVersion'] as num?)?.toInt() ?? 0,
       riderName: _rider(json)?['name']?.toString(),
       riderPhone: _rider(json)?['mobile']?.toString(),
-      deliveryOtp: json['delivery'] is Map
-          ? (json['delivery'] as Map)['deliveryOtp']?.toString()
-          : null,
+      deliveryOtp:
+          (json['journey'] is Map
+              ? (json['journey'] as Map)['deliveryOtp']?.toString()
+              : null) ??
+          (json['delivery'] is Map
+              ? (json['delivery'] as Map)['deliveryOtp']?.toString()
+              : null),
       timeline:
           (json['timeline'] as List?)
               ?.map((t) => OrderTimeline.fromJson(t))

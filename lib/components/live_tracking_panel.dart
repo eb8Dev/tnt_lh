@@ -76,6 +76,7 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     'picked_up',
     'out-for-delivery',
     'in_transit',
+    'on_the_way',
     'arrived',
     'delivered',
   }.contains((widget.order.displayStatus as String).toLowerCase());

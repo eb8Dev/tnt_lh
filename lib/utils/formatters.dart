@@ -24,15 +24,22 @@ class AppFormatters {
   static String statusLabel(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
+      case 'placed':
         return 'Order placed';
       case 'confirmed':
         return 'Confirmed';
       case 'preparing':
         return 'Being prepared';
       case 'ready':
-        return 'Ready';
+        return 'Ready, finding a rider';
       case 'waiting_for_rider':
         return 'Finding a rider';
+      case 'rider_assigned':
+        return 'Rider assigned';
+      case 'at_store':
+        return 'Rider at the store';
+      case 'on_the_way':
+        return 'On the way';
       case 'assigned':
       case 'accepted':
         return 'Rider assigned';
@@ -76,6 +83,7 @@ class AppFormatters {
       case 'cancelled':
         return Colors.red;
       case 'pending':
+      case 'placed':
         return Colors.orange;
       case 'preparing':
       case 'confirmed':
@@ -84,6 +92,11 @@ class AppFormatters {
       case 'out-for-delivery':
       case 'in_transit':
       case 'assigned':
+      case 'rider_assigned':
+      case 'at_store':
+      case 'picked_up':
+      case 'on_the_way':
+      case 'arrived':
         return Colors.purple;
       default:
         return Colors.grey;

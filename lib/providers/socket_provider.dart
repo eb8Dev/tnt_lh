@@ -173,6 +173,14 @@ class SocketManager {
     });
 
     // Listeners
+    // The order journey: one event with the whole current state.
+    _socket!.on('order:update', (data) {
+      debugPrint('[socket] order:update $data');
+      ref
+          .read(socketEventsProvider.notifier)
+          .emitEvent(SocketEvent('order:update', data));
+    });
+
     _socket!.on('order:status-updated', (data) {
       debugPrint('[socket] order:status-updated $data');
       ref
