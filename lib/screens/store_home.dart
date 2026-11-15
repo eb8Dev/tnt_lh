@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
@@ -316,47 +317,56 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
   }
 
   Widget _buildFloatingNav(String brand) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        // Compact: 52 high, closer to the edges and the home indicator.
-        margin: EdgeInsets.fromLTRB(20.w, 0, 20.w, 4.h),
-        height: 52.h,
-        padding: EdgeInsets.symmetric(horizontal: 6.w),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18.r),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.03)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.10),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(
-              0,
-              PhosphorIcons.house(PhosphorIconsStyle.fill),
-              PhosphorIcons.house(),
-              "Home",
-            ),
-            _buildNavItem(
-              StoreHomeScreen.ordersTab,
-              PhosphorIcons.receipt(PhosphorIconsStyle.fill),
-              PhosphorIcons.receipt(),
-              "Orders",
-            ),
-            _buildNavItem(
-              StoreHomeScreen.profileTab,
-              PhosphorIcons.user(PhosphorIconsStyle.fill),
-              PhosphorIcons.user(),
-              "Profile",
-            ),
-          ],
+    // A pill just wide enough for its three tabs, centred, sitting in the
+    // home-indicator area rather than a full inset above it. Full width with
+    // the tabs spread out looked like a slab and left odd gaps between them.
+    final inset = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(
+        top: 6.h,
+        bottom: inset > 0 ? math.max(8.0, inset - 14) : 10.h,
+      ),
+      child: Center(
+        heightFactor: 1,
+        child: Container(
+          height: 50.h,
+          padding: EdgeInsets.all(5.r),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25.r),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4.w,
+            children: [
+              _buildNavItem(
+                0,
+                PhosphorIcons.house(PhosphorIconsStyle.fill),
+                PhosphorIcons.house(),
+                "Home",
+              ),
+              _buildNavItem(
+                StoreHomeScreen.ordersTab,
+                PhosphorIcons.receipt(PhosphorIconsStyle.fill),
+                PhosphorIcons.receipt(),
+                "Orders",
+              ),
+              _buildNavItem(
+                StoreHomeScreen.profileTab,
+                PhosphorIcons.user(PhosphorIconsStyle.fill),
+                PhosphorIcons.user(),
+                "Profile",
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -379,13 +389,11 @@ class _StoreHomeScreenState extends ConsumerState<StoreHomeScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 14.w : 12.w,
-          vertical: 8.h,
-        ),
+        height: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: isSelected ? 16.w : 14.w),
         decoration: BoxDecoration(
           color: isSelected ? primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(13.r),
+          borderRadius: BorderRadius.circular(20.r),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
