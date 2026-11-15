@@ -4,7 +4,6 @@ import 'package:tnt_lh/models/cart_model.dart';
 import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/services/cart_service.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
-import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
 
 /// Carries the message from a cart write that failed *after* the UI had already
@@ -27,7 +26,26 @@ class CartNotifier extends AsyncNotifier<Cart> {
   /// tap on +/- can be re-pointed at the real cart-item id once it lands.
   static const String _optimisticPrefix = '__optimistic__';
 
+  /// Pending quantity writes, keyed by cart LINE (product + options), not by
+  /// id: an item's id changes from a placeholder to the server's once its add
+  /// lands, and keying by id let one line hold two timers, one under each.
   final Map<String, Timer> _writeTimers = {};
+
+  /// Placeholder id -> the id the server gave that line. Kept for the session,
+  /// so a tap queued before the swap still finds its line. Without it, those
+  /// late taps found nothing and showed "That item is no longer in your bag".
+  final Map<String, String> _realIds = {};
+
+  String _canonical(String id) => _realIds[id] ?? id;
+
+  CartItem? _lineOf(String id) {
+    final real = _canonical(id);
+    return state.value?.items
+        .where((i) => i.id == id || i.id == real)
+        .firstOrNull;
+  }
+
+  String _lineKeyOf(CartItem i) => _lineKey(i.product.id, i.customization);
   final Map<String, Future<void>> _inFlightAdds = {};
   Timer? _reconcileTimer;
 
@@ -170,6 +188,8 @@ class CartNotifier extends AsyncNotifier<Cart> {
 
   Future<String?> _resolveItemId(String itemId) async {
     if (!itemId.startsWith(_optimisticPrefix)) return itemId;
+    final known0 = _realIds[itemId];
+    if (known0 != null) return known0;
     final key = itemId.substring(_optimisticPrefix.length);
     final productId = key.split('|').first;
     final options = key.substring(productId.length + 1);
@@ -177,19 +197,19 @@ class CartNotifier extends AsyncNotifier<Cart> {
     // Ask the server for the real id without replacing what's on screen:
     // other edits may still be queued, and the screen is ahead of the server.
     final server = await _fetchCartInternal();
-    final known = state.value?.items.map((i) => i.id).toSet() ?? {};
-    final candidates = server.items
-        .where((i) => i.product.id == productId && !known.contains(i.id))
-        .toList();
-    // The server may word the options its own way ("Eggless" stays
-    // "Eggless"; nothing becomes "1kg | Standard"), so prefer an exact match
-    // and otherwise take the line this screen doesn't know about yet.
+    // The server keeps one line per product + options, so this is that line.
+    // (It used to skip lines already on screen, so if a refresh had swapped
+    // the real id in first, a late tap found nothing.) The server may word the
+    // options its own way ("" becomes "1kg | Standard"), so fall back to the
+    // product's newest line not already claimed by another placeholder.
+    final mine = server.items.where((i) => i.product.id == productId).toList();
+    final claimed = _realIds.values.toSet();
     final real =
-        (candidates
-                    .where((i) => (i.customization ?? '') == options)
-                    .firstOrNull ??
-                candidates.firstOrNull)
+        (mine.where((i) => (i.customization ?? '') == options).firstOrNull ??
+                mine.where((i) => !claimed.contains(i.id)).lastOrNull ??
+                mine.lastOrNull)
             ?.id;
+    if (real != null) _realIds[itemId] = real;
     final current = state.value;
     if (real != null && current != null) {
       state = AsyncData(
@@ -269,7 +289,10 @@ class CartNotifier extends AsyncNotifier<Cart> {
     try {
       await request;
     } catch (e) {
-      if (previous != null) state = AsyncData(previous); // roll back
+      // Re-read the bag rather than restore a snapshot from before this tap,
+      // which would also undo any taps made since on other items.
+      _inFlightAdds.remove(key);
+      unawaited(fetchCart(background: true));
       rethrow;
     } finally {
       _inFlightAdds.remove(key);
@@ -283,21 +306,23 @@ class CartNotifier extends AsyncNotifier<Cart> {
 
     final previous = state.value;
     if (previous == null) return;
+    // A tap on a line that has since been removed: nothing to change.
+    final line = _lineOf(itemId);
+    if (line == null) return;
 
     final items = previous.items
-        .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
+        .map((i) => i.id == line.id ? i.copyWith(quantity: quantity) : i)
         .toList();
     state = AsyncData(_recalculate(items));
     _localEdits++;
 
-    final brand = previous.items
-        .firstWhere((i) => i.id == itemId, orElse: () => previous.items.first)
-        .brand;
+    final brand = line.brand;
+    final lineId = line.id;
 
     _debounceWrite(
-      itemId,
+      _lineKeyOf(line),
       () => _inOrder(() async {
-        final realId = await _resolveItemId(itemId);
+        final realId = await _resolveItemId(_canonical(lineId));
         if (realId == null) {
           throw Exception('That item is no longer in your bag');
         }
@@ -310,27 +335,30 @@ class CartNotifier extends AsyncNotifier<Cart> {
     final previous = state.value;
     if (previous == null) return;
 
-    final target = previous.items.where((i) => i.id == itemId).firstOrNull;
-    final targetBrand = brand ?? target?.brand ?? ref.read(brandProvider);
+    final target = _lineOf(itemId);
+    if (target == null) return; // already gone
+    final targetBrand = brand ?? target.brand;
+    final lineId = target.id;
 
     state = AsyncData(
-      _recalculate(previous.items.where((i) => i.id != itemId).toList()),
+      _recalculate(previous.items.where((i) => i.id != lineId).toList()),
     );
     _localEdits++;
 
-    // A pending debounced quantity write for this item is now meaningless.
-    _writeTimers.remove(itemId)?.cancel();
+    // A pending quantity write for this line is now meaningless.
+    _writeTimers.remove(_lineKeyOf(target))?.cancel();
 
     _pendingWrites++;
     try {
       await _inOrder(() async {
-        final realId = await _resolveItemId(itemId);
+        final realId = await _resolveItemId(_canonical(lineId));
         if (realId != null) {
           await CartService.removeItem(realId, brand: targetBrand);
         }
       });
     } catch (e) {
-      state = AsyncData(previous); // put it back
+      // Re-read the bag rather than put back a stale snapshot.
+      unawaited(fetchCart(background: true));
       _reportError(e);
       rethrow;
     } finally {

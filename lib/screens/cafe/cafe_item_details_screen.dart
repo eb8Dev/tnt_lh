@@ -443,120 +443,155 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            height: 48.h,
-            decoration: BoxDecoration(
-              color: themeColor.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: themeColor.withValues(alpha: 0.3)),
+      child: Consumer(
+        builder: (context, ref, _) {
+          // What's already in the bag, so "- 1 +" reads as "how many more"
+          // and not as the bag's quantity.
+          final inBag = ref.watch(
+            cartProvider.select(
+              (c) => (c.value?.items ?? const [])
+                  .where((i) => i.product.id == widget.product.id)
+                  .fold<int>(0, (n, i) => n + i.quantity),
             ),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    if (_quantity > 1) setState(() => _quantity--);
-                  },
-                  icon: Icon(
-                    PhosphorIcons.minus(PhosphorIconsStyle.bold),
-                    size: 20.sp,
-                    color: Colors.black87,
-                  ),
-                ),
-                Text(
-                  "$_quantity",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => setState(() => _quantity++),
-                  icon: Icon(
-                    PhosphorIcons.plus(PhosphorIconsStyle.bold),
-                    size: 20.sp,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 16.w),
-          Expanded(
-            child: TactileButton(
-              onTap: () {
-                final List<String> customizations = [];
-                if (_selectedSize != null) {
-                  customizations.add("Size: $_selectedSize");
-                }
-                if (_isEggless) customizations.add("Eggless");
-                if (_customizationController.text.isNotEmpty) {
-                  customizations.add(_customizationController.text.trim());
-                }
-
-                final messenger = ScaffoldMessenger.of(context);
-                final productName = widget.product.name;
-
-                // Fire-and-reconcile: the cart updates optimistically, so don't
-                // make the user watch a spinner for a round-trip.
-                ref
-                    .read(cartProvider.notifier)
-                    .addToCart(
-                      product: widget.product,
-                      quantity: _quantity,
-                      customization: customizations.isNotEmpty
-                          ? customizations.join(", ")
-                          : null,
-                    )
-                    .catchError((_) {
-                      messenger.removeCurrentSnackBar();
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            "Couldn't add $productName. Please try again.",
-                          ),
-                          backgroundColor: Colors.redAccent.shade400,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          margin: const EdgeInsets.all(20),
-                        ),
-                      );
-                    });
-
-                HapticFeedback.lightImpact();
-                Navigator.pop(context);
-              },
-              child: Container(
-                height: 48.h,
-                // The store's colour, as on the bag's Place order. Black
-                // here and brand colour there felt like two apps.
-                decoration: BoxDecoration(
-                  color: themeColor,
-                  borderRadius: BorderRadius.circular(14.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: themeColor.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
+          );
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (inBag > 0)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 8.h, left: 4.w),
+                  child: Text(
+                    '$inBag in your bag',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: themeColor,
                     ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  "Add to bag · ${AppFormatters.rupees(_currentPrice * _quantity)}",
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15.sp,
                   ),
                 ),
+              Row(
+                children: [
+                  Container(
+                    height: 48.h,
+                    decoration: BoxDecoration(
+                      color: themeColor.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(14.r),
+                      border: Border.all(
+                        color: themeColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (_quantity > 1) setState(() => _quantity--);
+                          },
+                          icon: Icon(
+                            PhosphorIcons.minus(PhosphorIconsStyle.bold),
+                            size: 20.sp,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          "$_quantity",
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => setState(() => _quantity++),
+                          icon: Icon(
+                            PhosphorIcons.plus(PhosphorIconsStyle.bold),
+                            size: 20.sp,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 16.w),
+                  Expanded(
+                    child: TactileButton(
+                      onTap: () {
+                        final List<String> customizations = [];
+                        if (_selectedSize != null) {
+                          customizations.add("Size: $_selectedSize");
+                        }
+                        if (_isEggless) customizations.add("Eggless");
+                        if (_customizationController.text.isNotEmpty) {
+                          customizations.add(
+                            _customizationController.text.trim(),
+                          );
+                        }
+
+                        final messenger = ScaffoldMessenger.of(context);
+                        final productName = widget.product.name;
+
+                        // Fire-and-reconcile: the cart updates optimistically, so don't
+                        // make the user watch a spinner for a round-trip.
+                        ref
+                            .read(cartProvider.notifier)
+                            .addToCart(
+                              product: widget.product,
+                              quantity: _quantity,
+                              customization: customizations.isNotEmpty
+                                  ? customizations.join(", ")
+                                  : null,
+                            )
+                            .catchError((_) {
+                              messenger.removeCurrentSnackBar();
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Couldn't add $productName. Please try again.",
+                                  ),
+                                  backgroundColor: Colors.redAccent.shade400,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  margin: const EdgeInsets.all(20),
+                                ),
+                              );
+                            });
+
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        height: 48.h,
+                        // The store's colour, as on the bag's Place order. Black
+                        // here and brand colour there felt like two apps.
+                        decoration: BoxDecoration(
+                          color: themeColor,
+                          borderRadius: BorderRadius.circular(14.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeColor.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "Add${ref.watch(cartProvider.select((c) => (c.value?.items ?? const []).any((i) => i.product.id == widget.product.id))) ? ' $_quantity more' : ' to bag'} · ${AppFormatters.rupees(_currentPrice * _quantity)}",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
