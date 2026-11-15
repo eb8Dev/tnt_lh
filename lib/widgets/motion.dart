@@ -225,37 +225,42 @@ class _RotatingHintState extends State<RotatingHint> {
             : "Search '${widget.words[_i % widget.words.length]}'";
         // Exactly one line tall, so the next hint can't show beneath the
         // current one while it slides in.
-        return ClipRect(
-          child: SizedBox(
-            height: (widget.style.fontSize ?? 14) * 1.45,
-            child: AnimatedSwitcher(
-              duration: reduceMotion(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 380),
-              transitionBuilder: (child, anim) {
-                final incoming = child.key == ValueKey(text);
-                return SlideTransition(
-                  position:
-                      Tween(
-                        begin: Offset(0, incoming ? 1 : -1),
-                        end: Offset.zero,
-                      ).animate(
-                        CurvedAnimation(
-                          parent: anim,
-                          curve: Curves.easeOutCubic,
+        // Centred, so the parent can't stretch the one-line clip to the
+        // field's full height (which let the next hint show underneath).
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: ClipRect(
+            child: SizedBox(
+              height: (widget.style.fontSize ?? 14) * 1.45,
+              child: AnimatedSwitcher(
+                duration: reduceMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 380),
+                transitionBuilder: (child, anim) {
+                  final incoming = child.key == ValueKey(text);
+                  return SlideTransition(
+                    position:
+                        Tween(
+                          begin: Offset(0, incoming ? 1 : -1),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: anim,
+                            curve: Curves.easeOutCubic,
+                          ),
                         ),
-                      ),
-                  child: FadeTransition(opacity: anim, child: child),
-                );
-              },
-              child: Align(
-                key: ValueKey(text),
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: widget.style,
+                    child: FadeTransition(opacity: anim, child: child),
+                  );
+                },
+                child: Align(
+                  key: ValueKey(text),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: widget.style,
+                  ),
                 ),
               ),
             ),
@@ -345,37 +350,31 @@ class _SparkleGreetingState extends State<SparkleGreeting>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // The dish is part of the sentence (a TextSpan), so the line wraps
+        // naturally around it, with one sparkle after it. It used to be a
+        // separate block in the line, which sat on its own row, lower.
         Text.rich(
           TextSpan(
             style: plain,
             children: [
-              if (widget.before.isNotEmpty) TextSpan(text: widget.before),
-              WidgetSpan(
-                alignment: PlaceholderAlignment.baseline,
-                baseline: TextBaseline.alphabetic,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Text(
-                      widget.accent,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w700,
-                        color: widget.color,
-                        height: 1.2,
-                      ),
-                    ),
-                    Positioned(top: -6, right: -10, child: _sparkle(0, 10.sp)),
-                    Positioned(
-                      bottom: 0,
-                      right: -13,
-                      child: _sparkle(0.35, 7.sp),
-                    ),
-                    Positioned(top: -3, left: -9, child: _sparkle(0.68, 7.sp)),
-                  ],
+              TextSpan(text: widget.before),
+              TextSpan(
+                text: widget.accent,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w700,
+                  color: widget.color,
+                  height: 1.35,
                 ),
               ),
-              if (widget.after.isNotEmpty) TextSpan(text: widget.after),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.top,
+                child: Padding(
+                  padding: EdgeInsets.only(left: 1.w),
+                  child: _sparkle(0, 10.sp),
+                ),
+              ),
+              TextSpan(text: widget.after),
             ],
           ),
         ),
