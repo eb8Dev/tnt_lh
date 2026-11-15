@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -63,6 +64,10 @@ const _instructionChips = [
 class _BagScreenState extends ConsumerState<BagScreen> {
   String? _store;
 
+  /// The line just taken out, kept for a few seconds so it can be put back.
+  CartItem? _removed;
+  Timer? _undoTimer;
+
   final Map<String, _StorePricing> _pricing = {};
   bool _pricingFailed = false;
 
@@ -88,6 +93,7 @@ class _BagScreenState extends ConsumerState<BagScreen> {
 
   @override
   void dispose() {
+    _undoTimer?.cancel();
     _noteController.dispose();
     _altPhoneController.dispose();
     super.dispose();
@@ -144,6 +150,36 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       return; // cartErrorProvider has already said why
     }
     _couponNeedsRecheck();
+    if (!mounted) return;
+    // An undo strip takes the line's place for a few seconds.
+    _undoTimer?.cancel();
+    setState(() => _removed = item);
+    _undoTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted) setState(() => _removed = null);
+    });
+  }
+
+  void _undoRemove() {
+    final item = _removed;
+    if (item == null) return;
+    HapticFeedback.selectionClick();
+    _undoTimer?.cancel();
+    setState(() => _removed = null);
+    ref
+        .read(cartProvider.notifier)
+        .addToCart(
+          product: item.product,
+          quantity: item.quantity,
+          customization: item.customization,
+        )
+        .catchError((_) {});
+    _couponNeedsRecheck();
+  }
+
+  Widget? _undoStrip() {
+    final r = _removed;
+    if (r == null || r.brand != _store) return null;
+    return _UndoStrip(name: r.product.name, onUndo: _undoRemove);
   }
 
   /// The discount was worked out on the old item total; it may no longer hold
@@ -377,7 +413,23 @@ class _BagScreenState extends ConsumerState<BagScreen> {
             ],
           ),
           body: items.isEmpty
-              ? _EmptyBag(onBrowse: () => Navigator.pop(context))
+              ? Column(
+                  children: [
+                    if (_undoStrip() case final strip?)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          Space.md.w,
+                          Space.xs.h,
+                          Space.md.w,
+                          0,
+                        ),
+                        child: strip,
+                      ),
+                    Expanded(
+                      child: _EmptyBag(onBrowse: () => Navigator.pop(context)),
+                    ),
+                  ],
+                )
               : _buildBody(items, stores, all),
           bottomNavigationBar: items.isEmpty ? null : _buildFooter(items),
         ),
@@ -430,6 +482,10 @@ class _BagScreenState extends ConsumerState<BagScreen> {
                   ),
                   if (item != items.last)
                     Divider(height: Space.lg.h, color: Colors.black12),
+                ],
+                if (_undoStrip() case final strip?) ...[
+                  SizedBox(height: Space.sm.h),
+                  strip,
                 ],
                 Divider(height: Space.lg.h, color: Colors.black12),
                 _LinkRow(
@@ -863,6 +919,65 @@ class _LinkRow extends StatelessWidget {
               ),
             ),
             ?trailing,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Removed X  Undo", in the list where the item was, for a few seconds.
+class _UndoStrip extends StatelessWidget {
+  final String name;
+  final VoidCallback onUndo;
+  const _UndoStrip({required this.name, required this.onUndo});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, 6 * (1 - t)),
+          child: child,
+        ),
+      ),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(12.w, 6.h, 4.w, 6.h),
+        decoration: BoxDecoration(
+          color: primary.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Row(
+          children: [
+            Icon(PhosphorIcons.trash(), size: 16.sp, color: Colors.black45),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                'Removed $name',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 13.sp,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: onUndo,
+              child: Text(
+                'Undo',
+                style: GoogleFonts.poppins(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  color: primary,
+                ),
+              ),
+            ),
           ],
         ),
       ),

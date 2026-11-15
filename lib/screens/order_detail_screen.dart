@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/order_model.dart';
 import 'package:tnt_lh/services/order_service.dart';
 import 'package:tnt_lh/screens/store_home.dart';
+import 'package:tnt_lh/screens/order_placed_screen.dart';
 import 'package:tnt_lh/services/review_service.dart';
 import 'package:tnt_lh/components/live_tracking_panel.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
@@ -324,24 +325,30 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         brand: order.brand,
       );
       if (!mounted) return;
-      final newId = result['data']?['_id'] ?? result['data']?['id'];
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: 'Order placed!',
-      );
-      if (newId != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OrderDetailScreen(
-              orderId: newId.toString(),
-              brand: order.brand,
-            ),
-          ),
-        );
-      } else {
+      HapticFeedback.heavyImpact();
+      // The same "order placed" moment as checkout, then on to the new order.
+      // This read only '_id', but the server sends 'orderId', so nothing
+      // happened on screen after the sheet closed.
+      final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? {};
+      final newId =
+          (data['orderId'] ?? data['_id'] ?? data['id'])?.toString() ?? '';
+      if (newId.isEmpty) {
         _reload();
+        return;
       }
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 350),
+          pageBuilder: (_, _, _) => OrderPlacedScreen(
+            orderId: newId,
+            orderNumber: data['orderNumber']?.toString(),
+            store: order.brand,
+          ),
+          transitionsBuilder: (_, anim, _, child) =>
+              FadeTransition(opacity: anim, child: child),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       SnackBarUtils.showThemedSnackBar(
