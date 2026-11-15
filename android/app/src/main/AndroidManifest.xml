@@ -36,6 +36,11 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDHqos-W9V4xEohQJUmViexhuZ1eSX_vls"/>
+        <!-- Pushes without a channel of their own land in "Order updates"
+             (created in NotificationService.initialize), not a silent default. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

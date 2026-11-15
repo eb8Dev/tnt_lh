@@ -9,6 +9,13 @@ import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/core/navigation.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
 
+const _channel = AndroidNotificationChannel(
+  'high_importance_channel',
+  'Order updates',
+  description: 'Your order being accepted, picked up and delivered',
+  importance: Importance.max,
+);
+
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
@@ -40,6 +47,14 @@ class NotificationService {
         _openFromPayload(details.payload);
       },
     );
+
+    // The server sends every push to this channel. It was never created, so
+    // Android filed them under a default channel: no pop-up, often no sound.
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(_channel);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       // Order updates also arrive over the live connection, which already shows
@@ -117,10 +132,17 @@ class NotificationService {
         messaging.onTokenRefresh.listen(_registerCurrentUser);
       }
 
-      if (defaultTargetPlatform == TargetPlatform.iOS &&
-          await messaging.getAPNSToken() == null) {
-        debugPrint('Customer FCM: no APNs token yet; will register on refresh');
-        return;
+      // On iOS the FCM token needs Apple's push token first, which can take
+      // a few seconds after the permission prompt. Giving up at once meant
+      // a phone could go a whole session without order pushes.
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        for (var i = 0; i < 6 && await messaging.getAPNSToken() == null; i++) {
+          await Future<void>.delayed(const Duration(seconds: 3));
+        }
+        if (await messaging.getAPNSToken() == null) {
+          debugPrint('Customer FCM: no APNs token; will register on refresh');
+          return;
+        }
       }
 
       final fcmToken = await messaging.getToken();
@@ -136,13 +158,14 @@ class NotificationService {
   }
 
   static Future<void> _showLocalNotification(RemoteMessage message) async {
-    const androidDetails = AndroidNotificationDetails(
-      'customer_high_importance_channel',
-      'Customer High Importance Notifications',
+    final androidDetails = AndroidNotificationDetails(
+      _channel.id,
+      _channel.name,
+      channelDescription: _channel.description,
       importance: Importance.max,
       priority: Priority.high,
     );
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
