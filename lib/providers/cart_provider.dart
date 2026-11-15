@@ -91,6 +91,19 @@ class CartNotifier extends AsyncNotifier<Cart> {
   /// snapped back to 1.
   int _pendingWrites = 0;
 
+  /// Cart changes go to the server one at a time, in the order they were
+  /// tapped. Sent in parallel they could arrive out of order: - to zero and
+  /// then + again meant the add reached the server first, joined the old
+  /// line, and the remove then deleted that line, so the next quantity change
+  /// failed with "That item is no longer in your bag".
+  Future<void> _tail = Future.value();
+
+  Future<T> _inOrder<T>(Future<T> Function() op) {
+    final result = _tail.then((_) => op());
+    _tail = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
   bool get _settling =>
       _writeTimers.isNotEmpty || _inFlightAdds.isNotEmpty || _pendingWrites > 0;
 
@@ -242,11 +255,13 @@ class CartNotifier extends AsyncNotifier<Cart> {
       _localEdits++;
     }
 
-    final request = CartService.addToCart(
-      productId: product.id,
-      quantity: quantity,
-      brand: product.brand,
-      customization: customization,
+    final request = _inOrder(
+      () => CartService.addToCart(
+        productId: product.id,
+        quantity: quantity,
+        brand: product.brand,
+        customization: customization,
+      ),
     );
     final key = _lineKey(product.id, customization);
     _inFlightAdds[key] = request.then((_) {}).catchError((_) {});
@@ -279,11 +294,16 @@ class CartNotifier extends AsyncNotifier<Cart> {
         .firstWhere((i) => i.id == itemId, orElse: () => previous.items.first)
         .brand;
 
-    _debounceWrite(itemId, () async {
-      final realId = await _resolveItemId(itemId);
-      if (realId == null) throw Exception('That item is no longer in your bag');
-      await CartService.updateItemQuantity(realId, quantity, brand: brand);
-    });
+    _debounceWrite(
+      itemId,
+      () => _inOrder(() async {
+        final realId = await _resolveItemId(itemId);
+        if (realId == null) {
+          throw Exception('That item is no longer in your bag');
+        }
+        await CartService.updateItemQuantity(realId, quantity, brand: brand);
+      }),
+    );
   }
 
   Future<void> removeItem(String itemId, {String? brand}) async {
@@ -303,10 +323,12 @@ class CartNotifier extends AsyncNotifier<Cart> {
 
     _pendingWrites++;
     try {
-      final realId = await _resolveItemId(itemId);
-      if (realId != null) {
-        await CartService.removeItem(realId, brand: targetBrand);
-      }
+      await _inOrder(() async {
+        final realId = await _resolveItemId(itemId);
+        if (realId != null) {
+          await CartService.removeItem(realId, brand: targetBrand);
+        }
+      });
     } catch (e) {
       state = AsyncData(previous); // put it back
       _reportError(e);
