@@ -1,7 +1,8 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:io';
-import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/providers/wishlist_provider.dart';
+import 'package:tnt_lh/screens/wishlist_screen.dart';
 import 'package:tnt_lh/providers/address_provider.dart';
 import 'package:tnt_lh/screens/address_book_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -246,8 +247,21 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
 
     final you = <Widget>[
       _buildMembershipCard(user, isLittleH),
+      // The fields only while editing: shown all the time, they looked
+      // editable when they weren't. The header already shows name and email.
+      AnimatedSize(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: _isEditing
+            ? Padding(
+                padding: EdgeInsets.only(top: Space.sm.h),
+                child: _buildDetailsSection(authState),
+              )
+            : const SizedBox(width: double.infinity),
+      ),
       Gap(Space.sm),
-      _buildDetailsSection(authState),
+      _buildQuickTiles(),
     ];
     final settings = <Widget>[
       _buildAddressSection(),
@@ -305,180 +319,208 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     );
   }
 
-  /// The header reads like a café loyalty card rather than a settings page —
-  /// warm brand gradient, the avatar sitting on it, and the handful of facts
-  /// that matter (who you are, how we reach you).
+  /// Who you are, at a glance: photo (tap to change), name, phone and email,
+  /// and "Edit profile". Replaces a large brand-coloured card that cut long
+  /// names off and took a third of the screen.
   Widget _buildMembershipCard(User? user, bool isLittleH) {
     final primary = Theme.of(context).colorScheme.primary;
-
+    final name = user?.name?.isNotEmpty == true
+        ? user!.name!
+        : 'Complete your profile';
     return Container(
       padding: EdgeInsets.all(Space.md.r),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
-        gradient: LinearGradient(
-          colors: [primary, primary.withValues(alpha: 0.78)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: primary.withValues(alpha: 0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              PhosphorIcon(
-                isLittleH
-                    ? PhosphorIcons.bread(PhosphorIconsStyle.fill)
-                    : PhosphorIcons.coffee(PhosphorIconsStyle.fill),
-                color: Colors.white.withValues(alpha: 0.9),
-                size: 18.sp,
-              ),
-              GapW(Space.xs),
-              Text(
-                (isLittleH ? Brands.bakeryName : Brands.cafeName).toUpperCase(),
-                style: GoogleFonts.poppins(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+          GestureDetector(
+            onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  radius: 30.r,
+                  backgroundColor: primary.withValues(alpha: 0.10),
+                  backgroundImage: user?.profileImage != null
+                      ? NetworkImage(user!.profileImage!)
+                      : null,
+                  child: user?.profileImage == null
+                      ? Text(
+                          name.trim().isEmpty
+                              ? '?'
+                              : name.trim()[0].toUpperCase(),
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.w700,
+                            color: primary,
+                          ),
+                        )
+                      : null,
                 ),
-              ),
-              const Spacer(),
-              TactileButton(
-                onTap: () => _isEditing ? _cancelEditing() : _setEditing(true),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: Space.sm.w,
-                    vertical: 6.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      PhosphorIcon(
-                        _isEditing
-                            ? PhosphorIcons.x()
-                            : PhosphorIcons.pencilSimple(),
-                        color: Colors.white,
-                        size: 13.sp,
-                      ),
-                      GapW(Space.xxs),
-                      Text(
-                        _isEditing ? 'Cancel' : 'Edit',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Gap(Space.ml),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
-                child: Stack(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(3.r),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.35),
-                      ),
-                      child: CircleAvatar(
-                        radius: 34.r,
-                        backgroundColor: Colors.white,
-                        backgroundImage: user?.profileImage != null
-                            ? NetworkImage(user!.profileImage!)
-                            : null,
-                        child: user?.profileImage == null
-                            ? PhosphorIcon(
-                                PhosphorIcons.user(PhosphorIconsStyle.duotone),
-                                size: 30.sp,
-                                color: primary.withValues(alpha: 0.5),
-                              )
-                            : null,
-                      ),
+                Positioned(
+                  bottom: -2,
+                  right: -2,
+                  child: Container(
+                    padding: EdgeInsets.all(4.r),
+                    decoration: BoxDecoration(
+                      color: primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: EdgeInsets.all(5.r),
-                        decoration: BoxDecoration(
-                          color: Colors.black87,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5.w),
-                        ),
-                        child: _uploadingAvatar
-                            ? SizedBox(
-                                height: 11.sp,
-                                width: 11.sp,
-                                child: const CircularProgressIndicator.adaptive(
-                                  strokeWidth: 1.6,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : PhosphorIcon(
-                                PhosphorIcons.camera(PhosphorIconsStyle.fill),
-                                color: Colors.white,
-                                size: 11.sp,
+                    child: _uploadingAvatar
+                        ? SizedBox(
+                            height: 10.sp,
+                            width: 10.sp,
+                            child: const CircularProgressIndicator.adaptive(
+                              strokeWidth: 1.6,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
-                      ),
-                    ),
-                  ],
+                            ),
+                          )
+                        : PhosphorIcon(
+                            PhosphorIcons.camera(PhosphorIconsStyle.fill),
+                            color: Colors.white,
+                            size: 10.sp,
+                          ),
+                  ),
                 ),
-              ),
-              GapW(Space.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.name?.isNotEmpty == true
-                          ? user!.name!
-                          : 'Complete your profile',
-                      // Two lines: a full name was cut to "Bhanuprakash Een…".
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 17.sp,
-                        height: 1.25,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Gap(Space.xxs),
-                    Text(
-                      user?.mobile ?? '',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                  ],
+              ],
+            ),
+          ),
+          GapW(Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
                 ),
-              ),
-            ],
+                if ((user?.mobile ?? '').isNotEmpty)
+                  Text(
+                    '+91 ${user!.mobile}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.black54,
+                    ),
+                  ),
+                if ((user?.email ?? '').isNotEmpty)
+                  Text(
+                    user!.email!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.black45,
+                    ),
+                  ),
+                SizedBox(height: 4.h),
+                GestureDetector(
+                  onTap: () =>
+                      _isEditing ? _cancelEditing() : _setEditing(true),
+                  child: Text(
+                    _isEditing ? 'Cancel editing' : 'Edit profile',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Wishlist, addresses and help, one tap each.
+  Widget _buildQuickTiles() {
+    final primary = Theme.of(context).colorScheme.primary;
+    final wishCount = ref.watch(wishlistProvider).value?.length ?? 0;
+    final addrCount =
+        ref.watch(addressBookProvider).value?.addresses.length ?? 0;
+    Widget tile(IconData icon, String label, String? sub, VoidCallback onTap) =>
+        Expanded(
+          child: Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14.r),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14.r),
+              onTap: onTap,
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(icon, size: 22.sp, color: primary),
+                    SizedBox(height: 4.h),
+                    Text(
+                      label,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (sub != null)
+                      Text(
+                        sub,
+                        style: GoogleFonts.poppins(
+                          fontSize: 10.sp,
+                          color: Colors.black45,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+    return Row(
+      children: [
+        tile(
+          PhosphorIcons.heart(PhosphorIconsStyle.duotone),
+          'Wishlist',
+          wishCount == 0 ? null : '$wishCount saved',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const WishlistScreen()),
+          ),
+        ),
+        GapW(Space.sm),
+        tile(
+          PhosphorIcons.mapPin(PhosphorIconsStyle.duotone),
+          'Addresses',
+          addrCount == 0 ? null : '$addrCount saved',
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddressBookScreen()),
+          ),
+        ),
+        GapW(Space.sm),
+        tile(
+          PhosphorIcons.chatCircleDots(PhosphorIconsStyle.duotone),
+          'Help',
+          null,
+          _showHelpSupport,
+        ),
+      ],
     );
   }
 
