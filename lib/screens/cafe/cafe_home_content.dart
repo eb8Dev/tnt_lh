@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:tnt_lh/widgets/motion.dart';
+import 'package:tnt_lh/widgets/your_usual.dart';
 import 'package:tnt_lh/providers/greeting_provider.dart';
 import 'package:flutter/rendering.dart';
 import 'package:tnt_lh/widgets/promotions.dart';
@@ -492,6 +493,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                             SliverToBoxAdapter(
                               child: _buildGreeting(isLittleH),
                             ),
+                            SliverToBoxAdapter(
+                              child: YourUsualCard(brand: widget.brand),
+                            ),
                             // Banners, announcements and offers the store has
                             // published (nothing shows when there are none).
                             SliverToBoxAdapter(
@@ -580,6 +584,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                         ),
                       ),
                       SliverToBoxAdapter(child: _buildGreeting(isLittleH)),
+                      SliverToBoxAdapter(
+                        child: YourUsualCard(brand: widget.brand),
+                      ),
                       // Banners, announcements and offers the store has
                       // published (nothing shows when there are none).
                       SliverToBoxAdapter(
