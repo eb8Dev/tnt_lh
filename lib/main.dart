@@ -15,12 +15,10 @@ import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/connectivity_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
 import 'package:tnt_lh/core/navigation.dart';
-import 'package:tnt_lh/utils/formatters.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
 import 'package:tnt_lh/services/notification_service.dart';
 import 'package:tnt_lh/screens/store_home.dart';
-import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/loading_indicator.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -105,19 +103,9 @@ class GlobalListener extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen<SocketEvent?>(socketEventsProvider, (previous, next) {
       if (next != null) {
-        if (next.name == 'order:status-updated') {
-          // Was the raw code: "Order is OUT_FOR_DELIVERY".
-          final status = next.data is Map
-              ? next.data['status']?.toString()
-              : null;
-          SnackBarUtils.showThemedSnackBar(
-            context: context,
-            message: status == null
-                ? 'Your order was updated'
-                : 'Order update: ${AppFormatters.statusLabel(status)}',
-          );
-        }
-
+        // Order changes show on the screens themselves (the order, the
+        // active-order bar, the orders list) and as a push when the app is
+        // closed; no pop-up on top of them.
         if (next.name == 'rider:location-update') {
           ref.read(riderTrackingProvider.notifier).updateWithEvent(next);
         }

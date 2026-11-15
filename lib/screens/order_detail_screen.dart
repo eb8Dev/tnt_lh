@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:tnt_lh/providers/order_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/brand.dart';
@@ -66,7 +67,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       OrderService.getOrderById(widget.orderId, brand: widget.brand);
 
   /// Re-issues the request so a failed load can recover without restarting.
-  void _reload() => setState(() => _orderFuture = _fetchOrder());
+  // Braces matter: `setState(() => _orderFuture = ...)` hands setState the
+  // Future, which Flutter rejects with an error, so the screen never
+  // refreshed (after a cancel, a live status change or a pull to refresh).
+  void _reload() {
+    if (!mounted) return;
+    setState(() {
+      _orderFuture = _fetchOrder();
+    });
+  }
 
   /// This screen used to load once and never again: the store accepted the
   /// order, the rider picked it up, and the status and timeline here stayed
@@ -180,49 +189,84 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
+  static const _cancelReasons = [
+    'Ordered by mistake',
+    'Want to change the items',
+    'Wrong delivery address',
+    'Ordered from the wrong store',
+    'It is taking too long',
+    'Something else',
+  ];
+
+  /// Asks why, then cancels. Picking a reason is the confirmation; closing
+  /// the sheet keeps the order.
   Future<void> _cancelOrder(Order order) async {
-    final yes = await showAdaptiveDialog<bool>(
+    final reason = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog.adaptive(
-        title: const Text('Cancel this order?'),
-        content: const Text(
-          "The store hasn't accepted it yet, so it can still be cancelled.",
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Why are you cancelling?',
+                style: GoogleFonts.poppins(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                "The store hasn't accepted it yet, so it can still be cancelled.",
+                style: GoogleFonts.poppins(
+                  fontSize: 12.5.sp,
+                  color: Colors.black54,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              for (final r in _cancelReasons)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(r, style: GoogleFonts.poppins(fontSize: 14.sp)),
+                  trailing: Icon(
+                    PhosphorIcons.caretRight(),
+                    size: 16.sp,
+                    color: Colors.black38,
+                  ),
+                  onTap: () => Navigator.pop(ctx, r),
+                ),
+              SizedBox(height: 6.h),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Keep my order'),
+                ),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep order'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Cancel order'),
-          ),
-        ],
       ),
     );
-    if (yes != true || !mounted) return;
+    if (reason == null || !mounted) return;
+    HapticFeedback.mediumImpact();
     try {
       await OrderService.cancelOrder(
         orderId: order.id,
-        reason: 'Cancelled by customer',
+        reason: reason,
         brand: order.brand,
       );
-      if (!mounted) return;
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: 'Order cancelled.',
-      );
-      _reload();
-    } catch (e) {
-      if (!mounted) return;
-      // Most likely the store accepted it a moment ago.
-      _reload();
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: e.toString().replaceFirst('Exception: ', ''),
-      );
+    } catch (_) {
+      // Most likely the store accepted it a moment ago; the refresh below
+      // shows where the order actually stands.
     }
+    _reload();
+    ref.invalidate(orderProvider);
   }
 
   Future<void> _editAddress(Order order) async {
