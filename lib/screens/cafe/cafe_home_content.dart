@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:tnt_lh/widgets/motion.dart';
+import 'package:tnt_lh/providers/greeting_provider.dart';
 import 'package:flutter/rendering.dart';
 import 'package:tnt_lh/widgets/promotions.dart';
 import 'package:tnt_lh/providers/promotion_provider.dart';
@@ -627,17 +628,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// A slim, one-line time-based greeting. Replaces the old full-bleed gradient
   /// hero, which ate ~40% of a small screen before a single product was
   /// visible. Scrolls away with the content.
-  /// "Good morning," with the store's own most-ordered dish as the accent
-  /// ("Good morning, Iced Caramel Latte"); tapping it opens the dish. A stock
-  /// word ("chai?") said nothing about this cafe. Falls back to a plain
-  /// greeting until there are orders to go on.
+  /// A line in which the store's bestseller flirts with the customer
+  /// ("Afternoon slump? *Paneer Grilled Burger* has a crush on you"), from
+  /// the lines set in the admin panel or the built-in ones. Tapping the dish
+  /// opens it.
   Widget _buildGreeting(bool isLittleH) {
-    final hour = DateTime.now().hour;
-    final lead = hour < 12
-        ? 'Good morning,'
-        : hour < 17
-        ? 'Good afternoon,'
-        : 'Good evening,';
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 6.h),
       child: Row(
@@ -648,13 +643,19 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 final top = ref
                     .watch(popularProductsProvider(widget.brand))
                     .value
-                    ?.where((p) => p.name.length <= 26)
-                    .firstOrNull;
+                    ?.firstOrNull;
+                final lines = ref
+                    .watch(greetingLinesProvider(widget.brand))
+                    .value;
+                if (lines == null) return SizedBox(height: 44.h);
+                final line = pickGreeting(lines, DateTime.now()).text;
+                final dish =
+                    top?.name ?? (isLittleH ? 'something sweet' : 'our coffee');
+                final i = line.indexOf('{dish}');
                 final greeting = SparkleGreeting(
-                  lead: lead,
-                  accent:
-                      top?.name ??
-                      (isLittleH ? 'baked fresh' : 'freshly brewed'),
+                  before: i < 0 ? '$line ' : line.substring(0, i),
+                  accent: dish,
+                  after: i < 0 ? '' : line.substring(i + 6),
                   subtitle: top != null
                       ? 'Most ordered at ${Brands.name(widget.brand)} today'
                       : (isLittleH
@@ -676,9 +677,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
               },
             ),
           ),
+          SizedBox(width: 8.w),
           // The store's own mark rather than a stock cake or cookie icon.
           SizedBox(
-            width: 52.w,
+            width: 48.w,
             height: 34.h,
             child: Opacity(
               opacity: 0.9,
@@ -1365,6 +1367,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     ref.invalidate(categoriesProvider(widget.brand));
     ref.invalidate(promotionsProvider(widget.brand));
     ref.invalidate(storeMenuProvider(widget.brand));
+    ref.invalidate(greetingLinesProvider(widget.brand));
     ref.invalidate(productsProvider(params));
     // Await the new fetch so the refresh spinner tracks real work.
     await ref.read(productsProvider(params).future);

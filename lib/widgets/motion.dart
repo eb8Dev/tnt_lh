@@ -223,32 +223,40 @@ class _RotatingHintState extends State<RotatingHint> {
         final text = widget.words.isEmpty
             ? widget.fallback
             : "Search '${widget.words[_i % widget.words.length]}'";
+        // Exactly one line tall, so the next hint can't show beneath the
+        // current one while it slides in.
         return ClipRect(
-          child: AnimatedSwitcher(
-            duration: reduceMotion(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 380),
-            transitionBuilder: (child, anim) {
-              final incoming = child.key == ValueKey(text);
-              return SlideTransition(
-                position:
-                    Tween(
-                      begin: Offset(0, incoming ? 1 : -1),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-                    ),
-                child: FadeTransition(opacity: anim, child: child),
-              );
-            },
-            child: Align(
-              key: ValueKey(text),
-              alignment: Alignment.centerLeft,
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: widget.style,
+          child: SizedBox(
+            height: (widget.style.fontSize ?? 14) * 1.45,
+            child: AnimatedSwitcher(
+              duration: reduceMotion(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 380),
+              transitionBuilder: (child, anim) {
+                final incoming = child.key == ValueKey(text);
+                return SlideTransition(
+                  position:
+                      Tween(
+                        begin: Offset(0, incoming ? 1 : -1),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: anim,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      ),
+                  child: FadeTransition(opacity: anim, child: child),
+                );
+              },
+              child: Align(
+                key: ValueKey(text),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: widget.style,
+                ),
               ),
             ),
           ),
@@ -258,18 +266,21 @@ class _RotatingHintState extends State<RotatingHint> {
   }
 }
 
-/// A greeting with an accent word that has a few sparkles twinkling around
-/// it, like Swiggy's "Welcome, foodie!".
+/// A greeting line with the dish in it, the dish in the brand serif with a
+/// few sparkles twinkling around it: "Afternoon slump? *Paneer Grilled
+/// Burger* has a crush on you".
 class SparkleGreeting extends StatefulWidget {
-  final String lead;
+  final String before;
   final String accent;
+  final String after;
   final String subtitle;
   final Color color;
 
   const SparkleGreeting({
     super.key,
-    required this.lead,
+    required this.before,
     required this.accent,
+    required this.after,
     required this.subtitle,
     required this.color,
   });
@@ -305,7 +316,6 @@ class _SparkleGreetingState extends State<SparkleGreeting>
     animation: _c,
     builder: (_, _) {
       final t = (_c.value + phase) % 1.0;
-      // Off most of the time; a quick twinkle in its own slot.
       final v = t < 0.3 ? math.sin(t / 0.3 * math.pi) : 0.0;
       return Opacity(
         opacity: v,
@@ -326,42 +336,53 @@ class _SparkleGreetingState extends State<SparkleGreeting>
 
   @override
   Widget build(BuildContext context) {
+    final plain = GoogleFonts.poppins(
+      fontSize: 16.sp,
+      fontWeight: FontWeight.w600,
+      color: Colors.black87,
+      height: 1.35,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          crossAxisAlignment: WrapCrossAlignment.end,
-          children: [
-            Text(
-              '${widget.lead} ',
-              style: GoogleFonts.poppins(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
-            ),
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Text(
-                  widget.accent,
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w700,
-                    color: widget.color,
-                  ),
+        Text.rich(
+          TextSpan(
+            style: plain,
+            children: [
+              if (widget.before.isNotEmpty) TextSpan(text: widget.before),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.baseline,
+                baseline: TextBaseline.alphabetic,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Text(
+                      widget.accent,
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: widget.color,
+                        height: 1.2,
+                      ),
+                    ),
+                    Positioned(top: -6, right: -10, child: _sparkle(0, 10.sp)),
+                    Positioned(
+                      bottom: 0,
+                      right: -13,
+                      child: _sparkle(0.35, 7.sp),
+                    ),
+                    Positioned(top: -3, left: -9, child: _sparkle(0.68, 7.sp)),
+                  ],
                 ),
-                Positioned(top: -6, right: -12, child: _sparkle(0, 11.sp)),
-                Positioned(bottom: 2, right: -16, child: _sparkle(0.35, 8.sp)),
-                Positioned(top: -2, left: -10, child: _sparkle(0.68, 7.sp)),
-              ],
-            ),
-          ],
+              ),
+              if (widget.after.isNotEmpty) TextSpan(text: widget.after),
+            ],
+          ),
         ),
         SizedBox(height: 2.h),
         Text(
           widget.subtitle,
-          style: GoogleFonts.poppins(fontSize: 12.5.sp, color: Colors.black38),
+          style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black38),
         ),
       ],
     );
