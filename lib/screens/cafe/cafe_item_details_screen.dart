@@ -2,6 +2,7 @@ import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/motion.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -131,22 +132,36 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               data: (list) => list.any((p) => p.id == widget.product.id),
               orElse: () => false,
             );
-        return TactileButton(
-          onTap: () => ref
-              .read(wishlistProvider.notifier)
-              .toggleFavorite(widget.product),
-          child: Container(
-            padding: EdgeInsets.all(10.r),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isFav
-                  ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
-                  : PhosphorIcons.heart(),
-              color: isFav ? Colors.redAccent : Colors.black,
-              size: 24.sp,
+        return Material(
+          color: Colors.white,
+          shape: const CircleBorder(),
+          child: IconButton(
+            tooltip: isFav ? 'Remove from wishlist' : 'Add to wishlist',
+            onPressed: () async {
+              HapticFeedback.selectionClick();
+              try {
+                await ref
+                    .read(wishlistProvider.notifier)
+                    .toggleFavorite(widget.product);
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Couldn't update your wishlist"),
+                    ),
+                  );
+                }
+              }
+            },
+            icon: PopOnActivate(
+              active: isFav,
+              child: Icon(
+                isFav
+                    ? PhosphorIcons.heart(PhosphorIconsStyle.fill)
+                    : PhosphorIcons.heart(),
+                color: isFav ? Colors.redAccent : Colors.black,
+                size: 22.sp,
+              ),
             ),
           ),
         );

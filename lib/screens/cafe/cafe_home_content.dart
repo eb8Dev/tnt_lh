@@ -627,30 +627,53 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// A slim, one-line time-based greeting. Replaces the old full-bleed gradient
   /// hero, which ate ~40% of a small screen before a single product was
   /// visible. Scrolls away with the content.
+  /// "Good morning," with the store's own most-ordered dish as the accent
+  /// ("Good morning, Iced Caramel Latte"); tapping it opens the dish. A stock
+  /// word ("chai?") said nothing about this cafe. Falls back to a plain
+  /// greeting until there are orders to go on.
   Widget _buildGreeting(bool isLittleH) {
     final hour = DateTime.now().hour;
-    // A lead and a script-style accent word, which gets the sparkles.
-    final (String lead, String accent) = hour < 12
-        ? (isLittleH
-              ? ('Fresh from the', 'oven')
-              : ('Good morning,', 'coffee?'))
+    final lead = hour < 12
+        ? 'Good morning,'
         : hour < 17
-        ? (isLittleH ? ('Time for a', 'treat') : ('Good afternoon,', 'chai?'))
-        : (isLittleH ? ('Evening', 'desserts') : ('Good evening,', 'unwind'));
-    final subtitle = isLittleH
-        ? "Handcrafted, baked fresh today"
-        : "Freshly brewed, just for you";
-
+        ? 'Good afternoon,'
+        : 'Good evening,';
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 6.h),
       child: Row(
         children: [
           Expanded(
-            child: SparkleGreeting(
-              lead: lead,
-              accent: accent,
-              subtitle: subtitle,
-              color: Theme.of(context).colorScheme.primary,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final top = ref
+                    .watch(popularProductsProvider(widget.brand))
+                    .value
+                    ?.where((p) => p.name.length <= 26)
+                    .firstOrNull;
+                final greeting = SparkleGreeting(
+                  lead: lead,
+                  accent:
+                      top?.name ??
+                      (isLittleH ? 'baked fresh' : 'freshly brewed'),
+                  subtitle: top != null
+                      ? 'Most ordered at ${Brands.name(widget.brand)} today'
+                      : (isLittleH
+                            ? 'Handcrafted, baked fresh today'
+                            : 'Freshly brewed, just for you'),
+                  color: Theme.of(context).colorScheme.primary,
+                );
+                if (top == null) return greeting;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailsScreen(product: top),
+                    ),
+                  ),
+                  child: greeting,
+                );
+              },
             ),
           ),
           // The store's own mark rather than a stock cake or cookie icon.

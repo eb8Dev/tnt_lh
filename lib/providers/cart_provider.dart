@@ -85,7 +85,14 @@ class CartNotifier extends AsyncNotifier<Cart> {
   /// Bumped on every local (optimistic) change.
   int _localEdits = 0;
 
-  bool get _settling => _writeTimers.isNotEmpty || _inFlightAdds.isNotEmpty;
+  /// Quantity writes and removals on their way to the server. A refresh that
+  /// lands while one is pending carries the cart from before it: tap + then
+  /// -, and the item flashed back to 1 before going to 0; tap + twice, and it
+  /// snapped back to 1.
+  int _pendingWrites = 0;
+
+  bool get _settling =>
+      _writeTimers.isNotEmpty || _inFlightAdds.isNotEmpty || _pendingWrites > 0;
 
   Future<void> fetchCart({bool background = false}) async {
     if (!background) state = const AsyncValue.loading();
@@ -126,10 +133,13 @@ class CartNotifier extends AsyncNotifier<Cart> {
     _writeTimers[key] = Timer(const Duration(milliseconds: 350), () async {
       _writeTimers.remove(key);
       final rollback = state.value;
+      _pendingWrites++;
       try {
         await write();
+        _pendingWrites--;
         _scheduleReconcile();
       } catch (e) {
+        _pendingWrites--;
         _reportError(e);
         // The optimistic state is now a lie; take the server's word for it.
         if (rollback != null) await fetchCart(background: true);
@@ -291,6 +301,7 @@ class CartNotifier extends AsyncNotifier<Cart> {
     // A pending debounced quantity write for this item is now meaningless.
     _writeTimers.remove(itemId)?.cancel();
 
+    _pendingWrites++;
     try {
       final realId = await _resolveItemId(itemId);
       if (realId != null) {
@@ -300,6 +311,8 @@ class CartNotifier extends AsyncNotifier<Cart> {
       state = AsyncData(previous); // put it back
       _reportError(e);
       rethrow;
+    } finally {
+      _pendingWrites--;
     }
 
     _scheduleReconcile();
