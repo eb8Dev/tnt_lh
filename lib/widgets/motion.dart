@@ -387,3 +387,98 @@ class _SparkleGreetingState extends State<SparkleGreeting>
     );
   }
 }
+
+/// "LIVE" with a dot that sends out a soft ring every couple of seconds, for
+/// offers running right now.
+class LiveBadge extends StatefulWidget {
+  final Color color;
+  final bool onDark;
+  const LiveBadge({super.key, required this.color, this.onDark = false});
+
+  @override
+  State<LiveBadge> createState() => _LiveBadgeState();
+}
+
+class _LiveBadgeState extends State<LiveBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1800),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (reduceMotion(context)) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = widget.onDark ? Colors.white : widget.color;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: widget.onDark
+            ? Colors.black.withValues(alpha: 0.35)
+            : widget.color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 10.r,
+            height: 10.r,
+            child: AnimatedBuilder(
+              animation: _c,
+              builder: (_, _) {
+                final t = Curves.easeOut.transform(_c.value);
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 10.r * t,
+                      height: 10.r * t,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: fg.withValues(alpha: 0.45 * (1 - t)),
+                      ),
+                    ),
+                    Container(
+                      width: 5.r,
+                      height: 5.r,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: fg,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            'LIVE',
+            style: GoogleFonts.poppins(
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

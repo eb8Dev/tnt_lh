@@ -18,6 +18,7 @@ import 'package:tnt_lh/models/promotion_model.dart';
 import 'package:tnt_lh/providers/promotion_provider.dart';
 import 'package:tnt_lh/screens/cafe/cafe_item_details_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:tnt_lh/widgets/motion.dart';
 
 /// Everything the store is promoting, at the top of its menu: an announcement
 /// strip, a swipeable banner carousel and a row of offer cards. Each part
@@ -237,6 +238,18 @@ class _WiggleState extends State<_Wiggle> with SingleTickerProviderStateMixin {
   )..repeat();
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Still, if the phone asks for reduced motion.
+    if (reduceMotion(context)) {
+      _c.stop();
+      _c.value = 0.5;
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
   void dispose() {
     _c.dispose();
     super.dispose();
@@ -409,6 +422,14 @@ class _Banner extends StatelessWidget {
               errorWidget: (_, _, _) =>
                   ColoredBox(color: promo.color ?? Colors.black12),
             ),
+            Positioned(
+              top: 10,
+              left: 10,
+              child: LiveBadge(
+                color: promo.color ?? Colors.white,
+                onDark: true,
+              ),
+            ),
             if (hasText)
               DecoratedBox(
                 decoration: BoxDecoration(
@@ -533,10 +554,12 @@ class _OfferRow extends StatelessWidget {
                         color: primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
-                      child: Icon(
-                        PhosphorIcons.sealPercent(PhosphorIconsStyle.fill),
-                        color: primary,
-                        size: 22.sp,
+                      child: _Wiggle(
+                        child: Icon(
+                          PhosphorIcons.sealPercent(PhosphorIconsStyle.fill),
+                          color: primary,
+                          size: 22.sp,
+                        ),
                       ),
                     ),
                     GapW(Space.sm),
@@ -545,14 +568,22 @@ class _OfferRow extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            o.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  o.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 6.w),
+                              LiveBadge(color: primary),
+                            ],
                           ),
                           Text(
                             o.action == PromoAction.coupon
