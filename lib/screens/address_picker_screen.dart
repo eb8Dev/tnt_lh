@@ -2,6 +2,7 @@ import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:tnt_lh/services/places_service.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -243,7 +244,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
 
   void _snack(String msg) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      noticeSheet(context, message: msg);
     }
   }
 

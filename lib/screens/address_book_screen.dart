@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -29,32 +30,21 @@ class AddressBookScreen extends ConsumerWidget {
     WidgetRef ref,
     SavedAddress a,
   ) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete this address?'),
-        content: Text(a.fullText),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await confirmSheet(
+      context,
+      title: 'Delete this address?',
+      message: a.fullText,
+      confirmLabel: 'Delete address',
+      cancelLabel: 'Keep it',
+      destructive: true,
+      icon: PhosphorIcons.trash(),
     );
-    if (ok != true) return;
+    if (!ok) return;
     try {
       await ref.read(addressBookProvider.notifier).delete(a.id);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      noticeSheet(context, message: errorText(e));
     }
   }
 

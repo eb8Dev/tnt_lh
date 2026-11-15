@@ -1,5 +1,6 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:tnt_lh/providers/order_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -305,27 +306,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Future<void> _reorder(Order order) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Order again?'),
-        content: const Text(
-          'We\'ll place a new order with the same items to your last delivery '
-          'address, paid Cash on Delivery.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Place order'),
-          ),
-        ],
-      ),
+    final confirm = await confirmSheet(
+      context,
+      title: 'Order this again?',
+      message:
+          'The same items, delivered to your last address, paid cash on '
+          'delivery.',
+      confirmLabel: 'Place order',
+      cancelLabel: 'Not now',
+      icon: PhosphorIcons.arrowCounterClockwise(),
     );
-    if (confirm != true || !mounted) return;
+    if (!confirm || !mounted) return;
 
     try {
       final result = await OrderService.reorder(
@@ -406,9 +397,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       builder: (_) => _ReportIssueSheet(order: order),
     );
     if (submitted == true && mounted) {
-      SnackBarUtils.showThemedSnackBar(
-        context: context,
-        message: 'Reported. Our team will look into it.',
+      noticeSheet(
+        context,
+        isError: false,
+        title: 'Issue reported',
+        message: 'Our team will look into it and get back to you.',
       );
     }
   }

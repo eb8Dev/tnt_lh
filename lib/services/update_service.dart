@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:http/http.dart' as http;
 import 'package:in_app_update/in_app_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -56,16 +57,15 @@ class UpdateService {
       // it's ready we offer a one-tap restart to apply it.
       await InAppUpdate.startFlexibleUpdate();
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Update downloaded'),
-          duration: const Duration(seconds: 12),
-          action: SnackBarAction(
-            label: 'Restart',
-            onPressed: () => InAppUpdate.completeFlexibleUpdate(),
-          ),
-        ),
+      final restart = await confirmSheet(
+        context,
+        title: 'Update ready',
+        message: 'Restart the app now to use the new version.',
+        confirmLabel: 'Restart now',
+        cancelLabel: 'Later',
+        icon: Icons.system_update_alt_rounded,
       );
+      if (restart) await InAppUpdate.completeFlexibleUpdate();
     } else if (info.immediateUpdateAllowed) {
       await InAppUpdate.performImmediateUpdate();
     }
@@ -88,34 +88,22 @@ class UpdateService {
     if (storeVersion.isEmpty || !_isNewer(storeVersion, pkg.version)) return;
 
     if (!context.mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Update available'),
-        content: Text(
-          'Version $storeVersion is available on the App Store. '
-          'Update for the latest features and fixes.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Later'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (storeUrl.isNotEmpty) {
-                launchUrl(
-                  Uri.parse(storeUrl),
-                  mode: LaunchMode.externalApplication,
-                );
-              }
-            },
-            child: const Text('Update'),
-          ),
-        ],
-      ),
+    final update = await confirmSheet(
+      context,
+      title: 'A new version is here',
+      message:
+          'Version $storeVersion is on the App Store, with the latest '
+          'improvements and fixes.',
+      confirmLabel: 'Update',
+      cancelLabel: 'Later',
+      icon: Icons.system_update_alt_rounded,
     );
+    if (update && storeUrl.isNotEmpty) {
+      await launchUrl(
+        Uri.parse(storeUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    }
   }
 
   /// True when [store] is a higher dotted version than [current]

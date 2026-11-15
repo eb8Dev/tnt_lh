@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -152,9 +153,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       HapticFeedback.selectionClick();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't open your contacts")),
-      );
+      noticeSheet(context, message: "Couldn't open your contacts.");
     }
   }
 
@@ -211,12 +210,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-        ),
-      );
+      noticeSheet(context, message: errorText(e));
     }
   }
 

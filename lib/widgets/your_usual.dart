@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -69,12 +70,12 @@ class _YourUsualCardState extends ConsumerState<YourUsualCard> {
       _added = true;
     });
     if (skipped > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '$skipped ${skipped == 1 ? 'item isn\'t' : 'items aren\'t'} on the menu right now',
-          ),
-        ),
+      noticeSheet(
+        context,
+        isError: false,
+        title: 'Added to your bag',
+        message:
+            '$skipped ${skipped == 1 ? 'item isn\'t' : 'items aren\'t'} on the menu right now, so we left ${skipped == 1 ? 'it' : 'them'} out.',
       );
     }
     Future.delayed(const Duration(seconds: 2), () {

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -131,24 +132,23 @@ Future<void> openPromotion(
         );
       } catch (_) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("That item isn't available now")),
+          noticeSheet(
+            context,
+            title: 'Not available',
+            message: "That item isn't available right now.",
           );
         }
       }
     case PromoAction.coupon:
       await Clipboard.setData(ClipboardData(text: p.actionValue));
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              behavior: SnackBarBehavior.floating,
-              content: Text(
-                'Code ${p.actionValue} copied. Apply it in your bag.',
-              ),
-            ),
-          );
+        noticeSheet(
+          context,
+          isError: false,
+          title: 'Code ${p.actionValue} copied',
+          message: 'Apply it in your bag at checkout.',
+          buttonLabel: 'Got it',
+        );
       }
     case PromoAction.url:
       final uri = Uri.tryParse(p.actionValue);
@@ -663,52 +663,52 @@ Future<void> _maybeShowPopup(
     return; // can't remember it, so don't risk showing it every launch
   }
   if (!context.mounted) return;
-  await showGeneralDialog(
+  // A sheet rather than a pop-up over the menu: same picture, but it can be
+  // swiped away like everything else in the app.
+  await showModalBottomSheet<void>(
     context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Close',
-    barrierColor: Colors.black54,
-    transitionDuration: const Duration(milliseconds: 320),
-    transitionBuilder: (_, anim, _, child) => ScaleTransition(
-      scale: CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
-      child: FadeTransition(opacity: anim, child: child),
+    useRootNavigator: true,
+    showDragHandle: true,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
     ),
-    pageBuilder: (ctx, _, _) => Center(
+    builder: (ctx) => SafeArea(
+      top: false,
       child: Padding(
-        padding: EdgeInsets.all(28.r),
-        child: Material(
-          color: Colors.transparent,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              GestureDetector(
-                onTap: () {
+        padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(ctx).height * 0.6,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: CachedNetworkImage(
+                  imageUrl: p.imageUrl,
+                  fit: BoxFit.contain,
+                  errorWidget: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+            SizedBox(height: 14.h),
+            if (p.action != PromoAction.none)
+              SheetButton(
+                label: p.ctaLabel.isNotEmpty ? p.ctaLabel : 'Take a look',
+                onPressed: () {
                   Navigator.pop(ctx);
-                  if (p.action != PromoAction.none) onTap(p);
+                  onTap(p);
                 },
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18.r),
-                  child: CachedNetworkImage(
-                    imageUrl: p.imageUrl,
-                    fit: BoxFit.contain,
-                    errorWidget: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                ),
               ),
-              Positioned(
-                top: -12,
-                right: -12,
-                child: IconButton.filled(
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  icon: Icon(PhosphorIcons.x(), size: 16.sp),
-                ),
-              ),
-            ],
-          ),
+            SheetButton(
+              label: 'Maybe later',
+              primary: false,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
         ),
       ),
     ),

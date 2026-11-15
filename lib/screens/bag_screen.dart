@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -135,30 +136,14 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       return;
     }
 
-    // Taking the last one out removes it, with a way back.
-    final messenger = ScaffoldMessenger.of(context);
+    // Taking the last one out removes it; the line disappearing is the
+    // confirmation.
     try {
       await notifier.removeItem(item.id, brand: item.brand);
     } catch (_) {
       return; // cartErrorProvider has already said why
     }
     _couponNeedsRecheck();
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text('Removed ${item.product.name}'),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => notifier.addToCart(
-              product: item.product,
-              quantity: item.quantity,
-              customization: item.customization,
-            ),
-          ),
-        ),
-      );
   }
 
   /// The discount was worked out on the old item total; it may no longer hold
@@ -303,15 +288,11 @@ class _BagScreenState extends ConsumerState<BagScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _placing = false);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red.shade700,
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-          ),
-        );
+      noticeSheet(
+        context,
+        title: "Couldn't place your order",
+        message: errorText(e),
+      );
     }
   }
 
@@ -809,9 +790,7 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       await ref.read(cartProvider.notifier).clearCart(brand: store);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-      );
+      noticeSheet(context, message: errorText(e));
     }
   }
 }

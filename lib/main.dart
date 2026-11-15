@@ -2,6 +2,7 @@ import 'package:tnt_lh/core/responsive.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:tnt_lh/core/theme.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -289,15 +290,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     // Show the onboarding flow but with the error surfaced so it isn't silent.
     if (authState.error != null && !authState.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final messenger = ScaffoldMessenger.maybeOf(context);
-        messenger?.showSnackBar(
-          SnackBar(
-            content: Text(authState.error!),
-            backgroundColor: Colors.red.shade400,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        final message = authState.error!;
         ref.read(authProvider.notifier).clearError();
+        if (context.mounted) noticeSheet(context, message: message);
       });
     }
 

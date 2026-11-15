@@ -1855,11 +1855,7 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
         ? customizations.join(", ")
         : null;
 
-    // Captured before popping — the sheet's context is gone afterwards.
-    final messenger = ScaffoldMessenger.of(context);
     final notifier = ref.read(cartProvider.notifier);
-    final productName = widget.product.name;
-
     // Close immediately. The cart updates optimistically (the bag icon hops),
     // so awaiting the network here just froze the sheet for a couple of seconds.
     HapticFeedback.lightImpact();
@@ -1872,20 +1868,8 @@ class _AddToCartSheetState extends ConsumerState<AddToCartSheet> {
           quantity: _quantity,
           customization: customization,
         )
-        .catchError((_) {
-          messenger.removeCurrentSnackBar();
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text("Couldn't add $productName. Please try again."),
-              backgroundColor: Colors.redAccent.shade400,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              margin: const EdgeInsets.all(20),
-            ),
-          );
-        });
+        // The cart's error listener already explains a failed add.
+        .catchError((_) {});
   }
 
   @override

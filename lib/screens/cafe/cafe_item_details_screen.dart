@@ -2,6 +2,7 @@ import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:tnt_lh/widgets/motion.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:flutter/services.dart';
@@ -145,10 +146,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                     .toggleFavorite(widget.product);
               } catch (_) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Couldn't update your wishlist"),
-                    ),
+                  noticeSheet(
+                    context,
+                    message: "Couldn't update your wishlist. Please try again.",
                   );
                 }
               }
@@ -526,9 +526,6 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                           );
                         }
 
-                        final messenger = ScaffoldMessenger.of(context);
-                        final productName = widget.product.name;
-
                         // Fire-and-reconcile: the cart updates optimistically, so don't
                         // make the user watch a spinner for a round-trip.
                         ref
@@ -540,22 +537,9 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
                                   ? customizations.join(", ")
                                   : null,
                             )
-                            .catchError((_) {
-                              messenger.removeCurrentSnackBar();
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    "Couldn't add $productName. Please try again.",
-                                  ),
-                                  backgroundColor: Colors.redAccent.shade400,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  margin: const EdgeInsets.all(20),
-                                ),
-                              );
-                            });
+                            // The cart's error listener already explains a
+                            // failed add (in a sheet), wherever the customer is.
+                            .catchError((_) {});
 
                         HapticFeedback.lightImpact();
                         Navigator.pop(context);

@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:tnt_lh/providers/wishlist_provider.dart';
 import 'package:tnt_lh/screens/wishlist_screen.dart';
 import 'package:tnt_lh/providers/address_provider.dart';
@@ -187,6 +188,15 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final sure = await confirmSheet(
+      context,
+      title: 'Log out?',
+      message: "You'll need your phone number and a code to sign in again.",
+      confirmLabel: 'Log out',
+      cancelLabel: 'Stay signed in',
+      icon: PhosphorIcons.signOut(),
+    );
+    if (!sure || !mounted) return;
     await ref.read(authProvider.notifier).logout();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -839,33 +849,19 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
   }
 
   Future<void> _confirmDeleteAccount() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          'Delete your account?',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        ),
-        content: Text(
+    final confirmed = await confirmSheet(
+      context,
+      title: 'Delete your account?',
+      message:
           'Your name, phone number, email, saved addresses and photo will be '
           'removed, and you will be signed out. This cannot be undone.\n\n'
           'Records of past orders are kept, without your profile details.',
-          style: GoogleFonts.poppins(fontSize: 13.sp, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep my account'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red.shade400),
-            child: const Text('Delete account'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete my account',
+      cancelLabel: 'Keep my account',
+      destructive: true,
+      icon: PhosphorIcons.userMinus(),
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     final refused = await ref.read(authProvider.notifier).deleteAccount();
     if (!mounted) return;
@@ -1030,9 +1026,11 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                         );
                         navigator.pop();
                         if (!mounted) return;
-                        SnackBarUtils.showThemedSnackBar(
-                          context: context,
-                          message: 'Message sent — we\'ll get back to you.',
+                        noticeSheet(
+                          context,
+                          isError: false,
+                          title: 'Message sent',
+                          message: "We'll get back to you soon.",
                         );
                       } catch (e) {
                         if (!mounted) return;

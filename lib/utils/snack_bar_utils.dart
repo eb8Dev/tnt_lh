@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
 
+/// Kept under its old name so every caller goes through one place. There are
+/// no snackbars any more: an error opens a short bottom sheet, and a success
+/// message shows nothing, because the screen itself already shows the result
+/// (the address changed, the photo changed, the order moved on).
 class SnackBarUtils {
   static void showThemedSnackBar({
     required BuildContext context,
@@ -9,59 +12,7 @@ class SnackBarUtils {
     bool isError = false,
     Duration duration = const Duration(seconds: 3),
   }) {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // Clear existing snackbars
-    scaffoldMessenger.removeCurrentSnackBar();
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: isError ? Colors.white24 : Colors.white24,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isError
-                    ? PhosphorIcons.warningCircle()
-                    : PhosphorIcons.checkCircle(PhosphorIconsStyle.duotone),
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: isError
-            ? Colors.redAccent.shade400
-            : Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(20),
-        elevation: 6,
-        persist: false,
-        duration: duration,
-        action: SnackBarAction(
-          label: 'Dismiss',
-          textColor: Colors.white,
-          onPressed: () {
-            scaffoldMessenger.hideCurrentSnackBar();
-          },
-        ),
-      ),
-    );
+    if (!isError || !context.mounted) return;
+    noticeSheet(context, message: message);
   }
 }
