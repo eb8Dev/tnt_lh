@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:tnt_lh/widgets/promotions.dart';
 import 'package:tnt_lh/providers/promotion_provider.dart';
 import 'package:tnt_lh/widgets/deliver_to_header.dart';
@@ -44,7 +45,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// matching chip lights up as you scroll.
   final Set<String> _expandedSections = {};
   final Map<String, GlobalKey> _sectionKeys = {};
-  String? _spyCategoryId;
+
+  /// A notifier, not state: following the scroll must only rebuild the chip
+  /// bar, never the whole menu (that made scrolling rough).
+  final ValueNotifier<String?> _spy = ValueNotifier<String?>(null);
+  String? get _spyCategoryId => _spy.value;
 
   bool get _allMode =>
       _selectedCategoryId == null && _searchQuery.trim().isEmpty;
@@ -73,7 +78,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       _selectedCategoryId = null;
       _expandedSections.clear();
       _sectionKeys.clear();
-      _spyCategoryId = null;
+      _spy.value = null;
       _searchQuery = "";
       _searchController.clear();
       if (_scrollController.hasClients) _scrollController.jumpTo(0);
@@ -86,6 +91,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   @override
   void dispose() {
     _searchController.dispose();
+    _spy.dispose();
     _scrollController.dispose();
     _categoryBarController.dispose();
     _debounce?.cancel();
@@ -128,16 +134,25 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     // Bring the selected chip into view (near the left edge) so the customer
     // can always see what they just picked — the key problem when the choice
     // came from the Menu sheet and the chip was scrolled off the right.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _selectedChipKey.currentContext;
-      if (ctx == null) return;
-      Scrollable.ensureVisible(
-        ctx,
-        alignment: 0.1,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealSelectedChip());
+  }
+
+  /// Slide the chip bar (only the chip bar) so the active chip is in view.
+  /// Scrollable.ensureVisible would also nudge the menu's own scroll.
+  void _revealSelectedChip() {
+    final ctx = _selectedChipKey.currentContext;
+    if (ctx == null || !_categoryBarController.hasClients) return;
+    final box = ctx.findRenderObject();
+    if (box == null || !box.attached) return;
+    final viewport = RenderAbstractViewport.maybeOf(box);
+    if (viewport == null) return;
+    final target = viewport.getOffsetToReveal(box, 0.3).offset;
+    final pos = _categoryBarController.position;
+    _categoryBarController.animateTo(
+      target.clamp(pos.minScrollExtent, pos.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   /// Pull the next page in slightly before the customer reaches the bottom so
@@ -175,7 +190,12 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       final top = box.localToGlobal(Offset.zero).dy;
       if (top <= line && top + box.size.height > line) current = e.key;
     }
-    if (current != _spyCategoryId) setState(() => _spyCategoryId = current);
+    if (current != _spy.value) {
+      _spy.value = current;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _revealSelectedChip(),
+      );
+    }
   }
 
   /// The Zomato-style "Menu" sheet: a scannable list of every category with its
@@ -555,7 +575,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                                 pinned: true,
                                 delegate: _PinnedHeaderDelegate(
                                   height: 56.h,
-                                  child: _buildCategoryBar(categoriesAsync),
+                                  child: ValueListenableBuilder<String?>(
+                                    valueListenable: _spy,
+                                    builder: (_, _, _) =>
+                                        _buildCategoryBar(categoriesAsync),
+                                  ),
                                 ),
                               ),
                             ...(_allMode
@@ -632,7 +656,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                           pinned: true,
                           delegate: _PinnedHeaderDelegate(
                             height: 56.h,
-                            child: _buildCategoryBar(categoriesAsync),
+                            child: ValueListenableBuilder<String?>(
+                              valueListenable: _spy,
+                              builder: (_, _, _) =>
+                                  _buildCategoryBar(categoriesAsync),
+                            ),
                           ),
                         ),
                       ...(_allMode
@@ -1064,12 +1092,6 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                 padding: EdgeInsets.symmetric(horizontal: 16.w),
                 child: Row(
                   children: [
-                    Icon(
-                      PhosphorIcons.fire(PhosphorIconsStyle.fill),
-                      size: 16.sp,
-                      color: const Color(0xFFF5A623),
-                    ),
-                    SizedBox(width: 6.w),
                     Text(
                       'Bestsellers',
                       style: GoogleFonts.poppins(
@@ -1424,7 +1446,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// [heroPrefix] keeps photo animations unique when the same item shows
   /// twice on screen (Bestsellers and its own section); two identical Hero
   /// tags on one page throw when either is opened.
-  Widget _buildGridCard(Product product, {String heroPrefix = ''}) {
+  Widget _buildGridCard(Product product, {String heroPrefix = ''}) =>
+      RepaintBoundary(child: _gridCard(product, heroPrefix: heroPrefix));
+
+  Widget _gridCard(Product product, {String heroPrefix = ''}) {
     final isLittleH = widget.brand == 'littleh';
 
     return Consumer(
@@ -1460,14 +1485,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+              // Border only: a blurred shadow on every card was costly to
+              // paint while scrolling a long menu.
+              border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

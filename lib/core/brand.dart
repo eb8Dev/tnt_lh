@@ -17,18 +17,16 @@ class Brands {
 
   static const Color cafeColor = Color(0xFF57733C);
 
-  // Cream N Crust, taken from its logo: the strawberry-pink iced cake, the
-  // chocolate lettering, cream. The app used to paint the bakery in the
-  // chocolate alone, which read as the old brown Little H.
-  /// Buttons, selected states, prices. Deep enough for white text (5.3:1).
-  static const Color bakeryColor = Color(0xFFC92A60);
-
+  // Cream N Crust's brand colour, Rust #B7410E (from the client), with the
+  // logo's chocolate for headings and warm rust tints. An earlier pass used
+  // the cake's strawberry pink; the brand colour is rust.
+  /// Buttons, selected states, prices. White text on it reads at 5.7:1.
+  static const Color bakeryColor = Color(0xFFB7410E);
   /// The wordmark's chocolate: headings and strong text.
   static const Color bakeryChocolate = Color(0xFF4A1D0A);
-
-  /// The cake's icing, for tints, chips and highlights.
-  static const Color bakeryIcing = Color(0xFFF9B4CB);
-  static const Color bakeryIcingLight = Color(0xFFFCE4EC);
+  /// Warm tints of the rust, for chips and highlights.
+  static const Color bakeryIcing = Color(0xFFF2C4AE);
+  static const Color bakeryIcingLight = Color(0xFFFBEDE6);
   static const Color bakeryCream = Color(0xFFFFF8F3);
 
   static const String cafeLogo = 'assets/images/teas_n_trees_no_bg.png';

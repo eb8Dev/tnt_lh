@@ -54,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: "Sweet Moments",
       description: "Desserts that make every moment special.",
       image: Brands.bakeryLogo,
-      gradient: [Color(0xFFFDEEF3), Color(0xFFF9C9D8)],
+      gradient: [Color(0xFFFDF1EA), Color(0xFFF6D2C0)],
     ),
   ];
 
