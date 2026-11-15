@@ -37,6 +37,17 @@ class BrandHomeContent extends ConsumerStatefulWidget {
 class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   int _selectedCategoryIndex = -1; // -1 for "All"
   String? _selectedCategoryId;
+
+  /// "All" is a sectioned menu (one section per category, first few items
+  /// each) instead of one endless grid; these track which sections were
+  /// opened in place, and which section is under the chips right now so the
+  /// matching chip lights up as you scroll.
+  final Set<String> _expandedSections = {};
+  final Map<String, GlobalKey> _sectionKeys = {};
+  String? _spyCategoryId;
+
+  bool get _allMode =>
+      _selectedCategoryId == null && _searchQuery.trim().isEmpty;
   String _searchQuery = "";
 
   final TextEditingController _searchController = TextEditingController();
@@ -60,6 +71,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       _debounce?.cancel();
       _selectedCategoryIndex = -1;
       _selectedCategoryId = null;
+      _expandedSections.clear();
+      _sectionKeys.clear();
+      _spyCategoryId = null;
       _searchQuery = "";
       _searchController.clear();
       if (_scrollController.hasClients) _scrollController.jumpTo(0);
@@ -129,6 +143,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// Pull the next page in slightly before the customer reaches the bottom so
   /// the long menu keeps flowing. Shared by the scroll listener.
   bool _onScrollNotification(ScrollNotification n) {
+    if (_allMode) {
+      _updateSpy();
+      return false;
+    }
     if (n.metrics.pixels >= n.metrics.maxScrollExtent - 600) {
       ref
           .read(
@@ -143,6 +161,21 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           .loadMore();
     }
     return false;
+  }
+
+  /// Which section sits under the pinned search and chips.
+  void _updateSpy() {
+    final line = MediaQuery.paddingOf(context).top + 130.h;
+    String? current;
+    for (final e in _sectionKeys.entries) {
+      final ctx = e.value.currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached) continue;
+      final top = box.localToGlobal(Offset.zero).dy;
+      if (top <= line && top + box.size.height > line) current = e.key;
+    }
+    if (current != _spyCategoryId) setState(() => _spyCategoryId = current);
   }
 
   /// The Zomato-style "Menu" sheet: a scannable list of every category with its
@@ -399,15 +432,19 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   Widget build(BuildContext context) {
     listenForCartErrors(ref, context);
     final categoriesAsync = ref.watch(categoriesProvider(widget.brand));
-    final productsAsync = ref.watch(
-      productsProvider(
-        ProductParams(
-          categoryId: _selectedCategoryId,
-          search: _searchQuery.isEmpty ? null : _searchQuery,
-          brand: widget.brand,
-        ),
-      ),
-    );
+    // "All" is built from per-category sections, so the flat list isn't
+    // fetched there.
+    final productsAsync = _allMode
+        ? const AsyncValue<ProductsState>.loading()
+        : ref.watch(
+            productsProvider(
+              ProductParams(
+                categoryId: _selectedCategoryId,
+                search: _searchQuery.isEmpty ? null : _searchQuery,
+                brand: widget.brand,
+              ),
+            ),
+          );
 
     final isLittleH = widget.brand == 'littleh';
     final primary = Theme.of(context).colorScheme.primary;
@@ -521,7 +558,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                                   child: _buildCategoryBar(categoriesAsync),
                                 ),
                               ),
-                            ..._productSlivers(productsAsync),
+                            ...(_allMode
+                                ? _sectionSlivers(categoriesAsync)
+                                : _productSlivers(productsAsync)),
                           ],
                         ),
                       ),
@@ -596,7 +635,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                             child: _buildCategoryBar(categoriesAsync),
                           ),
                         ),
-                      ..._productSlivers(productsAsync),
+                      ...(_allMode
+                          ? _sectionSlivers(categoriesAsync)
+                          : _productSlivers(productsAsync)),
                     ],
                   ),
                 ),
@@ -875,7 +916,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
         ),
         error: (_, _) => const SizedBox.shrink(),
         data: (categories) {
-          final allSelected = _selectedCategoryIndex == -1;
+          final allSelected =
+              _selectedCategoryIndex == -1 && _spyCategoryId == null;
           final chips = <Widget>[
             _buildCategoryChip(
               key: allSelected ? _selectedChipKey : null,
@@ -886,7 +928,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
           ];
           for (var i = 0; i < categories.length; i++) {
             final cat = categories[i];
-            final selected = _selectedCategoryId == cat.id;
+            final selected =
+                _selectedCategoryId == cat.id ||
+                (_allMode && _spyCategoryId == cat.id);
             chips.add(
               _buildCategoryChip(
                 key: selected ? _selectedChipKey : null,
@@ -985,6 +1029,188 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   }
 
   /// Builds the product area as slivers for the CustomScrollView.
+  /// "All", as a menu: Bestsellers, then each category with its first few
+  /// items and "See all". Sections are built (and their items fetched) only
+  /// as they scroll into view.
+  List<Widget> _sectionSlivers(AsyncValue<List<Category>> categoriesAsync) {
+    final cats = (categoriesAsync.value ?? const <Category>[])
+        .where((c) => (c.productCount ?? 1) > 0)
+        .toList();
+    if (categoriesAsync.isLoading && cats.isEmpty) {
+      return [const SliverToBoxAdapter(child: ProductListSkeleton())];
+    }
+    return [
+      SliverToBoxAdapter(child: _buildBestsellers()),
+      SliverList.builder(
+        itemCount: cats.length,
+        itemBuilder: (context, i) => _buildSection(cats[i], i),
+      ),
+      SliverToBoxAdapter(child: SizedBox(height: 24.h)),
+    ];
+  }
+
+  Widget _buildBestsellers() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final items =
+            ref.watch(popularProductsProvider(widget.brand)).value ?? const [];
+        if (items.length < 3) return const SizedBox.shrink();
+        return Padding(
+          padding: EdgeInsets.only(top: 10.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Row(
+                  children: [
+                    Icon(
+                      PhosphorIcons.fire(PhosphorIconsStyle.fill),
+                      size: 16.sp,
+                      color: const Color(0xFFF5A623),
+                    ),
+                    SizedBox(width: 6.w),
+                    Text(
+                      'Bestsellers',
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8.h),
+              SizedBox(
+                height: 168.w * 3 / 4 + 60.h,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) => SizedBox(width: 10.w),
+                  itemBuilder: (_, i) => SizedBox(
+                    width: 168.w,
+                    child: _buildGridCard(items[i], heroPrefix: 'best-'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSection(Category cat, int index) {
+    final key = _sectionKeys.putIfAbsent(cat.id, () => GlobalKey());
+    return Consumer(
+      key: key,
+      builder: (context, ref, _) {
+        final async = ref.watch(
+          productsProvider(
+            ProductParams(categoryId: cat.id, brand: widget.brand),
+          ),
+        );
+        final all = async.value?.products ?? const <Product>[];
+        final expanded = _expandedSections.contains(cat.id);
+        final shown = expanded ? all : all.take(4).toList();
+        final total = cat.productCount ?? all.length;
+        if (async.hasValue && all.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 18.h, 16.w, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      cat.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$total ${total == 1 ? 'item' : 'items'}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.sp,
+                      color: Colors.black45,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              if (!async.hasValue)
+                SizedBox(
+                  height: 120.h,
+                  child: const Center(
+                    child: CircularProgressIndicator.adaptive(),
+                  ),
+                )
+              else
+                LayoutBuilder(
+                  builder: (context, box) => AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: _gridDelegate(context, box.maxWidth + 32.w),
+                      itemCount: shown.length,
+                      itemBuilder: (_, i) => _buildGridCard(shown[i]),
+                    ),
+                  ),
+                ),
+              if (async.hasValue && total > shown.length)
+                Padding(
+                  padding: EdgeInsets.only(top: 8.h),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                        side: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 8.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        // Open the rest here; past what was loaded, the
+                        // full category takes over.
+                        if (!expanded && all.length > shown.length) {
+                          setState(() => _expandedSections.add(cat.id));
+                        } else {
+                          _onCategorySelected(index, cat.id);
+                        }
+                      },
+                      child: Text(
+                        'See all $total',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   List<Widget> _productSlivers(AsyncValue<ProductsState> productsAsync) {
     return productsAsync.when(
       loading: () => [const SliverToBoxAdapter(child: ProductListSkeleton())],
@@ -1195,7 +1421,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     );
   }
 
-  Widget _buildGridCard(Product product) {
+  /// [heroPrefix] keeps photo animations unique when the same item shows
+  /// twice on screen (Bestsellers and its own section); two identical Hero
+  /// tags on one page throw when either is opened.
+  Widget _buildGridCard(Product product, {String heroPrefix = ''}) {
     final isLittleH = widget.brand == 'littleh';
 
     return Consumer(
@@ -1256,7 +1485,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12.r),
                           child: Hero(
-                            tag: product.id,
+                            tag: '$heroPrefix${product.id}',
                             child: ProductImage(
                               url: product.image,
                               isLittleH: isLittleH,

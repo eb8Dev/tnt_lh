@@ -277,10 +277,14 @@ class AuthService {
     String? brand,
     int page = 1,
     int limit = 20,
+
+    /// 'popular' for most-ordered first.
+    String? sort,
   }) async {
     final queryParams = <String, String>{
       'page': page.toString(),
       'limit': limit.toString(),
+      'sort': ?sort,
     };
     if (categoryId != null && categoryId.isNotEmpty) {
       queryParams['category'] = categoryId;

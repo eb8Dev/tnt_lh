@@ -128,3 +128,16 @@ final productsProvider =
       ProductsState,
       ProductParams
     >(ProductsNotifier.new);
+
+/// The store's most-ordered items, for the Bestsellers row.
+final popularProductsProvider = FutureProvider.family<List<Product>, String>((
+  ref,
+  brand,
+) async {
+  final raw = await AuthService.getProducts(
+    brand: brand,
+    limit: 10,
+    sort: 'popular',
+  );
+  return raw.map((e) => Product.fromJson(e)).toList();
+});
