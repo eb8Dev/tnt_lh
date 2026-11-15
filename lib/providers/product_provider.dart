@@ -141,3 +141,36 @@ final popularProductsProvider = FutureProvider.family<List<Product>, String>((
   );
   return raw.map((e) => Product.fromJson(e)).toList();
 });
+
+/// The store's whole menu, grouped by category, loaded once.
+///
+/// The sectioned "All" view used to fetch each category as it scrolled into
+/// view (0.3–0.7 s each), so a quick scroll met a row of spinners. Pages of
+/// 100 are fetched in parallel instead; every section then appears at once.
+final storeMenuProvider =
+    FutureProvider.family<Map<String, List<Product>>, String>((
+      ref,
+      brand,
+    ) async {
+      Future<List<Product>> page(int n) async => (await AuthService.getProducts(
+        brand: brand,
+        page: n,
+        limit: 100,
+      )).map((e) => Product.fromJson(e)).toList();
+
+      final first = await Future.wait([page(1), page(2), page(3)]);
+      final all = [for (final p in first) ...p];
+      // A menu past 300 items: keep going one page at a time.
+      var n = 4;
+      var last = first.last;
+      while (last.length == 100) {
+        last = await page(n++);
+        all.addAll(last);
+      }
+
+      final byCategory = <String, List<Product>>{};
+      for (final p in all) {
+        byCategory.putIfAbsent(p.categoryId ?? '', () => []).add(p);
+      }
+      return byCategory;
+    });

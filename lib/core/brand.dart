@@ -22,8 +22,10 @@ class Brands {
   // the cake's strawberry pink; the brand colour is rust.
   /// Buttons, selected states, prices. White text on it reads at 5.7:1.
   static const Color bakeryColor = Color(0xFFB7410E);
+
   /// The wordmark's chocolate: headings and strong text.
   static const Color bakeryChocolate = Color(0xFF4A1D0A);
+
   /// Warm tints of the rust, for chips and highlights.
   static const Color bakeryIcing = Color(0xFFF2C4AE);
   static const Color bakeryIcingLight = Color(0xFFFBEDE6);

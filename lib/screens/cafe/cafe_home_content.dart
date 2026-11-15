@@ -205,143 +205,90 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// predates that field they're simply omitted.
   void _openCategorySheet(List<Category> categories) {
     final primary = Theme.of(context).colorScheme.primary;
-    final totalCount = categories.fold<int?>(0, (sum, c) {
-      if (sum == null || c.productCount == null) return null;
-      return sum + c.productCount!;
-    });
+    final cats = categories.where((c) => (c.productCount ?? 1) > 0).toList();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.4,
-            maxChildSize: 0.92,
-            expand: false,
-            builder: (context, scrollController) {
-              return Column(
-                children: [
-                  SizedBox(height: 12.h),
-                  Container(
-                    width: 40.w,
-                    height: 5.h,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 12.h),
-                    child: Row(
-                      children: [
-                        Icon(
-                          PhosphorIcons.forkKnife(PhosphorIconsStyle.fill),
-                          color: primary,
-                          size: 20.sp,
-                        ),
-                        SizedBox(width: 10.w),
-                        Text(
-                          "Menu",
-                          style: GoogleFonts.poppins(
-                            fontSize: 19.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(
-                    height: 1,
-                    color: Colors.black.withValues(alpha: 0.05),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      controller: scrollController,
-                      padding: EdgeInsets.only(bottom: 12.h),
-                      // +1 for the leading "All items" row.
-                      itemCount: categories.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return _menuRow(
-                            label: "All items",
-                            count: totalCount,
-                            selected: _selectedCategoryId == null,
-                            onTap: () {
-                              Navigator.pop(sheetContext);
-                              _onCategorySelected(-1, null);
-                            },
-                          );
-                        }
-                        final cat = categories[index - 1];
-                        return _menuRow(
-                          label: cat.name,
-                          count: cat.productCount,
-                          selected: _selectedCategoryId == cat.id,
-                          onTap: () {
-                            Navigator.pop(sheetContext);
-                            _onCategorySelected(index - 1, cat.id);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// One row of the menu sheet: category name on the left, item count on the
-  /// right (Zomato style). The active category is tinted so it's easy to see
-  /// where you are.
-  Widget _menuRow({
-    required String label,
-    required int? count,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return TactileButton(
-      onTap: onTap,
-      child: Container(
-        color: Colors.transparent,
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 15.h),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 15.sp,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? primary : Colors.black87,
+      builder: (sheetContext) => SafeArea(
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.4,
+          maxChildSize: 0.92,
+          expand: false,
+          builder: (context, scrollController) => Column(
+            children: [
+              SizedBox(height: 10.h),
+              Container(
+                width: 36.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(4.r),
                 ),
               ),
-            ),
-            if (count != null) ...[
-              SizedBox(width: 12.w),
-              Text(
-                "$count",
-                style: GoogleFonts.poppins(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? primary : Colors.black38,
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 8.h),
+                child: Row(
+                  children: [
+                    Text(
+                      'Menu',
+                      style: GoogleFonts.poppins(
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _onCategorySelected(-1, null);
+                      },
+                      child: Text(
+                        'See everything',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          color: primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: GridView.builder(
+                  controller: scrollController,
+                  padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12.h,
+                    crossAxisSpacing: 10.w,
+                    childAspectRatio: 0.82,
+                  ),
+                  itemCount: cats.length,
+                  itemBuilder: (_, i) {
+                    final cat = cats[i];
+                    final index = categories.indexOf(cat);
+                    return _CategoryTile(
+                      category: cat,
+                      selected: _selectedCategoryId == cat.id,
+                      color: primary,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.pop(sheetContext);
+                        _onCategorySelected(index, cat.id);
+                      },
+                    );
+                  },
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1128,15 +1075,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     return Consumer(
       key: key,
       builder: (context, ref, _) {
-        final async = ref.watch(
-          productsProvider(
-            ProductParams(categoryId: cat.id, brand: widget.brand),
-          ),
-        );
-        final all = async.value?.products ?? const <Product>[];
+        final async = ref.watch(storeMenuProvider(widget.brand));
+        final all = async.value?[cat.id] ?? const <Product>[];
         final expanded = _expandedSections.contains(cat.id);
         final shown = expanded ? all : all.take(4).toList();
-        final total = cat.productCount ?? all.length;
+        final total = async.hasValue ? all.length : (cat.productCount ?? 0);
         if (async.hasValue && all.isEmpty) return const SizedBox.shrink();
 
         return Padding(
@@ -1188,7 +1131,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                     ),
                   ),
                 ),
-              if (async.hasValue && total > shown.length)
+              if (async.hasValue && all.length > shown.length)
                 Padding(
                   padding: EdgeInsets.only(top: 8.h),
                   child: SizedBox(
@@ -1210,14 +1153,10 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                         HapticFeedback.selectionClick();
                         // Open the rest here; past what was loaded, the
                         // full category takes over.
-                        if (!expanded && all.length > shown.length) {
-                          setState(() => _expandedSections.add(cat.id));
-                        } else {
-                          _onCategorySelected(index, cat.id);
-                        }
+                        setState(() => _expandedSections.add(cat.id));
                       },
                       child: Text(
-                        'See all $total',
+                        'See all ${all.length}',
                         style: GoogleFonts.poppins(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
@@ -1378,6 +1317,7 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     );
     ref.invalidate(categoriesProvider(widget.brand));
     ref.invalidate(promotionsProvider(widget.brand));
+    ref.invalidate(storeMenuProvider(widget.brand));
     ref.invalidate(productsProvider(params));
     // Await the new fetch so the refresh spinner tracks real work.
     await ref.read(productsProvider(params).future);
@@ -2098,5 +2038,117 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
     return oldDelegate.height != height || oldDelegate.child != child;
+  }
+}
+
+/// A category in the Menu sheet: its picture (or, until one is uploaded, an
+/// icon that suits its name), the name, and how many items it has.
+class _CategoryTile extends StatelessWidget {
+  final Category category;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CategoryTile({
+    required this.category,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  static IconData iconFor(String name) {
+    final n = name.toLowerCase();
+    bool has(List<String> words) => words.any(n.contains);
+    if (has(['coffee', 'espresso', 'latte', 'cappuccino', 'mocha', 'frappe'])) {
+      return PhosphorIcons.coffee(PhosphorIconsStyle.duotone);
+    }
+    if (has(['tea', 'chai', 'matcha'])) {
+      return PhosphorIcons.teaBag(PhosphorIconsStyle.duotone);
+    }
+    if (has(['juice', 'mojito', 'cooler', 'lemonade', 'soda'])) {
+      return PhosphorIcons.martini(PhosphorIconsStyle.duotone);
+    }
+    if (has(['shake', 'smoothie', 'milk'])) {
+      return PhosphorIcons.pintGlass(PhosphorIconsStyle.duotone);
+    }
+    if (has(['burger'])) {
+      return PhosphorIcons.hamburger(PhosphorIconsStyle.duotone);
+    }
+    if (has(['pizza'])) {
+      return PhosphorIcons.pizza(PhosphorIconsStyle.duotone);
+    }
+    if (has(['sandwich', 'wrap', 'roll', 'toast'])) {
+      return PhosphorIcons.bread(PhosphorIconsStyle.duotone);
+    }
+    if (has(['fries', 'snack', 'starter', 'nachos', 'bites'])) {
+      return PhosphorIcons.popcorn(PhosphorIconsStyle.duotone);
+    }
+    if (has(['pasta', 'noodle', 'maggi'])) {
+      return PhosphorIcons.bowlFood(PhosphorIconsStyle.duotone);
+    }
+    if (has(['cake', 'tres', 'pastry', 'cheesecake'])) {
+      return PhosphorIcons.cake(PhosphorIconsStyle.duotone);
+    }
+    if (has(['cookie', 'brownie', 'biscuit'])) {
+      return PhosphorIcons.cookie(PhosphorIconsStyle.duotone);
+    }
+    if (has(['bread', 'bun', 'loaf', 'croissant', 'puff'])) {
+      return PhosphorIcons.bread(PhosphorIconsStyle.duotone);
+    }
+    if (has(['ice cream', 'dessert', 'sundae', 'mousse', 'jar'])) {
+      return PhosphorIcons.iceCream(PhosphorIconsStyle.duotone);
+    }
+    return PhosphorIcons.forkKnife(PhosphorIconsStyle.duotone);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final image = category.image;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14.r),
+      child: Column(
+        children: [
+          AspectRatio(
+            aspectRatio: 1,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: selected ? 0.16 : 0.07),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(
+                  color: selected ? color : Colors.transparent,
+                  width: 1.5,
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: (image != null && image.isNotEmpty)
+                  ? ProductImage(url: image, isLittleH: false, iconSize: 28)
+                  : Icon(iconFor(category.name), size: 34.sp, color: color),
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            category.name,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 11.sp,
+              height: 1.2,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+          if (category.productCount != null)
+            Text(
+              '${category.productCount} items',
+              style: GoogleFonts.poppins(
+                fontSize: 10.sp,
+                color: Colors.black45,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
