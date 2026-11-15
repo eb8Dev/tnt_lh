@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/core/spacing.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/widgets/skeleton.dart';
 import 'package:tnt_lh/widgets/error_retry_view.dart';
@@ -63,10 +64,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         title: Text(
-          "My Orders",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          "Your orders",
+          // Same compact title as the bag and order details.
+          style: GoogleFonts.poppins(
             color: Colors.black87,
-            fontSize: 20.sp,
+            fontSize: 17.sp,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -90,7 +93,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               // +1 for the "you owe us a rating" nudge, +1 for the footer that
               // either loads the next page or says we've reached the end.
               itemCount: orders.length + 2,
-              separatorBuilder: (_, _) => SizedBox(height: 16.h),
+              separatorBuilder: (_, _) => SizedBox(height: 10.h),
               itemBuilder: (context, index) {
                 if (index == 0) return _buildRatingNudge();
                 if (index == orders.length + 1) {
@@ -244,6 +247,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   Widget _buildOrderCard(Order order) {
     final statusColor = _getStatusColor(order.status);
     final isTeas = order.brand == 'teasntrees';
+    final storeColor = Brands.color(order.brand);
 
     return TactileButton(
       onTap: () {
@@ -259,123 +263,113 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         );
       },
       child: Container(
-        padding: EdgeInsets.all(20.r),
+        padding: EdgeInsets.all(14.r),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 15,
-              offset: Offset(0, 6),
-            ),
-          ],
-          border: Border.all(color: Colors.black.withValues(alpha: 0.02)),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
+                  width: 40.r,
+                  height: 40.r,
+                  padding: EdgeInsets.all(5.r),
                   decoration: BoxDecoration(
-                    color: (isTeas ? Brands.cafeColor : Brands.bakeryColor)
-                        .withValues(alpha: 0.1),
+                    color: storeColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
-                  child: Text(
-                    isTeas ? Brands.cafeName : Brands.bakeryName,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isTeas ? Brands.cafeColor : Brands.bakeryColor,
-                    ),
+                  child: Image.asset(
+                    Brands.logo(order.brand),
+                    fit: BoxFit.contain,
                   ),
                 ),
-                Text(
-                  AppFormatters.formatDate(order.createdAt),
-                  style: GoogleFonts.poppins(
-                    fontSize: 12.sp,
-                    color: Colors.black38,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16.h),
-            Row(
-              children: [
+                GapW(Space.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Order #${order.orderNumber}",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.sp,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        "${order.items.length} ${order.items.length == 1 ? 'item' : 'items'} • ${AppFormatters.rupees(order.total)}",
+                        isTeas ? Brands.cafeName : Brands.bakeryName,
                         style: GoogleFonts.poppins(
                           fontSize: 14.sp,
-                          color: Colors.black54,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '#${order.orderNumber} · ${AppFormatters.formatDateTimeFull(order.createdAt)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.sp,
+                          color: Colors.black45,
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 8.h,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12.r),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Text(
-                    AppFormatters.statusLabel(order.status).toUpperCase(),
+                    AppFormatters.statusLabel(order.status),
                     style: GoogleFonts.poppins(
                       fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: statusColor,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 16.h),
-            Divider(height: 1.h, color: Color(0xFFF5F5F5)),
-            SizedBox(height: 16.h),
+            Gap(Space.sm),
+            // What was in it, not just "3 items".
+            Text(
+              order.items.map((i) => '${i.quantity}× ${i.name}').join(', '),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                color: Colors.black54,
+                height: 1.4,
+              ),
+            ),
+            Divider(height: Space.lg.h, color: Colors.black12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Text(
+                  AppFormatters.rupees(order.total),
+                  style: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
                 Text(
                   // Nothing to track once it is over.
                   [
                         'delivered',
+                        'completed',
                         'cancelled',
                       ].contains(order.status.toLowerCase())
-                      ? "View details"
-                      : "Track order",
+                      ? 'View details'
+                      : 'Track order',
                   style: GoogleFonts.poppins(
-                    fontSize: 13.sp,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: storeColor,
                   ),
                 ),
                 Icon(
                   PhosphorIcons.caretRight(PhosphorIconsStyle.bold),
-                  size: 14.sp,
-                  color: Colors.black26,
+                  size: 12.sp,
+                  color: storeColor,
                 ),
               ],
             ),

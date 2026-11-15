@@ -325,10 +325,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
-          title: Text("Order Details"),
+          title: Text(
+            'Order details',
+            style: GoogleFonts.poppins(
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           centerTitle: true,
           elevation: 0,
-          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: Colors.grey[50],
           foregroundColor: Colors.black,
           // Always give a way out. When this screen is the only route (e.g. opened
           // straight from a notification), the automatic back button vanishes and
@@ -440,10 +447,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           children: [
                             Container(
                               margin: EdgeInsets.only(top: 1.h),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 6.w,
-                                vertical: 1.h,
-                              ),
+                              // Fixed width so item names line up.
+                              width: 30.w,
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(vertical: 1.h),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(5.r),
                                 border: Border.all(
@@ -658,13 +665,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: child,
     );
@@ -910,13 +911,21 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
         return GestureDetector(
           onTap: _done || _busy ? null : () => onChanged(i + 1),
           child: Padding(
-            padding: EdgeInsets.only(right: 6.w),
-            child: Icon(
-              filled
-                  ? PhosphorIcons.star(PhosphorIconsStyle.fill)
-                  : PhosphorIcons.star(),
-              color: filled ? const Color(0xFFF5A623) : Colors.black26,
-              size: 30.sp,
+            padding: EdgeInsets.only(left: 4.w),
+            // A little pop as each star fills.
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey('$i-$filled'),
+              tween: Tween(begin: filled ? 0.6 : 1, end: 1),
+              duration: Duration(milliseconds: 300 + i * 40),
+              curve: Curves.elasticOut,
+              builder: (_, s, child) => Transform.scale(scale: s, child: child),
+              child: Icon(
+                filled
+                    ? PhosphorIcons.star(PhosphorIconsStyle.fill)
+                    : PhosphorIcons.star(),
+                color: filled ? const Color(0xFFF5A623) : Colors.black26,
+                size: 24.sp,
+              ),
             ),
           ),
         );
@@ -928,25 +937,27 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.only(bottom: 16.h),
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _done ? 'Thanks for your feedback!' : 'Rate your order',
-            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
+            _done ? 'Thanks for your feedback!' : 'How was it?',
+            style: GoogleFonts.poppins(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: 12.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Food', style: TextStyle(fontSize: 13.sp)),
+              Text('Food', style: GoogleFonts.poppins(fontSize: 13.sp)),
               _stars(_foodRating, (v) => setState(() => _foodRating = v)),
             ],
           ),
@@ -954,7 +965,7 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Rider', style: TextStyle(fontSize: 13.sp)),
+              Text('Delivery', style: GoogleFonts.poppins(fontSize: 13.sp)),
               _stars(_riderRating, (v) => setState(() => _riderRating = v)),
             ],
           ),
@@ -964,10 +975,28 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
               controller: _commentController,
               enabled: !_busy,
               maxLines: 2,
+              minLines: 1,
+              style: GoogleFonts.poppins(fontSize: 13.sp),
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
               decoration: InputDecoration(
-                hintText: 'Add a comment (optional)',
+                hintText: 'Tell us more (optional)',
+                hintStyle: GoogleFonts.poppins(
+                  fontSize: 13.sp,
+                  color: Colors.black38,
+                ),
+                isDense: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
+                  borderSide: BorderSide(
+                    color: Colors.black.withValues(alpha: 0.12),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  borderSide: BorderSide(
+                    color: Colors.black.withValues(alpha: 0.12),
+                  ),
                 ),
                 contentPadding: EdgeInsets.all(12.r),
               ),
@@ -980,7 +1009,12 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(vertical: 11.h),
+                  textStyle: GoogleFonts.poppins(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12.r),
                   ),
