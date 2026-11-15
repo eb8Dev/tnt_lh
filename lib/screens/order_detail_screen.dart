@@ -107,8 +107,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final isDelivered = status == 'delivered' || status == 'completed';
     final isCancelled = status == 'cancelled';
     final canReorder = isDelivered || isCancelled;
+    // The server allows it only until the store accepts the order.
+    final canCancel = status == 'pending';
 
     final buttons = <Widget>[
+      if (canCancel)
+        _actionButton(
+          label: 'Cancel order',
+          icon: PhosphorIcons.xCircle(),
+          color: Colors.redAccent.shade400,
+          onPressed: () => _cancelOrder(order),
+        ),
       if (canEditAddress)
         _actionButton(
           label: 'Edit address',
@@ -169,6 +178,51 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _cancelOrder(Order order) async {
+    final yes = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog.adaptive(
+        title: const Text('Cancel this order?'),
+        content: const Text(
+          "The store hasn't accepted it yet, so it can still be cancelled.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep order'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Cancel order'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    try {
+      await OrderService.cancelOrder(
+        orderId: order.id,
+        reason: 'Cancelled by customer',
+        brand: order.brand,
+      );
+      if (!mounted) return;
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: 'Order cancelled.',
+      );
+      _reload();
+    } catch (e) {
+      if (!mounted) return;
+      // Most likely the store accepted it a moment ago.
+      _reload();
+      SnackBarUtils.showThemedSnackBar(
+        context: context,
+        message: e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
 
   Future<void> _editAddress(Order order) async {

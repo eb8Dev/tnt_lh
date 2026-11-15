@@ -267,4 +267,23 @@ class OrderService {
     if (response.statusCode == 200) return data;
     throw Exception(data['message'] ?? 'Could not update the address');
   }
+
+  /// Cancel an order the store hasn't accepted yet.
+  static Future<void> cancelOrder({
+    required String orderId,
+    String? reason,
+    String? brand,
+  }) async {
+    final url = AppConfig.buildUrl(
+      '/customer/orders/$orderId/cancel',
+      brand: brand,
+    );
+    final response = await ApiClient.delete(url, body: {'reason': ?reason});
+    if (response.statusCode == 200) return;
+    String? message;
+    try {
+      message = jsonDecode(response.body)['message']?.toString();
+    } catch (_) {}
+    throw Exception(message ?? 'Could not cancel the order');
+  }
 }
