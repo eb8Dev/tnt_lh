@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -65,8 +66,24 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       (_shown?.isRiderPhase ?? false) &&
       MediaQuery.sizeOf(context).width < 760;
 
+  /// While a rider has the order, look again every 15 seconds. Live events
+  /// should make this unnecessary, but a missed one (a dropped connection,
+  /// a server restart) left the page minutes behind the rider.
+  Timer? _livePoll;
+
+  void _syncLivePoll() {
+    final live = _shown?.isRiderPhase ?? false;
+    if (live && _livePoll == null) {
+      _livePoll = Timer.periodic(const Duration(seconds: 15), (_) => _reload());
+    } else if (!live && _livePoll != null) {
+      _livePoll!.cancel();
+      _livePoll = null;
+    }
+  }
+
   @override
   void dispose() {
+    _livePoll?.cancel();
     _eta.dispose();
     super.dispose();
   }
@@ -123,6 +140,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       if (event == null || event.name != 'order:status-updated') return;
       final data = event.data;
       final id = data is Map ? data['orderId']?.toString() : null;
+      debugPrint(
+        '[live] order:status-updated $id -> ${data is Map ? data['status'] : '?'}',
+      );
       if (id == widget.orderId) _reload();
     });
     // Back from the background, or the connection was restored.
@@ -504,6 +524,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 snapshot.hasData) {
               _shown = snapshot.data;
             }
+            _syncLivePoll();
             final live = _liveLayout(context);
             if (live != _barHidden) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1491,10 +1512,11 @@ class _LiveOrderView extends StatelessWidget {
         return 1;
       case 'picked_up':
       case 'out-for-delivery':
+        return 2; // has the order, not yet riding to the customer
       case 'in_transit':
-        return 2;
-      case 'arrived':
         return 3;
+      case 'arrived':
+        return 4;
       default:
         return 0; // assigned, accepted, heading to the store
     }
@@ -1513,6 +1535,10 @@ class _LiveOrderView extends StatelessWidget {
         return (title: 'At the store', sub: '$who is collecting your order');
       case 'picked_up':
       case 'out-for-delivery':
+        return (
+          title: 'Order picked up',
+          sub: '$who will set off towards you shortly',
+        );
       case 'in_transit':
         return (title: 'On the way to you', sub: '$who has your order');
       case 'arrived':
@@ -1639,7 +1665,7 @@ class _LiveOrderView extends StatelessWidget {
                               ],
                             ),
                           ),
-                          if (_step == 2)
+                          if (_step == 3)
                             ValueListenableBuilder<String?>(
                               valueListenable: eta,
                               builder: (_, v, _) => v == null
@@ -1698,13 +1724,19 @@ class _LiveOrderView extends StatelessWidget {
   }
 }
 
-/// Four steps: assigned, at the store, on the way, arrived.
+/// Five steps: assigned, at the store, picked up, on the way, arrived.
 class _StepBar extends StatelessWidget {
   final int step;
   final Color color;
   const _StepBar({required this.step, required this.color});
 
-  static const _labels = ['Assigned', 'At store', 'On the way', 'Arrived'];
+  static const _labels = [
+    'Assigned',
+    'At store',
+    'Picked up',
+    'On the way',
+    'Arrived',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1712,7 +1744,7 @@ class _StepBar extends StatelessWidget {
       children: [
         Row(
           children: [
-            for (var i = 0; i < 4; i++) ...[
+            for (var i = 0; i < _labels.length; i++) ...[
               Expanded(
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(end: i <= step ? 1 : 0),
@@ -1729,20 +1761,20 @@ class _StepBar extends StatelessWidget {
                   ),
                 ),
               ),
-              if (i < 3) SizedBox(width: 4.w),
+              if (i < _labels.length - 1) SizedBox(width: 4.w),
             ],
           ],
         ),
         SizedBox(height: 6.h),
         Row(
           children: [
-            for (var i = 0; i < 4; i++)
+            for (var i = 0; i < _labels.length; i++)
               Expanded(
                 child: Text(
                   _labels[i],
                   textAlign: i == 0
                       ? TextAlign.start
-                      : i == 3
+                      : i == _labels.length - 1
                       ? TextAlign.end
                       : TextAlign.center,
                   style: GoogleFonts.poppins(

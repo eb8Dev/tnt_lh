@@ -49,6 +49,10 @@ class ActiveOrderBar extends ConsumerWidget {
         );
       case 'picked_up':
       case 'out-for-delivery':
+        return (
+          text: 'Order picked up, rider setting off',
+          icon: PhosphorIcons.package(),
+        );
       case 'in_transit':
         return (text: 'On the way to you', icon: PhosphorIcons.moped());
       case 'arrived':

@@ -174,6 +174,7 @@ class SocketManager {
 
     // Listeners
     _socket!.on('order:status-updated', (data) {
+      debugPrint('[socket] order:status-updated $data');
       ref
           .read(socketEventsProvider.notifier)
           .emitEvent(SocketEvent('order:status-updated', data));
