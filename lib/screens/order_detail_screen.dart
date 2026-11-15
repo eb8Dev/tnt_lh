@@ -1,5 +1,6 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:flutter/services.dart';
 import 'package:tnt_lh/providers/order_provider.dart';
@@ -48,6 +49,35 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   /// the new copy loads (and if that load fails), instead of blanking the page
   /// to a spinner or an error every time the status moves.
   Order? _shown;
+
+  /// Distance / time to the customer, from the live map.
+  final _eta = ValueNotifier<String?>(null);
+
+  /// While a rider has the order, a phone shows the map-first live view.
+  bool _liveLayout(BuildContext context) =>
+      !widget.embedded &&
+      (_shown?.isRiderPhase ?? false) &&
+      MediaQuery.sizeOf(context).width < 760;
+
+  @override
+  void dispose() {
+    _eta.dispose();
+    super.dispose();
+  }
+
+  void _goBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const StoreHomeScreen(initialIndex: 0),
+        ),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -422,43 +452,45 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       maxWidth: Responsive.isExpanded(context) ? 1100 : 640,
       child: Scaffold(
         backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          title: Text(
-            'Order details',
-            style: GoogleFonts.poppins(
-              fontSize: 17.sp,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          centerTitle: true,
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          backgroundColor: Colors.grey[50],
-          foregroundColor: Colors.black,
-          // Always give a way out. When this screen is the only route (e.g. opened
-          // straight from a notification), the automatic back button vanishes and
-          // the customer is trapped — so fall back to the home menu.
-          automaticallyImplyLeading: !widget.embedded,
-          leading: widget.embedded
-              ? null
-              : IconButton(
-                  icon: Icon(PhosphorIcons.caretLeft()),
-                  onPressed: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    } else {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const StoreHomeScreen(initialIndex: 0),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  },
+        appBar: _liveLayout(context)
+            ? null
+            : AppBar(
+                title: Text(
+                  'Order details',
+                  style: GoogleFonts.poppins(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-        ),
+                centerTitle: true,
+                elevation: 0,
+                surfaceTintColor: Colors.transparent,
+                backgroundColor: Colors.grey[50],
+                foregroundColor: Colors.black,
+                // Always give a way out. When this screen is the only route (e.g. opened
+                // straight from a notification), the automatic back button vanishes and
+                // the customer is trapped — so fall back to the home menu.
+                automaticallyImplyLeading: !widget.embedded,
+                leading: widget.embedded
+                    ? null
+                    : IconButton(
+                        icon: Icon(PhosphorIcons.caretLeft()),
+                        onPressed: () {
+                          if (Navigator.canPop(context)) {
+                            Navigator.pop(context);
+                          } else {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const StoreHomeScreen(initialIndex: 0),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                        },
+                      ),
+              ),
         body: FutureBuilder<Order>(
           future: _orderFuture,
           builder: (context, snapshot) {
@@ -688,6 +720,18 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               _buildOrderActions(order),
               Gap(Space.xl),
             ];
+
+            if (_liveLayout(context)) {
+              return Theme(
+                data: storeTheme,
+                child: _LiveOrderView(
+                  order: order,
+                  eta: _eta,
+                  details: itemsPart,
+                  onBack: _goBack,
+                ),
+              );
+            }
 
             return Theme(
               data: storeTheme,
@@ -1406,5 +1450,414 @@ class _TimelineState extends State<_Timeline> {
     final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
     final m = d.minute.toString().padLeft(2, '0');
     return '$h:$m ${d.hour < 12 ? 'AM' : 'PM'}';
+  }
+}
+
+// ------------------------------------------------------------ live view ---
+
+/// While a rider has the order: the map fills the screen and a sheet you can
+/// drag up holds what is happening (headline, progress, PIN, rider), then the
+/// order itself. Modelled on how Rapido and Zomato track a trip.
+class _LiveOrderView extends StatelessWidget {
+  final Order order;
+  final ValueNotifier<String?> eta;
+  final List<Widget> details;
+  final VoidCallback onBack;
+
+  const _LiveOrderView({
+    required this.order,
+    required this.eta,
+    required this.details,
+    required this.onBack,
+  });
+
+  static const _initial = 0.46;
+
+  int get _step {
+    switch (order.displayStatus.toLowerCase()) {
+      case 'arrived_at_pickup':
+        return 1;
+      case 'picked_up':
+      case 'out-for-delivery':
+      case 'in_transit':
+        return 2;
+      case 'arrived':
+        return 3;
+      default:
+        return 0; // assigned, accepted, heading to the store
+    }
+  }
+
+  ({String title, String sub}) get _headline {
+    final rider = (order.riderName ?? '').split(' ').first;
+    final who = rider.isEmpty ? 'Your rider' : rider;
+    switch (order.displayStatus.toLowerCase()) {
+      case 'heading_to_pickup':
+        return (
+          title: 'Heading to the store',
+          sub: '$who is on the way to pick up your order',
+        );
+      case 'arrived_at_pickup':
+        return (title: 'At the store', sub: '$who is collecting your order');
+      case 'picked_up':
+      case 'out-for-delivery':
+      case 'in_transit':
+        return (title: 'On the way to you', sub: '$who has your order');
+      case 'arrived':
+        return (
+          title: "Your rider's here",
+          sub: 'Share the PIN below to collect your order',
+        );
+      default:
+        return (
+          title: 'Rider assigned',
+          sub: '$who will pick up your order soon',
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+    final h = _headline;
+    final showPin = (order.deliveryOtp ?? '').isNotEmpty && _step >= 2;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: LiveTrackingPanel(
+            order: order,
+            fullBleed: true,
+            eta: eta,
+            mapBottomPadding: media.size.height * (_initial - 0.04),
+          ),
+        ),
+        Positioned(
+          top: media.padding.top + 8.h,
+          left: 12.w,
+          child: Material(
+            color: Colors.white,
+            shape: const CircleBorder(),
+            elevation: 3,
+            shadowColor: Colors.black26,
+            child: IconButton(
+              icon: Icon(PhosphorIcons.caretLeft(), color: Colors.black87),
+              onPressed: onBack,
+            ),
+          ),
+        ),
+        DraggableScrollableSheet(
+          initialChildSize: _initial,
+          minChildSize: 0.28,
+          maxChildSize: 0.94,
+          snap: true,
+          snapSizes: const [_initial],
+          builder: (context, controller) => DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 18,
+                  offset: Offset(0, -2),
+                ),
+              ],
+            ),
+            child: ListView(
+              controller: controller,
+              padding: EdgeInsets.fromLTRB(
+                16.w,
+                8.h,
+                16.w,
+                24.h + media.padding.bottom,
+              ),
+              children: [
+                Center(
+                  child: Container(
+                    width: 38.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 12.h),
+                    decoration: BoxDecoration(
+                      color: Colors.black12,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.all(16.r),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18.r),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  child: Text(
+                                    h.title,
+                                    key: ValueKey(h.title),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 20.sp,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: 2.h),
+                                Text(
+                                  h.sub,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.5.sp,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_step == 2)
+                            ValueListenableBuilder<String?>(
+                              valueListenable: eta,
+                              builder: (_, v, _) => v == null
+                                  ? const SizedBox.shrink()
+                                  : Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 10.w,
+                                        vertical: 6.h,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: primary.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(
+                                          10.r,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        v,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11.5.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: primary,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                        ],
+                      ),
+                      SizedBox(height: 14.h),
+                      _StepBar(step: _step, color: primary),
+                      if (showPin) ...[
+                        SizedBox(height: 14.h),
+                        _PinStrip(pin: order.deliveryOtp!, color: primary),
+                      ],
+                      SizedBox(height: 14.h),
+                      Divider(
+                        height: 1,
+                        color: Colors.black.withValues(alpha: 0.06),
+                      ),
+                      SizedBox(height: 12.h),
+                      _RiderRow(
+                        name: order.riderName,
+                        phone: order.riderPhone,
+                        color: primary,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                ...details,
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Four steps: assigned, at the store, on the way, arrived.
+class _StepBar extends StatelessWidget {
+  final int step;
+  final Color color;
+  const _StepBar({required this.step, required this.color});
+
+  static const _labels = ['Assigned', 'At store', 'On the way', 'Arrived'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < 4; i++) ...[
+              Expanded(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(end: i <= step ? 1 : 0),
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, t, _) => ClipRRect(
+                    borderRadius: BorderRadius.circular(3.r),
+                    child: LinearProgressIndicator(
+                      value: t,
+                      minHeight: 5.h,
+                      backgroundColor: Colors.black.withValues(alpha: 0.07),
+                      valueColor: AlwaysStoppedAnimation(color),
+                    ),
+                  ),
+                ),
+              ),
+              if (i < 3) SizedBox(width: 4.w),
+            ],
+          ],
+        ),
+        SizedBox(height: 6.h),
+        Row(
+          children: [
+            for (var i = 0; i < 4; i++)
+              Expanded(
+                child: Text(
+                  _labels[i],
+                  textAlign: i == 0
+                      ? TextAlign.start
+                      : i == 3
+                      ? TextAlign.end
+                      : TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 10.sp,
+                    fontWeight: i == step ? FontWeight.w700 : FontWeight.w500,
+                    color: i <= step ? Colors.black87 : Colors.black38,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PinStrip extends StatelessWidget {
+  final String pin;
+  final Color color;
+  const _PinStrip({required this.pin, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14.r),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            PhosphorIcons.lockKey(PhosphorIconsStyle.fill),
+            color: color,
+            size: 20.sp,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              'Delivery PIN, share it with the rider',
+              style: GoogleFonts.poppins(
+                fontSize: 12.sp,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          Text(
+            pin.split('').join(' '),
+            style: GoogleFonts.poppins(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RiderRow extends StatelessWidget {
+  final String? name;
+  final String? phone;
+  final Color color;
+  const _RiderRow({
+    required this.name,
+    required this.phone,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final n = (name ?? '').trim();
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 22.r,
+          backgroundColor: color.withValues(alpha: 0.12),
+          child: Text(
+            n.isEmpty ? '?' : n[0].toUpperCase(),
+            style: GoogleFonts.poppins(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                n.isEmpty ? 'Your rider' : n,
+                style: GoogleFonts.poppins(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'Delivery partner',
+                style: GoogleFonts.poppins(
+                  fontSize: 11.5.sp,
+                  color: Colors.black45,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if ((phone ?? '').isNotEmpty)
+          Material(
+            color: color,
+            shape: const CircleBorder(),
+            child: IconButton(
+              tooltip: 'Call rider',
+              icon: Icon(
+                PhosphorIcons.phone(PhosphorIconsStyle.fill),
+                color: Colors.white,
+                size: 20.sp,
+              ),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                launchUrl(Uri.parse('tel:$phone'));
+              },
+            ),
+          ),
+      ],
+    );
   }
 }

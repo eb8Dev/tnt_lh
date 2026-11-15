@@ -15,7 +15,25 @@ import 'package:tnt_lh/utils/map_markers.dart';
 
 class LiveTrackingPanel extends ConsumerStatefulWidget {
   final dynamic order;
-  const LiveTrackingPanel({super.key, required this.order});
+
+  /// Map only, filling its parent (the live order screen). Off: the card
+  /// with map, status line and PIN used elsewhere.
+  final bool fullBleed;
+
+  /// Space at the bottom of the map hidden under a sheet, so the camera keeps
+  /// the rider and the markers in the visible part.
+  final double mapBottomPadding;
+
+  /// The distance / time line ("0.3 km away · 2 mins"), for the page to show.
+  final ValueNotifier<String?>? eta;
+
+  const LiveTrackingPanel({
+    super.key,
+    required this.order,
+    this.fullBleed = false,
+    this.mapBottomPadding = 0,
+    this.eta,
+  });
 
   @override
   ConsumerState<LiveTrackingPanel> createState() => _LiveTrackingPanelState();
@@ -302,6 +320,9 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
             ? "Rider has arrived at your location!"
             : "Rider is ${dist.toStringAsFixed(1)}km away • $mins mins away";
       });
+      widget.eta?.value = dist < 0.1
+          ? 'Right outside'
+          : '${dist.toStringAsFixed(1)} km away · $mins min';
     }
   }
 
@@ -419,6 +440,46 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
     );
   }
 
+  Widget _fullBleedMap() {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: _riderLoc ?? _pickupLoc ?? _defaultLoc,
+              zoom: 15,
+            ),
+            onMapCreated: (c) => _mapController = c,
+            markers: _buildMarkers(),
+            polylines: _buildPolylines(),
+            padding: EdgeInsets.only(bottom: widget.mapBottomPadding),
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+          ),
+        ),
+        Positioned(
+          right: 14.w,
+          bottom: widget.mapBottomPadding + 14.h,
+          child: FloatingActionButton.small(
+            heroTag: "locate_rider_full_${widget.order.id}",
+            elevation: 2,
+            onPressed: () {
+              if (_riderLoc != null) {
+                _mapController?.animateCamera(
+                  CameraUpdate.newLatLngZoom(_riderLoc!, 15.5),
+                );
+              }
+            },
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black87,
+            child: Icon(PhosphorIcons.crosshair()),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final trackingState = ref.watch(riderTrackingProvider);
@@ -446,6 +507,8 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
         }
       });
     }
+
+    if (widget.fullBleed) return _fullBleedMap();
 
     if (_isLoading) {
       return Container(

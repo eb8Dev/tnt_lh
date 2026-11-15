@@ -1,5 +1,12 @@
 import 'package:tnt_lh/utils/formatters.dart';
 
+Map? _rider(Map json) {
+  final d = json['delivery'];
+  if (d is Map && d['rider'] is Map) return d['rider'] as Map;
+  if (json['riderId'] is Map) return json['riderId'] as Map;
+  return null;
+}
+
 class Order {
   final String id;
   final String orderNumber;
@@ -38,6 +45,27 @@ class Order {
   /// which stays "assigned" while the rider waits at the store and "on the way"
   /// after they reach the door.
   final String? deliveryStatus;
+
+  /// The rider on this order, and the PIN the customer gives them at the door
+  /// (sent only once the rider is on the way to the customer).
+  final String? riderName;
+  final String? riderPhone;
+  final String? deliveryOtp;
+
+  /// A rider has the order and it isn't finished: the live, map-first view.
+  bool get isRiderPhase {
+    const steps = {
+      'assigned',
+      'accepted',
+      'heading_to_pickup',
+      'arrived_at_pickup',
+      'picked_up',
+      'out-for-delivery',
+      'in_transit',
+      'arrived',
+    };
+    return steps.contains(displayStatus.toLowerCase());
+  }
 
   static const _riderSteps = {
     'accepted',
@@ -91,6 +119,9 @@ class Order {
     this.cancelReason,
     required this.timeline,
     this.deliveryStatus,
+    this.riderName,
+    this.riderPhone,
+    this.deliveryOtp,
   });
 
   /// When this order last moved (its last status change), falling back to when
@@ -139,6 +170,11 @@ class Order {
       cancelReason: json['cancelReason']?.toString(),
       deliveryStatus: json['delivery'] is Map
           ? (json['delivery'] as Map)['status']?.toString()
+          : null,
+      riderName: _rider(json)?['name']?.toString(),
+      riderPhone: _rider(json)?['mobile']?.toString(),
+      deliveryOtp: json['delivery'] is Map
+          ? (json['delivery'] as Map)['deliveryOtp']?.toString()
           : null,
       timeline:
           (json['timeline'] as List?)
