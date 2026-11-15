@@ -1,6 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/product_model.dart';
+import 'package:tnt_lh/providers/socket_provider.dart';
 import 'package:tnt_lh/services/auth_service.dart';
+
+/// Reload when the menu changes on the server (an admin or manager edits a
+/// category or product: a new picture, price, item switched off) and after
+/// a reconnect or coming back to the app, so every open app shows the menu
+/// as it is now, not as it was at launch.
+void _reloadOnCatalogChange(Ref ref) {
+  ref.listen<SocketEvent?>(socketEventsProvider, (_, e) {
+    if (e?.name == 'catalog:updated') ref.invalidateSelf();
+  });
+  ref.listen<int>(liveRefreshProvider, (_, _) => ref.invalidateSelf());
+}
 
 class ProductParams {
   final String? categoryId;
@@ -29,6 +41,7 @@ final categoriesProvider = FutureProvider.family<List<Category>, String>((
   // The request is already brand-scoped (/api/:brand/...), so the backend
   // returns only this brand's categories. Re-filtering client-side risked
   // showing an empty screen whenever a brand field didn't match exactly.
+  _reloadOnCatalogChange(ref);
   final raw = await AuthService.getCategories(brand: brand);
   return raw.map((e) => Category.fromJson(e)).toList();
 });
@@ -74,7 +87,10 @@ class ProductsNotifier extends AsyncNotifier<ProductsState> {
   int _page = 1;
 
   @override
-  Future<ProductsState> build() => _loadFirstPage();
+  Future<ProductsState> build() {
+    _reloadOnCatalogChange(ref);
+    return _loadFirstPage();
+  }
 
   Future<ProductsState> _loadFirstPage() async {
     _page = 1;
@@ -134,6 +150,7 @@ final popularProductsProvider = FutureProvider.family<List<Product>, String>((
   ref,
   brand,
 ) async {
+  _reloadOnCatalogChange(ref);
   final raw = await AuthService.getProducts(
     brand: brand,
     limit: 10,
@@ -152,6 +169,7 @@ final storeMenuProvider =
       ref,
       brand,
     ) async {
+      _reloadOnCatalogChange(ref);
       Future<List<Product>> page(int n) async => (await AuthService.getProducts(
         brand: brand,
         page: n,

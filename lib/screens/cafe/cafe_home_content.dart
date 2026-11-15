@@ -273,7 +273,8 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                     crossAxisCount: 3,
                     mainAxisSpacing: 12.h,
                     crossAxisSpacing: 10.w,
-                    childAspectRatio: 0.82,
+                    // Square picture + two lines of name + item count.
+                    childAspectRatio: 0.66,
                   ),
                   itemCount: cats.length,
                   itemBuilder: (_, i) {

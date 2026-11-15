@@ -191,6 +191,13 @@ class SocketManager {
     // never subscribed to the event, so it was dropped on the floor and the
     // tracking map sat frozen while the rider was actually moving.
     // An admin published or changed a banner/offer.
+    // A category or product changed (picture, price, availability).
+    _socket!.on('catalog:updated', (data) {
+      ref
+          .read(socketEventsProvider.notifier)
+          .emitEvent(SocketEvent('catalog:updated', data));
+    });
+
     _socket!.on('promotions:updated', (data) {
       ref
           .read(socketEventsProvider.notifier)

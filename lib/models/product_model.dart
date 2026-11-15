@@ -33,7 +33,9 @@ class Category {
     return Category(
       id: AppFormatters.parseId(json['_id'] ?? json['id']),
       name: json['name'] ?? '',
-      image: json['image'] ?? json['icon'],
+      // Only a real picture. The old 'icon' field holds an emoji, which was
+      // being loaded as an image URL and showed a broken placeholder.
+      image: _url(json['image']),
       description: json['description'],
       brand: brandStr,
       productCount: rawCount is num ? rawCount.toInt() : null,
@@ -185,4 +187,9 @@ class CakePricing {
       egglessExtraCharge: (json['egglessExtraCharge'] ?? 100).toDouble(),
     );
   }
+}
+
+String? _url(dynamic v) {
+  final s = v?.toString().trim() ?? '';
+  return s.startsWith('http') ? s : null;
 }
