@@ -309,33 +309,39 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       }
       _idempotencyKey = null;
 
-      // The order is placed; take its items out of the bag. A failed clean-up
-      // is corrected by the refetch, which takes the server's bag as truth.
-      final cart = ref.read(cartProvider.notifier);
-      for (final i in items) {
-        try {
-          await cart.removeItem(i.id, brand: i.brand);
-        } catch (_) {}
-      }
-      cart.fetchCart(background: true);
-
-      if (!mounted) return;
       final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? {};
       final orderId = data['orderId']?.toString() ?? data['_id']?.toString() ?? '';
+      final cart = ref.read(cartProvider.notifier);
 
-      // Online: the order reaches the café only once it's paid.
       if (data['awaitingPayment'] == true) {
+        // Online: the order reaches the café, and its items leave the bag,
+        // only once it's paid (the server takes them out). A payment that
+        // fails or is left for later keeps the bag as it was.
         final ids = [for (final id in (data['orderIds'] as List? ?? [orderId])) id.toString()];
+        if (!mounted) return;
         final paid = await completePayment(context, orderIds: ids, brand: store);
+        cart.fetchCart(background: true);
         if (!mounted) return;
         if (paid == PaymentResult.unpaid) {
-          Navigator.pushReplacement(
+          setState(() => _placing = false);
+          Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId, brand: store)),
           );
           return;
         }
+      } else {
+        // Cash: the order is placed; take its items out of the bag. A failed
+        // clean-up is corrected by the refetch, which takes the server's bag as truth.
+        for (final i in items) {
+          try {
+            await cart.removeItem(i.id, brand: i.brand);
+          } catch (_) {}
+        }
+        cart.fetchCart(background: true);
       }
+
+      if (!mounted) return;
 
       HapticFeedback.heavyImpact();
       Navigator.pushReplacement(
