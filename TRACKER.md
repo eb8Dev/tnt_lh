@@ -152,13 +152,15 @@ Backend `264348d`…`3e7cf7d`, customer app `d7c660a`…`e6e343c`, website `fe24
 
 ## Phase 10 — Notification and engagement engine (2026-11-20)
 
-Brief from the owner (ChatGPT prompt). Audit first, then build on what exists:
+Brief from the owner (ChatGPT prompt). Owner 2026-11-20: an enhancement, not a blocker; after the auth rework, rider redesign and admin redesign.
+Backend engine built and tested (27 checks) on backend branch `notifications-engine` (`c8d1be1`), NOT on main or live. Still to do: app deep links, opened tracking, multi-device registration, preference screens, admin page.
+Audit first, then build on what exists:
 `services/pushOutbox.js` (queued pushes with retries), `services/orderJourney.js`
 (order-stage pushes), `workers/nudgeWorker.js` (one abandoned-cart nudge after
 2 h, no caps), `services/notificationService.js` / `fcmService.js`,
 `Customer.notificationPreferences` (email, sms, push, offers).
 
-- [ ] 10.1 Audit and write up: every place a push is sent, duplicates, missing caps, token handling, deep links (app `NotificationService`)
+- [x] 10.1 Audit and write up (2026-11-20, in chat): every place a push is sent, duplicates, missing caps, token handling, deep links (app `NotificationService`)
 - [ ] 10.2 One send path: every push goes through the outbox with a category (transactional, cart, recommendation, promo, re-engagement), priority and idempotency key
 - [ ] 10.3 Frequency controller: transactional exempt; marketing max 4 per rolling 7 days, promos max 1 per day, quiet hours 9 PM to 8 AM IST, no duplicates; limits in settings, not code
 - [ ] 10.4 Transactional gaps: payment failed, refund started, refund completed
