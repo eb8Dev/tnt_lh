@@ -11,7 +11,16 @@ class AppConfig {
   // anymore. Flip _useLocalBackend to true only when actively developing the
   // API against a local emulator.
   static const bool _useLocalBackend = false;
-  static String _baseUrl = (_useLocalBackend && kDebugMode)
+
+  /// A developer's own API, for one run:
+  ///   flutter run --dart-define=API_BASE=http://localhost:5000/api
+  /// Wins over Remote Config. Ignored in release builds.
+  static const String _apiOverride = String.fromEnvironment('API_BASE');
+  static bool get _overridden => _apiOverride.isNotEmpty && !kReleaseMode;
+
+  static String _baseUrl = _overridden
+      ? _apiOverride
+      : (_useLocalBackend && kDebugMode)
       ? _devBaseUrl
       : _prodBaseUrl;
   static const String defaultBrand = "teasntrees";
@@ -29,6 +38,10 @@ class AppConfig {
   }
 
   static Future<void> initializeRemoteConfig() async {
+    if (_overridden) {
+      debugPrint('API: using $_apiOverride (API_BASE)');
+      return;
+    }
     try {
       final remoteConfig = FirebaseRemoteConfig.instance;
 

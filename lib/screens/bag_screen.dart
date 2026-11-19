@@ -23,6 +23,9 @@ import 'package:tnt_lh/screens/address_form_screen.dart';
 import 'package:tnt_lh/screens/order_placed_screen.dart';
 import 'package:tnt_lh/services/coupon_service.dart';
 import 'package:tnt_lh/services/order_service.dart';
+import 'package:tnt_lh/services/payment_service.dart';
+import 'package:tnt_lh/payments/online_payment.dart';
+import 'package:tnt_lh/screens/order_detail_screen.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
 
@@ -86,6 +89,13 @@ class _BagScreenState extends ConsumerState<BagScreen> {
 
   bool _placing = false;
 
+  /// Whether each store offers online payment to this customer (server says).
+  final Map<String, bool> _online = {};
+
+  /// The customer's choice; only honoured where online payment is offered.
+  bool _payOnline = true;
+  bool get _paysOnline => _payOnline && (_online[_store] ?? false);
+
   /// Survives retries of one checkout; see OrderService.createOrder. A timeout
   /// after the server already took the order must not let "Place order" create
   /// a second one.
@@ -102,6 +112,11 @@ class _BagScreenState extends ConsumerState<BagScreen> {
   // ---------------------------------------------------------------- data ---
 
   Future<void> _loadPricing(String store) async {
+    if (!_online.containsKey(store)) {
+      PaymentService.onlineAvailable(store).then((ok) {
+        if (mounted) setState(() => _online[store] = ok);
+      });
+    }
     if (_pricing.containsKey(store)) return;
     try {
       final s = await OrderService.getSettings(brand: store);
@@ -273,7 +288,7 @@ class _BagScreenState extends ConsumerState<BagScreen> {
         alternatePhone: alt.isNotEmpty
             ? alt
             : (address.receiverPhone.isNotEmpty ? address.receiverPhone : null),
-        paymentMethod: 'COD',
+        paymentMethod: _paysOnline ? 'Online' : 'COD',
         latitude: address.latitude,
         longitude: address.longitude,
         brand: store,
@@ -305,8 +320,24 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       cart.fetchCart(background: true);
 
       if (!mounted) return;
-      HapticFeedback.heavyImpact();
       final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? {};
+      final orderId = data['orderId']?.toString() ?? data['_id']?.toString() ?? '';
+
+      // Online: the order reaches the café only once it's paid.
+      if (data['awaitingPayment'] == true) {
+        final ids = [for (final id in (data['orderIds'] as List? ?? [orderId])) id.toString()];
+        final paid = await completePayment(context, orderIds: ids, brand: store);
+        if (!mounted) return;
+        if (paid == PaymentResult.unpaid) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId, brand: store)),
+          );
+          return;
+        }
+      }
+
+      HapticFeedback.heavyImpact();
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -689,27 +720,10 @@ class _BagScreenState extends ConsumerState<BagScreen> {
               Gap(Space.sm),
               Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'PAY ON DELIVERY',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10.sp,
-                          letterSpacing: 0.6,
-                          color: Colors.black45,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'Cash',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  _PayMethod(
+                    online: _paysOnline,
+                    canChoose: _online[_store] ?? false,
+                    onTap: _choosePayMethod,
                   ),
                   GapW(Space.md),
                   Expanded(
@@ -784,6 +798,53 @@ class _BagScreenState extends ConsumerState<BagScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _choosePayMethod() async {
+    HapticFeedback.selectionClick();
+    final online = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('How would you like to pay?', style: GoogleFonts.poppins(fontSize: 17.sp, fontWeight: FontWeight.w700)),
+              Gap(Space.sm),
+              _PayOption(
+                icon: PhosphorIcons.qrCode(),
+                title: 'Pay online',
+                subtitle: 'UPI, cards, net banking or wallets',
+                selected: _paysOnline,
+                onTap: () => Navigator.pop(ctx, true),
+              ),
+              Gap(Space.xs),
+              _PayOption(
+                icon: PhosphorIcons.money(),
+                title: 'Cash on delivery',
+                subtitle: 'Pay the rider when your order arrives',
+                selected: !_paysOnline,
+                onTap: () => Navigator.pop(ctx, false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (online != null && mounted) {
+      setState(() {
+        _payOnline = online;
+        _idempotencyKey = null; // a different checkout now
+      });
+    }
   }
 
   Future<void> _confirmClear(String store) async {
@@ -1743,6 +1804,86 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The payment method in the pay bar: tap to change it, where there's a choice.
+class _PayMethod extends StatelessWidget {
+  final bool online;
+  final bool canChoose;
+  final VoidCallback onTap;
+  const _PayMethod({required this.online, required this.canChoose, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              online ? 'PAY ONLINE' : 'PAY ON DELIVERY',
+              style: GoogleFonts.poppins(fontSize: 10.sp, letterSpacing: 0.6, color: Colors.black45, fontWeight: FontWeight.w600),
+            ),
+            if (canChoose) ...[
+              GapW(Space.xxs),
+              Icon(PhosphorIcons.caretUp(PhosphorIconsStyle.bold), size: 10.sp, color: Colors.black45),
+            ],
+          ],
+        ),
+        Text(online ? 'UPI, cards' : 'Cash', style: GoogleFonts.poppins(fontSize: 14.sp, fontWeight: FontWeight.w600)),
+      ],
+    );
+    if (!canChoose) return label;
+    return Semantics(
+      button: true,
+      label: 'Payment method: ${online ? 'online' : 'cash on delivery'}. Change',
+      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(10.r), child: Padding(padding: EdgeInsets.all(4.r), child: label)),
+    );
+  }
+}
+
+class _PayOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+  const _PayOption({required this.icon, required this.title, required this.subtitle, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14.r),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.all(14.r),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(color: selected ? primary : Colors.black12, width: selected ? 2 : 1),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: primary, size: 24.sp),
+            GapW(Space.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: GoogleFonts.poppins(fontSize: 14.5.sp, fontWeight: FontWeight.w600)),
+                  Text(subtitle, style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black54)),
+                ],
+              ),
+            ),
+            if (selected) Icon(PhosphorIcons.checkCircle(PhosphorIconsStyle.fill), color: primary, size: 22.sp),
+          ],
         ),
       ),
     );

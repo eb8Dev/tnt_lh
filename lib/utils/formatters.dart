@@ -23,6 +23,8 @@ class AppFormatters {
 
   static String statusLabel(String status) {
     switch (status.toLowerCase()) {
+      case 'awaiting_payment':
+        return 'Waiting for payment';
       case 'pending':
       case 'placed':
         return 'Order placed';

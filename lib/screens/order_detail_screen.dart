@@ -23,6 +23,7 @@ import 'package:tnt_lh/components/live_tracking_panel.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/formatters.dart';
+import 'package:tnt_lh/payments/online_payment.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
@@ -184,9 +185,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final isCancelled = status == 'cancelled';
     final canReorder = isDelivered || isCancelled;
     // The server allows it only until the store accepts the order.
-    final canCancel = status == 'pending';
+    final canCancel = status == 'pending' || status == 'awaiting_payment';
+    final awaitingPayment = status == 'awaiting_payment';
 
     final buttons = <Widget>[
+      if (awaitingPayment)
+        _actionButton(
+          label: 'Pay now',
+          icon: PhosphorIcons.creditCard(),
+          color: Theme.of(context).colorScheme.primary,
+          onPressed: () => _payNow(order),
+        ),
       if (canCancel)
         _actionButton(
           label: 'Cancel order',
@@ -254,6 +263,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Pay an order that's waiting for its online payment.
+  Future<void> _payNow(Order order) async {
+    final brand = widget.brand ?? order.brand;
+    await completePayment(context, orderIds: [order.id], brand: brand);
+    if (mounted) _reload();
   }
 
   static const _cancelReasons = [
@@ -710,7 +726,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           ? (delivered
                                 ? 'Paid in cash on delivery'
                                 : 'Cash on delivery')
-                          : 'Paid online',
+                          : switch (order.paymentStatus) {
+                              'paid' => 'Paid online',
+                              'refund_pending' => 'Refund on its way to your account',
+                              'refunded' => 'Refunded to your account',
+                              _ => 'Waiting for your payment',
+                            },
                       style: GoogleFonts.poppins(
                         fontSize: 11.sp,
                         color: Colors.black45,
