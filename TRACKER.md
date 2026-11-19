@@ -135,6 +135,40 @@ Every screen gets a designed layout in both orientations; none left out. Landsca
 - [x] 6.10 Dead push tokens cleared instead of retried hourly — live 2026-10-15
 - [x] 6.11 Remote Desktop (3389) open to the internet — client's server and setting; owner decided to leave it (2026-10-15)
 
+## Phase 9 — Online payments, Razorpay (2026-11-20)
+
+Backend `264348d`…`3e7cf7d`, customer app `d7c660a`…`e6e343c`, website `fe247ba`, `e878f7e`.
+
+- [x] 9.1 Unpaid online orders wait as `awaiting_payment`, hidden from every staff list, dashboard and report (one rule in the Order model)
+- [x] 9.2 Server sets the amount; payment fetched, captured, amount-checked; settles from the app or the webhook, idempotent
+- [x] 9.3 Unpaid orders expire after 20 min (Razorpay checked first); pay-cash fallback; bag kept until paid
+- [x] 9.4 Paid orders that get cancelled are refunded (on cancel, plus a sweep that catches every other path)
+- [x] 9.5 App: pay-online / cash switch, try again / pay cash / decide later sheet, Pay now on the order page, refund labels
+- [x] 9.6 Website: same flow through the shared `useOnlinePayment` hook (TNT redesign; CNC reuses it)
+- [x] 9.7 Live in testers mode (`ONLINE_PAYMENTS=testers`, owner's number only), test keys, webhook verified; end-to-end on production 2026-11-20: failed attempt, retry, paid, cancelled, refunded
+- [ ] 9.8 Live keys per brand (one account or two still undecided), then `ONLINE_PAYMENTS=on`
+- [ ] 9.9 Website checkout tested in a browser with a signed-in account
+- [ ] 9.10 Admin panel shows payment status and refunds on orders
+
+## Phase 10 — Notification and engagement engine (2026-11-20)
+
+Brief from the owner (ChatGPT prompt). Audit first, then build on what exists:
+`services/pushOutbox.js` (queued pushes with retries), `services/orderJourney.js`
+(order-stage pushes), `workers/nudgeWorker.js` (one abandoned-cart nudge after
+2 h, no caps), `services/notificationService.js` / `fcmService.js`,
+`Customer.notificationPreferences` (email, sms, push, offers).
+
+- [ ] 10.1 Audit and write up: every place a push is sent, duplicates, missing caps, token handling, deep links (app `NotificationService`)
+- [ ] 10.2 One send path: every push goes through the outbox with a category (transactional, cart, recommendation, promo, re-engagement), priority and idempotency key
+- [ ] 10.3 Frequency controller: transactional exempt; marketing max 4 per rolling 7 days, promos max 1 per day, quiet hours 9 PM to 8 AM IST, no duplicates; limits in settings, not code
+- [ ] 10.4 Transactional gaps: payment failed, refund started, refund completed
+- [ ] 10.5 Abandoned cart: 30 min, 4 h, 24 h; reset on change; cancel on order or empty bag; max 3; product names in the copy
+- [ ] 10.6 Preferences: order updates (always on), cart reminders, recommendations, offers, re-engagement; app settings screen and website settings tab
+- [ ] 10.7 Deep links: cart, product, offer, order, on Android and iOS
+- [ ] 10.8 Tracking: scheduled, sent, failed, suppressed, opened; opt-outs; orders that followed a push
+- [ ] 10.9 Admin: switch categories on and off, edit limits and copy
+- [ ] 10.10 Later, once there is enough order history: meal-time pushes, "your usual", re-engagement at 3/7/14/30 days
+
 ## Phase 4 — Later (agreed to defer)
 
 - [ ] 4.1 Backend: new brand key (`creamncrust`) with `littleh` kept as an alias
