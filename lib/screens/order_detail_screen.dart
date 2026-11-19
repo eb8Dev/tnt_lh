@@ -704,7 +704,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            delivered ? 'Paid' : 'To pay',
+                            switch (order.paymentStatus) {
+                              'refunded' || 'refund_pending' => 'Refund',
+                              'paid' => 'Paid',
+                              _ => delivered
+                                  ? 'Paid'
+                                  : order.status == 'cancelled'
+                                  ? 'Order total'
+                                  : 'To pay',
+                            },
                             style: GoogleFonts.poppins(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
