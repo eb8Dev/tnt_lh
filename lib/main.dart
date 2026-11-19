@@ -8,10 +8,9 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tnt_lh/firebase_options.dart';
-import 'package:tnt_lh/onboarding/onboarding_screen.dart';
-import 'package:tnt_lh/onboarding/login_screen.dart';
-import 'package:tnt_lh/onboarding/otp_verify.dart';
-import 'package:tnt_lh/onboarding/register_screen.dart';
+import 'package:tnt_lh/auth/auth_flow.dart';
+import 'package:tnt_lh/auth/complete_profile_screen.dart';
+import 'package:tnt_lh/auth/phone_sign_in.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/connectivity_provider.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
@@ -207,6 +206,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    ref.listen(authProvider.select((s) => s.isAuthenticated || s.requiresRegistration), (_, signedIn) {
+      if (signedIn) ref.invalidate(phoneSignInProvider);
+    });
 
     if ((authState.isLoading &&
             !authState.isAuthenticated &&
@@ -234,7 +236,7 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
         }
       }
 
-      return RegisterScreen(
+      return CompleteProfileScreen(
         initialName: authState.firebaseUser?.displayName,
         initialEmail: authState.firebaseUser?.email,
         initialMobile: displayMobile,
@@ -300,38 +302,3 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   }
 }
 
-class AuthFlow extends StatefulWidget {
-  const AuthFlow({super.key});
-
-  @override
-  State<AuthFlow> createState() => _AuthFlowState();
-}
-
-class _AuthFlowState extends State<AuthFlow> {
-  String _step = 'onboarding'; // onboarding, login, otp
-  String? _phone;
-  String? _verificationId;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_step == 'login') {
-      return LoginScreen(
-        onBack: () => setState(() => _step = 'onboarding'),
-        onOtpSent: (phone, verId) => setState(() {
-          _phone = phone;
-          _verificationId = verId;
-          _step = 'otp';
-        }),
-      );
-    } else if (_step == 'otp') {
-      return OtpVerifyScreen(
-        phone: _phone!,
-        verificationId: _verificationId!,
-        onBack: () => setState(() => _step = 'login'),
-      );
-    }
-    return OnboardingScreen(
-      onGetStarted: () => setState(() => _step = 'login'),
-    );
-  }
-}

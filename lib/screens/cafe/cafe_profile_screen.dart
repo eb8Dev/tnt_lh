@@ -14,7 +14,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/models/user_model.dart';
-import 'package:tnt_lh/onboarding/onboarding_screen.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/unsaved_changes_provider.dart';
@@ -199,11 +198,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     if (!sure || !mounted) return;
     await ref.read(authProvider.notifier).logout();
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => OnboardingScreen(onGetStarted: () {})),
-      (route) => false,
-    );
+    // Back to the root: signed out, it shows the sign-in flow by itself.
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _launchPrivacyPolicy() async {
@@ -873,11 +869,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       );
       return;
     }
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => OnboardingScreen(onGetStarted: () {})),
-      (route) => false,
-    );
+    // Back to the root: signed out, it shows the sign-in flow by itself.
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Widget _buildDeleteAccountButton() {
