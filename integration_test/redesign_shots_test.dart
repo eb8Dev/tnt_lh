@@ -17,6 +17,8 @@ import 'package:tnt_lh/auth/welcome_screen.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'package:tnt_lh/core/theme.dart';
 import 'package:tnt_lh/firebase_options.dart';
+import 'package:tnt_lh/models/order_model.dart';
+import 'package:tnt_lh/screens/rider_badge_screen.dart';
 
 /// Holds whatever state the shot needs; nothing reaches Firebase.
 class _FakeSignIn extends PhoneSignIn {
@@ -33,7 +35,9 @@ class _FakeSignIn extends PhoneSignIn {
 }
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // Draw every frame, as on a phone, so physics and drifting run in real time.
+  binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
   GoogleFonts.config.allowRuntimeFetching = false;
 
   Future<void> pumpFor(WidgetTester tester, Duration d) async {
@@ -97,5 +101,16 @@ void main() {
     await shot(tester, '08_new_customer');
     await show(tester, const CompleteProfileScreen(initialName: 'Bhanu', initialEmail: 'name@example.com'));
     await shot(tester, '09_new_customer_google');
+
+    // Sample rider, not a real person.
+    const rider = RiderBadge(name: 'Ravi Kumar', phone: '9000000000', code: 'TNT-0042', vehicle: 'Splendor Bike', vehicleNumber: 'AP 07 AB 1234', rating: 4.8, deliveries: 312);
+    await show(tester, const RiderBadgeScreen(rider: rider, brand: 'teasntrees', pin: '4821'));
+    await pumpFor(tester, const Duration(seconds: 2)); // let the drop-in swing settle
+    await shot(tester, '10_rider_badge');
+    await tester.tap(find.text('Ravi Kumar'));
+    await shot(tester, '11_rider_badge_back');
+    await show(tester, const RiderBadgeScreen(rider: RiderBadge(name: 'Sana Begum', vehicleNumber: 'AP 07 CD 5678'), brand: 'littleh'));
+    await pumpFor(tester, const Duration(seconds: 2));
+    await shot(tester, '12_rider_badge_new_bakery');
   });
 }

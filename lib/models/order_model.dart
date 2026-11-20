@@ -50,6 +50,9 @@ class Order {
   /// (sent only once the rider is on the way to the customer).
   final String? riderName;
   final String? riderPhone;
+
+  /// The rider's ID badge: their rider ID, vehicle, rating and delivery count.
+  final RiderBadge? riderBadge;
   final String? deliveryOtp;
 
   /// A rider has the order and it isn't finished: the live, map-first view.
@@ -133,6 +136,7 @@ class Order {
     this.stageVersion = 0,
     this.riderName,
     this.riderPhone,
+    this.riderBadge,
     this.deliveryOtp,
   });
 
@@ -187,6 +191,7 @@ class Order {
       stageVersion: (json['stageVersion'] as num?)?.toInt() ?? 0,
       riderName: _rider(json)?['name']?.toString(),
       riderPhone: _rider(json)?['mobile']?.toString(),
+      riderBadge: RiderBadge.fromRider(_rider(json)),
       deliveryOtp:
           (json['journey'] is Map
               ? (json['journey'] as Map)['deliveryOtp']?.toString()
@@ -273,6 +278,56 @@ class OrderTimeline {
       status: json['status']?.toString() ?? '',
       timestamp: json['timestamp']?.toString() ?? '',
       description: json['description']?.toString(),
+    );
+  }
+}
+
+/// What the customer's rider card shows about their rider.
+class RiderBadge {
+  final String name;
+  final String? phone;
+  final String? code; // e.g. TNT-0042
+  final String? vehicle; // e.g. "Splendor Bike"
+  final String? vehicleNumber;
+  final double? rating; // null until they have ratings
+  final int deliveries;
+
+  const RiderBadge({
+    required this.name,
+    this.phone,
+    this.code,
+    this.vehicle,
+    this.vehicleNumber,
+    this.rating,
+    this.deliveries = 0,
+  });
+
+  String get initials {
+    final parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'R';
+    return parts.take(2).map((p) => p[0].toUpperCase()).join();
+  }
+
+  static RiderBadge? fromRider(Map? r) {
+    final name = r?['name']?.toString();
+    if (r == null || name == null || name.isEmpty) return null;
+    final count = (r['ratingsCount'] as num?)?.toInt() ?? 0;
+    final vehicle = [
+      r['vehicleModel'],
+      r['vehicleType'],
+    ].where((v) => v != null && '$v'.isNotEmpty).join(' ');
+    return RiderBadge(
+      name: name,
+      phone: r['mobile']?.toString(),
+      code: r['readableId']?.toString(),
+      vehicle: vehicle.isEmpty ? null : vehicle,
+      vehicleNumber: r['vehicleNumber']?.toString(),
+      rating: count > 0 ? (r['averageRating'] as num?)?.toDouble() : null,
+      deliveries: (r['totalDeliveries'] as num?)?.toInt() ?? 0,
     );
   }
 }

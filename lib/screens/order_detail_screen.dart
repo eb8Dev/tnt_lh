@@ -25,6 +25,8 @@ import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:tnt_lh/payments/online_payment.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
+import 'package:tnt_lh/screens/rider_badge_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
@@ -80,6 +82,31 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       _livePoll!.cancel();
       _livePoll = null;
     }
+  }
+
+  /// The rider's badge drops in once per order, the first time this page
+  /// sees a rider on it. Remembered on the device so it doesn't repeat.
+  static const _storage = FlutterSecureStorage();
+  static final _badgeShown = <String>{};
+
+  Future<void> _maybeShowBadge(Order order) async {
+    final rider = order.riderBadge;
+    if (rider == null || !order.isRiderPhase || widget.embedded) return;
+    if (!_badgeShown.add(order.id)) return;
+    final key = 'rider_badge_seen_${order.id}';
+    try {
+      if (await _storage.read(key: key) != null) return;
+      await _storage.write(key: key, value: '1');
+    } catch (_) {
+      // Storage unavailable: the in-memory set still stops repeats this session.
+    }
+    if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
+    RiderBadgeScreen.show(
+      context,
+      rider: rider,
+      brand: order.brand,
+      pin: order.deliveryOtp,
+    );
   }
 
   @override
@@ -548,6 +575,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             if (snapshot.connectionState == ConnectionState.done &&
                 snapshot.hasData) {
               _shown = snapshot.data;
+              final shown = _shown!;
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _maybeShowBadge(shown),
+              );
             }
             _syncLivePoll();
             final live = _liveLayout(context);
@@ -707,11 +738,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                             switch (order.paymentStatus) {
                               'refunded' || 'refund_pending' => 'Refund',
                               'paid' => 'Paid',
-                              _ => delivered
-                                  ? 'Paid'
-                                  : order.status == 'cancelled'
-                                  ? 'Order total'
-                                  : 'To pay',
+                              _ =>
+                                delivered
+                                    ? 'Paid'
+                                    : order.status == 'cancelled'
+                                    ? 'Order total'
+                                    : 'To pay',
                             },
                             style: GoogleFonts.poppins(
                               fontSize: 14.sp,
@@ -736,7 +768,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                                 : 'Cash on delivery')
                           : switch (order.paymentStatus) {
                               'paid' => 'Paid online',
-                              'refund_pending' => 'Refund on its way to your account',
+                              'refund_pending' =>
+                                'Refund on its way to your account',
                               'refunded' => 'Refunded to your account',
                               _ => 'Waiting for your payment',
                             },
@@ -1751,6 +1784,14 @@ class _LiveOrderView extends StatelessWidget {
                         name: order.riderName,
                         phone: order.riderPhone,
                         color: primary,
+                        onOpen: order.riderBadge == null
+                            ? null
+                            : () => RiderBadgeScreen.show(
+                                context,
+                                rider: order.riderBadge!,
+                                brand: order.brand,
+                                pin: order.deliveryOtp,
+                              ),
                       ),
                     ],
                   ),
@@ -1881,10 +1922,12 @@ class _RiderRow extends StatelessWidget {
   final String? name;
   final String? phone;
   final Color color;
+  final VoidCallback? onOpen;
   const _RiderRow({
     required this.name,
     required this.phone,
     required this.color,
+    this.onOpen,
   });
 
   @override
@@ -1892,38 +1935,50 @@ class _RiderRow extends StatelessWidget {
     final n = (name ?? '').trim();
     return Row(
       children: [
-        CircleAvatar(
-          radius: 22.r,
-          backgroundColor: color.withValues(alpha: 0.12),
-          child: Text(
-            n.isEmpty ? '?' : n[0].toUpperCase(),
-            style: GoogleFonts.poppins(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ),
-        SizedBox(width: 12.w),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                n.isEmpty ? 'Your rider' : n,
-                style: GoogleFonts.poppins(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w600,
+          child: InkWell(
+            onTap: onOpen,
+            borderRadius: BorderRadius.circular(12.r),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 22.r,
+                  backgroundColor: color.withValues(alpha: 0.12),
+                  child: Text(
+                    n.isEmpty ? '?' : n[0].toUpperCase(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
                 ),
-              ),
-              Text(
-                'Delivery partner',
-                style: GoogleFonts.poppins(
-                  fontSize: 11.5.sp,
-                  color: Colors.black45,
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        n.isEmpty ? 'Your rider' : n,
+                        style: GoogleFonts.poppins(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        onOpen == null
+                            ? 'Delivery partner'
+                            : 'Delivery partner · See ID',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.5.sp,
+                          color: Colors.black45,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         if ((phone ?? '').isNotEmpty)
