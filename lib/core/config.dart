@@ -2,6 +2,10 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
+  /// The policies customers agree to, on the website.
+  static final Uri termsUrl = Uri.parse('https://teasntrees.in/terms');
+  static final Uri privacyUrl = Uri.parse('https://teasntrees.in/privacy');
+
   // Debug builds hit the local emulator host; release builds fall back to
   // production HTTPS if Remote Config is unavailable. Remote Config `base_url`
   // overrides either at runtime.

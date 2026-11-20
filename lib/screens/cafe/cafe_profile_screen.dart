@@ -1,6 +1,7 @@
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:tnt_lh/providers/wishlist_provider.dart';
 import 'package:tnt_lh/screens/wishlist_screen.dart';
@@ -205,7 +206,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
   }
 
   Future<void> _launchPrivacyPolicy() async {
-    final url = Uri.parse('https://teasntrees.in/privacy');
+    final url = AppConfig.privacyUrl;
     try {
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
         throw 'could not launch';

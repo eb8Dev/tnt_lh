@@ -1,6 +1,10 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:tnt_lh/widgets/app_sheets.dart';
+import 'package:tnt_lh/core/config.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,6 +134,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                const _BrandLockup(),
+                                Gap(Space.sm),
                                 Text(
                                   'Sign in or create an account',
                                   style: GoogleFonts.poppins(
@@ -222,14 +228,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                   ),
                                 ],
                                 Gap(Space.sm),
-                                Text(
-                                  'By continuing you agree to our Terms and Privacy Policy.',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 11.sp,
-                                    color: Colors.black38,
-                                  ),
-                                ),
+                                const _PolicyLine(),
                               ],
                             ),
                           ),
@@ -433,5 +432,113 @@ class _RenderMeasureHeight extends RenderProxyBox {
       _last = h;
       WidgetsBinding.instance.addPostFrameCallback((_) => onHeight(h));
     }
+  }
+}
+
+/// Both shops, side by side, at the top of the sign-in panel: they stay in
+/// view while the keyboard covers the photos and the headline.
+class _BrandLockup extends StatelessWidget {
+  const _BrandLockup();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget shop(String logo, String name, Color color) => Expanded(
+      child: Row(
+        children: [
+          Container(
+            width: 36.r,
+            height: 36.r,
+            padding: EdgeInsets.all(4.r),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Image.asset(logo, fit: BoxFit.contain),
+          ),
+          GapW(Space.xs),
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Row(
+      children: [
+        shop(Brands.cafeLogo, Brands.cafeName, Brands.cafeColor),
+        Container(
+          width: 1,
+          height: 24.h,
+          margin: EdgeInsets.symmetric(horizontal: Space.sm.w),
+          color: Colors.black12,
+        ),
+        shop(Brands.bakeryLogo, Brands.bakeryName, Brands.bakeryColor),
+      ],
+    );
+  }
+}
+
+/// "By continuing you agree to our Terms and Privacy Policy", with both
+/// opening the policy pages.
+class _PolicyLine extends StatefulWidget {
+  const _PolicyLine();
+
+  @override
+  State<_PolicyLine> createState() => _PolicyLineState();
+}
+
+class _PolicyLineState extends State<_PolicyLine> {
+  late final _terms = TapGestureRecognizer()
+    ..onTap = () => _open(AppConfig.termsUrl);
+  late final _privacy = TapGestureRecognizer()
+    ..onTap = () => _open(AppConfig.privacyUrl);
+
+  @override
+  void dispose() {
+    _terms.dispose();
+    _privacy.dispose();
+    super.dispose();
+  }
+
+  Future<void> _open(Uri url) async {
+    HapticFeedback.selectionClick();
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.inAppBrowserView)) {
+        throw 'could not open';
+      }
+    } catch (_) {
+      if (mounted) noticeSheet(context, message: "Couldn't open that page.");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final base = GoogleFonts.poppins(fontSize: 11.sp, color: Colors.black45);
+    final link = base.copyWith(
+      color: Colors.black87,
+      fontWeight: FontWeight.w600,
+      decoration: TextDecoration.underline,
+    );
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          const TextSpan(text: 'By continuing you agree to our '),
+          TextSpan(text: 'Terms', style: link, recognizer: _terms),
+          const TextSpan(text: ' and '),
+          TextSpan(text: 'Privacy Policy', style: link, recognizer: _privacy),
+          const TextSpan(text: '.'),
+        ],
+      ),
+      textAlign: TextAlign.center,
+    );
   }
 }
