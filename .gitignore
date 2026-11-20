@@ -52,3 +52,6 @@ app.*.map.json
 android/key.properties
 android/app/release-keystore.jks
 **/release-keystore.jks
+
+# Review screenshots (tool/screenshots.py, redesign_shots_test.dart)
+tests/screenshots/

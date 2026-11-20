@@ -13,7 +13,8 @@ import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
 import 'package:tnt_lh/widgets/drift_wall.dart';
 
-const _wallPhotos = [
+/// The café's own photos, for the drifting wall (welcome and code screens).
+const welcomeWallPhotos = [
   'assets/images/wall_interior_3.jpg',
   'assets/images/wall_drinks_3.jpg',
   'assets/images/wall_food_3.jpg',
@@ -83,7 +84,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 fit: StackFit.expand,
                 children: [
                   const DriftWall(
-                    images: _wallPhotos,
+                    images: welcomeWallPhotos,
                     background: Color(0xFF0F2419),
                     dim: 0.85,
                   ),

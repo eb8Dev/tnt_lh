@@ -5,6 +5,9 @@ prints SHOT:<name>.
 
   tool/screenshots.py <simulator-udid | emulator-5554> <out-dir> [extra flutter args...]
 
+SHOTS_TARGET picks another walk, e.g. SHOTS_TARGET=integration_test/redesign_shots_test.dart
+for the redesigned screens (saved under tests/screenshots/).
+
 The iPhone 17 Pro Max simulator gives 1320x2868, the App Store's 6.9" size.
 """
 import os, re, subprocess, sys
@@ -17,7 +20,7 @@ if not android:
                     '--batteryState', 'charged', '--batteryLevel', '100',
                     '--cellularBars', '4', '--wifiBars', '3'], check=False)
 cmd = ['flutter', 'drive', '--driver=test_driver/integration_test.dart',
-       '--target=integration_test/screenshots_test.dart', '-d', udid] + sys.argv[3:]
+       '--target=' + os.environ.get('SHOTS_TARGET', 'integration_test/screenshots_test.dart'), '-d', udid] + sys.argv[3:]
 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 for line in p.stdout:
     sys.stdout.write(line); sys.stdout.flush()
