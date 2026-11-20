@@ -80,7 +80,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: const Color(0xFF0F2419),
-        resizeToAvoidBottomInset: true,
+        // The wall keeps its size when the keyboard opens; only the panel
+        // rides up on it. Resizing the whole screen re-laid out the wall on
+        // every frame of the keyboard animation, which made it stutter.
+        resizeToAvoidBottomInset: false,
         // The wall fills the screen and the panel sits over its foot, so the
         // wall keeps its size and place from the splash; the headline lifts
         // as the panel arrives.
@@ -89,139 +92,146 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             Positioned.fill(child: WelcomeHero(bottomInset: _panelHeight)),
             Align(
               alignment: Alignment.bottomCenter,
-              child: _MeasureHeight(
-                onHeight: (h) {
-                  if ((h - _panelHeight).abs() > 0.5) {
-                    setState(() => _panelHeight = h);
-                  }
-                },
-                child: _Rise(
-                  // After the splash the hero is already up; only the panel arrives.
-                  delay: WelcomeHero.shown ? 0 : 400,
-                  // Slides up from the bottom edge, solid, under the lifting headline.
-                  offset: WelcomeHero.shown ? 420 : 40,
-                  fade: !WelcomeHero.shown,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(26.r),
-                      ),
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          Space.ml.w,
-                          Space.lg.h,
-                          Space.ml.w,
-                          Space.md.h,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: _MeasureHeight(
+                  onHeight: (h) {
+                    if ((h - _panelHeight).abs() > 0.5) {
+                      setState(() => _panelHeight = h);
+                    }
+                  },
+                  child: _Rise(
+                    // After the splash the hero is already up; only the panel arrives.
+                    delay: WelcomeHero.shown ? 0 : 400,
+                    // Slides up from the bottom edge, solid, under the lifting headline.
+                    offset: WelcomeHero.shown ? 420 : 40,
+                    fade: !WelcomeHero.shown,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(26.r),
                         ),
-                        child: AutofillGroup(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Sign in or create an account',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Gap(Space.xxs),
-                              Text(
-                                "We'll text you a 6-digit code.",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12.5.sp,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              Gap(Space.md),
-                              PhoneField(
-                                controller: _phone,
-                                enabled: !busy,
-                                onChanged: (_) => signIn.error != null
-                                    ? flow.clearError()
-                                    : null,
-                                onSubmitted: (v) => flow.sendCode(v),
-                              ),
-                              AuthError(signIn.error),
-                              Gap(Space.md),
-                              ValueListenableBuilder<TextEditingValue>(
-                                valueListenable: _phone,
-                                builder: (_, v, _) => AuthPrimaryButton(
-                                  label: 'Continue',
-                                  busy: signIn.sending,
-                                  onTap: v.text.length == 10 && !busy
-                                      ? () => flow.sendCode(v.text)
-                                      : null,
-                                ),
-                              ),
-                              Gap(Space.md),
-                              Row(
-                                children: [
-                                  const Expanded(
-                                    child: Divider(color: Colors.black12),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            Space.ml.w,
+                            Space.lg.h,
+                            Space.ml.w,
+                            Space.md.h,
+                          ),
+                          child: AutofillGroup(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Sign in or create an account',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: Space.sm.w,
+                                ),
+                                Gap(Space.xxs),
+                                Text(
+                                  "We'll text you a 6-digit code.",
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12.5.sp,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                                Gap(Space.md),
+                                PhoneField(
+                                  controller: _phone,
+                                  enabled: !busy,
+                                  onChanged: (_) => signIn.error != null
+                                      ? flow.clearError()
+                                      : null,
+                                  onSubmitted: (v) => flow.sendCode(v),
+                                ),
+                                AuthError(signIn.error),
+                                Gap(Space.md),
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: _phone,
+                                  builder: (_, v, _) => AuthPrimaryButton(
+                                    label: 'Continue',
+                                    busy: signIn.sending,
+                                    onTap: v.text.length == 10 && !busy
+                                        ? () => flow.sendCode(v.text)
+                                        : null,
+                                  ),
+                                ),
+                                Gap(Space.md),
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Divider(color: Colors.black12),
                                     ),
-                                    child: Text(
-                                      'or',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12.sp,
-                                        color: Colors.black45,
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: Space.sm.w,
+                                      ),
+                                      child: Text(
+                                        'or',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.sp,
+                                          color: Colors.black45,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const Expanded(
-                                    child: Divider(color: Colors.black12),
-                                  ),
-                                ],
-                              ),
-                              Gap(Space.md),
-                              AuthSocialButton(
-                                label: 'Continue with Google',
-                                icon: Image.asset(
-                                  'assets/images/google_logo.png',
-                                  width: 24.r,
-                                  height: 24.r,
-                                ),
-                                onTap: busy
-                                    ? null
-                                    : () => _withSocial(auth.signInWithGoogle),
-                              ),
-                              // Apple requires its button next to any other social sign-in.
-                              if (Platform.isIOS) ...[
-                                Gap(Space.xs),
-                                AuthSocialButton(
-                                  label: 'Sign in with Apple',
-                                  dark: true,
-                                  icon: Icon(
-                                    PhosphorIcons.appleLogo(
-                                      PhosphorIconsStyle.fill,
+                                    const Expanded(
+                                      child: Divider(color: Colors.black12),
                                     ),
-                                    color: Colors.white,
-                                    size: 20.r,
+                                  ],
+                                ),
+                                Gap(Space.md),
+                                AuthSocialButton(
+                                  label: 'Continue with Google',
+                                  icon: Image.asset(
+                                    'assets/images/google_logo.png',
+                                    width: 24.r,
+                                    height: 24.r,
                                   ),
                                   onTap: busy
                                       ? null
-                                      : () => _withSocial(auth.signInWithApple),
+                                      : () =>
+                                            _withSocial(auth.signInWithGoogle),
+                                ),
+                                // Apple requires its button next to any other social sign-in.
+                                if (Platform.isIOS) ...[
+                                  Gap(Space.xs),
+                                  AuthSocialButton(
+                                    label: 'Sign in with Apple',
+                                    dark: true,
+                                    icon: Icon(
+                                      PhosphorIcons.appleLogo(
+                                        PhosphorIconsStyle.fill,
+                                      ),
+                                      color: Colors.white,
+                                      size: 20.r,
+                                    ),
+                                    onTap: busy
+                                        ? null
+                                        : () =>
+                                              _withSocial(auth.signInWithApple),
+                                  ),
+                                ],
+                                Gap(Space.sm),
+                                Text(
+                                  'By continuing you agree to our Terms and Privacy Policy.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11.sp,
+                                    color: Colors.black38,
+                                  ),
                                 ),
                               ],
-                              Gap(Space.sm),
-                              Text(
-                                'By continuing you agree to our Terms and Privacy Policy.',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 11.sp,
-                                  color: Colors.black38,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -268,11 +278,15 @@ class _WelcomeHeroState extends State<WelcomeHero> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        DriftWall(
-          images: welcomeWallPhotos,
-          background: Color(0xFF0F2419),
-          dim: 0.85,
-          sharedClock: true,
+        // Its own layer: the wall repaints every frame, the panel and text
+        // don't, and neither should make the other repaint.
+        RepaintBoundary(
+          child: DriftWall(
+            images: welcomeWallPhotos,
+            background: Color(0xFF0F2419),
+            dim: 0.85,
+            sharedClock: true,
+          ),
         ),
         // Shade so the title reads on any photo.
         const DecoratedBox(
