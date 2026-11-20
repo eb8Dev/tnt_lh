@@ -2,6 +2,7 @@ import 'package:tnt_lh/core/responsive.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tnt_lh/widgets/app_sheets.dart';
 import 'package:tnt_lh/core/theme.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -86,7 +87,15 @@ class MyApp extends ConsumerWidget {
           );
           return MediaQuery(
             data: mq.copyWith(textScaler: scaler),
-            child: GlobalListener(child: child!),
+            // Dark status bar icons on the app's light screens. Screens with a
+            // dark top (welcome, rider badge) set light icons for themselves;
+            // without this default those stayed on after leaving them.
+            child: AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: Colors.transparent,
+              ),
+              child: GlobalListener(child: child!),
+            ),
           );
         },
         home: const AuthWrapper(),
