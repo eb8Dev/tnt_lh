@@ -19,6 +19,10 @@ class DriftWall extends StatefulWidget {
   final Color background;
   final double dim; // tile opacity
 
+  /// Walls built with this share one clock, so a wall that replaces another
+  /// (splash to welcome) carries on from the same frame instead of restarting.
+  final bool sharedClock;
+
   const DriftWall({
     super.key,
     required this.images,
@@ -32,7 +36,10 @@ class DriftWall extends StatefulWidget {
     this.variance = 0.45,
     this.background = Colors.black,
     this.dim = 0.9,
+    this.sharedClock = false,
   });
+
+  static final Stopwatch _clock = Stopwatch();
 
   @override
   State<DriftWall> createState() => _DriftWallState();
@@ -45,7 +52,12 @@ class _DriftWallState extends State<DriftWall> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker((d) => _elapsed.value = d.inMicroseconds / 1e6)..start();
+    if (widget.sharedClock && !DriftWall._clock.isRunning) DriftWall._clock.start();
+    _ticker = createTicker(
+      (d) => _elapsed.value = widget.sharedClock
+          ? DriftWall._clock.elapsedMicroseconds / 1e6
+          : d.inMicroseconds / 1e6,
+    )..start();
   }
 
   @override

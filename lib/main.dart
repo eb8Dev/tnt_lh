@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tnt_lh/firebase_options.dart';
 import 'package:tnt_lh/auth/auth_flow.dart';
+import 'package:tnt_lh/auth/launch_screen.dart';
 import 'package:tnt_lh/auth/complete_profile_screen.dart';
 import 'package:tnt_lh/auth/phone_sign_in.dart';
 import 'package:tnt_lh/providers/auth_provider.dart';
@@ -20,7 +21,6 @@ import 'package:tnt_lh/providers/brand_provider.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
 import 'package:tnt_lh/services/notification_service.dart';
 import 'package:tnt_lh/screens/store_home.dart';
-import 'package:tnt_lh/utils/loading_indicator.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -198,11 +198,15 @@ class AuthWrapper extends ConsumerStatefulWidget {
 
 class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   bool _checkedStore = false;
+  bool _splashDone = false;
 
   @override
   void initState() {
     super.initState();
     _checkStorePref();
+    Future.delayed(LaunchScreen.minimum, () {
+      if (mounted) setState(() => _splashDone = true);
+    });
   }
 
   Future<void> _checkStorePref() async {
@@ -214,6 +218,21 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // The splash fades into the menu; into sign-in it hands over directly,
+    // because both show the same wall.
+    final child = _screen(context);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 450),
+      layoutBuilder: (current, previous) =>
+          Stack(children: [...previous, ?current]),
+      transitionBuilder: (c, anim) => c is AuthFlow
+          ? c
+          : FadeTransition(opacity: anim, child: c),
+      child: child,
+    );
+  }
+
+  Widget _screen(BuildContext context) {
     final authState = ref.watch(authProvider);
     ref.listen(authProvider.select((s) => s.isAuthenticated || s.requiresRegistration), (_, signedIn) {
       if (signedIn) ref.invalidate(phoneSignInProvider);
@@ -222,11 +241,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     if ((authState.isLoading &&
             !authState.isAuthenticated &&
             !authState.requiresRegistration) ||
-        !_checkedStore) {
-      return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        body: const Center(child: HouseOfFlavorsLoader(size: 160)),
-      );
+        !_checkedStore ||
+        !_splashDone) {
+      return const LaunchScreen();
     }
 
     if (authState.isAuthenticated) {

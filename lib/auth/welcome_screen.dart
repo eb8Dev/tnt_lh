@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -47,6 +48,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   );
   bool _social = false;
 
+  /// The sign-in panel's height, measured, so the headline sits above it.
+  double _panelHeight = 0;
+
   @override
   void dispose() {
     _phone.dispose();
@@ -77,204 +81,149 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFF0F2419),
         resizeToAvoidBottomInset: true,
-        body: Column(
+        // The wall fills the screen and the panel sits over its foot, so the
+        // wall keeps its size and place from the splash; the headline lifts
+        // as the panel arrives.
+        body: Stack(
           children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const DriftWall(
-                    images: welcomeWallPhotos,
-                    background: Color(0xFF0F2419),
-                    dim: 0.85,
-                  ),
-                  // Shade so the title reads on any photo.
-                  const DecoratedBox(
+            Positioned.fill(child: WelcomeHero(bottomInset: _panelHeight)),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: _MeasureHeight(
+                onHeight: (h) {
+                  if ((h - _panelHeight).abs() > 0.5) {
+                    setState(() => _panelHeight = h);
+                  }
+                },
+                child: _Rise(
+                  // After the splash the hero is already up; only the panel arrives.
+                  delay: WelcomeHero.shown ? 0 : 400,
+                  // Slides up from the bottom edge, solid, under the lifting headline.
+                  offset: WelcomeHero.shown ? 420 : 40,
+                  fade: !WelcomeHero.shown,
+                  child: Container(
+                    width: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x330F2419),
-                          Color(0x000F2419),
-                          Color(0xE60F2419),
-                        ],
-                        stops: [0, 0.45, 1],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(26.r),
                       ),
                     ),
-                  ),
-                  SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        Space.lg.w,
-                        Space.md.h,
-                        Space.lg.w,
-                        Space.lg.h,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          Space.ml.w,
+                          Space.lg.h,
+                          Space.ml.w,
+                          Space.md.h,
+                        ),
+                        child: AutofillGroup(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _Mark(Brands.cafeLogo),
-                              GapW(Space.xs),
-                              _Mark(Brands.bakeryLogo),
-                            ],
-                          ),
-                          const Spacer(),
-                          _Rise(
-                            delay: 150,
-                            child: Text(
-                              'Garden brews and fresh bakes, delivered.',
-                              style: GoogleFonts.playfairDisplay(
-                                color: Colors.white,
-                                fontSize: 30.sp,
-                                height: 1.12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Gap(Space.xs),
-                          _Rise(
-                            delay: 300,
-                            child: Text(
-                              '${Brands.cafeName} and ${Brands.bakeryName}, Guntur',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white70,
-                                fontSize: 13.5.sp,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _Rise(
-              delay: 400,
-              offset: 40,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(26.r),
-                  ),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      Space.ml.w,
-                      Space.lg.h,
-                      Space.ml.w,
-                      Space.md.h,
-                    ),
-                    child: AutofillGroup(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Sign in or create an account',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Gap(Space.xxs),
-                          Text(
-                            "We'll text you a 6-digit code.",
-                            style: GoogleFonts.poppins(
-                              fontSize: 12.5.sp,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          Gap(Space.md),
-                          PhoneField(
-                            controller: _phone,
-                            enabled: !busy,
-                            onChanged: (_) =>
-                                signIn.error != null ? flow.clearError() : null,
-                            onSubmitted: (v) => flow.sendCode(v),
-                          ),
-                          AuthError(signIn.error),
-                          Gap(Space.md),
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _phone,
-                            builder: (_, v, _) => AuthPrimaryButton(
-                              label: 'Continue',
-                              busy: signIn.sending,
-                              onTap: v.text.length == 10 && !busy
-                                  ? () => flow.sendCode(v.text)
-                                  : null,
-                            ),
-                          ),
-                          Gap(Space.md),
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Divider(color: Colors.black12),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: Space.sm.w,
+                              Text(
+                                'Sign in or create an account',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                child: Text(
-                                  'or',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 12.sp,
-                                    color: Colors.black45,
+                              ),
+                              Gap(Space.xxs),
+                              Text(
+                                "We'll text you a 6-digit code.",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12.5.sp,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              Gap(Space.md),
+                              PhoneField(
+                                controller: _phone,
+                                enabled: !busy,
+                                onChanged: (_) => signIn.error != null
+                                    ? flow.clearError()
+                                    : null,
+                                onSubmitted: (v) => flow.sendCode(v),
+                              ),
+                              AuthError(signIn.error),
+                              Gap(Space.md),
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: _phone,
+                                builder: (_, v, _) => AuthPrimaryButton(
+                                  label: 'Continue',
+                                  busy: signIn.sending,
+                                  onTap: v.text.length == 10 && !busy
+                                      ? () => flow.sendCode(v.text)
+                                      : null,
+                                ),
+                              ),
+                              Gap(Space.md),
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Divider(color: Colors.black12),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: Space.sm.w,
+                                    ),
+                                    child: Text(
+                                      'or',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12.sp,
+                                        color: Colors.black45,
+                                      ),
+                                    ),
+                                  ),
+                                  const Expanded(
+                                    child: Divider(color: Colors.black12),
+                                  ),
+                                ],
                               ),
-                              const Expanded(
-                                child: Divider(color: Colors.black12),
+                              Gap(Space.md),
+                              AuthSocialButton(
+                                label: 'Continue with Google',
+                                icon: Image.asset(
+                                  'assets/images/google_logo.png',
+                                  width: 24.r,
+                                  height: 24.r,
+                                ),
+                                onTap: busy
+                                    ? null
+                                    : () => _withSocial(auth.signInWithGoogle),
+                              ),
+                              // Apple requires its button next to any other social sign-in.
+                              if (Platform.isIOS) ...[
+                                Gap(Space.xs),
+                                AuthSocialButton(
+                                  label: 'Sign in with Apple',
+                                  dark: true,
+                                  icon: Icon(
+                                    PhosphorIcons.appleLogo(
+                                      PhosphorIconsStyle.fill,
+                                    ),
+                                    color: Colors.white,
+                                    size: 20.r,
+                                  ),
+                                  onTap: busy
+                                      ? null
+                                      : () => _withSocial(auth.signInWithApple),
+                                ),
+                              ],
+                              Gap(Space.sm),
+                              Text(
+                                'By continuing you agree to our Terms and Privacy Policy.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11.sp,
+                                  color: Colors.black38,
+                                ),
                               ),
                             ],
                           ),
-                          Gap(Space.md),
-                          AuthSocialButton(
-                            label: 'Continue with Google',
-                            icon: Image.asset(
-                              'assets/images/google_logo.png',
-                              width: 24.r,
-                              height: 24.r,
-                            ),
-                            onTap: busy
-                                ? null
-                                : () => _withSocial(auth.signInWithGoogle),
-                          ),
-                          // Apple requires its button next to any other social sign-in.
-                          if (Platform.isIOS) ...[
-                            Gap(Space.xs),
-                            AuthSocialButton(
-                              label: 'Sign in with Apple',
-                              dark: true,
-                              icon: Icon(
-                                PhosphorIcons.appleLogo(
-                                  PhosphorIconsStyle.fill,
-                                ),
-                                color: Colors.white,
-                                size: 20.r,
-                              ),
-                              onTap: busy
-                                  ? null
-                                  : () => _withSocial(auth.signInWithApple),
-                            ),
-                          ],
-                          Gap(Space.sm),
-                          Text(
-                            'By continuing you agree to our Terms and Privacy Policy.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11.sp,
-                              color: Colors.black38,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -284,6 +233,110 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The top of the welcome screen: the café drifting by, both shops' marks and
+/// the headline. The splash shows it on its own while the app starts, then the
+/// welcome screen takes over with the same wall mid-drift and only the sign-in
+/// panel rises in.
+class WelcomeHero extends StatefulWidget {
+  /// Room to leave at the foot for whatever covers it (the sign-in panel).
+  final double bottomInset;
+  const WelcomeHero({super.key, this.bottomInset = 0});
+
+  /// Set once the hero has been on screen, so it doesn't animate in twice.
+  static bool shown = false;
+
+  @override
+  State<WelcomeHero> createState() => _WelcomeHeroState();
+}
+
+class _WelcomeHeroState extends State<WelcomeHero> {
+  // Decided once: the first hero animates its headline in, later ones don't.
+  final bool entrance = !WelcomeHero.shown;
+
+  @override
+  void initState() {
+    super.initState();
+    WelcomeHero.shown = true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DriftWall(
+          images: welcomeWallPhotos,
+          background: Color(0xFF0F2419),
+          dim: 0.85,
+          sharedClock: true,
+        ),
+        // Shade so the title reads on any photo.
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x330F2419), Color(0x000F2419), Color(0xE60F2419)],
+              stops: [0, 0.45, 1],
+            ),
+          ),
+        ),
+        SafeArea(
+          bottom: widget.bottomInset == 0,
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 520),
+            curve: Curves.easeOutCubic,
+            padding: EdgeInsets.fromLTRB(
+              Space.lg.w,
+              Space.md.h,
+              Space.lg.w,
+              Space.lg.h + widget.bottomInset,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _Mark(Brands.cafeLogo),
+                    GapW(Space.xs),
+                    _Mark(Brands.bakeryLogo),
+                  ],
+                ),
+                const Spacer(),
+                _Rise(
+                  enabled: entrance,
+                  delay: 150,
+                  child: Text(
+                    'Garden brews and fresh bakes, delivered.',
+                    style: GoogleFonts.playfairDisplay(
+                      color: Colors.white,
+                      fontSize: 30.sp,
+                      height: 1.12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Gap(Space.xs),
+                _Rise(
+                  enabled: entrance,
+                  delay: 300,
+                  child: Text(
+                    '${Brands.cafeName} and ${Brands.bakeryName}, Guntur',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 13.5.sp,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -310,17 +363,25 @@ class _Rise extends StatelessWidget {
   final Widget child;
   final int delay;
   final double offset;
-  const _Rise({required this.child, this.delay = 0, this.offset = 16});
+  final bool enabled;
+  final bool fade;
+  const _Rise({
+    required this.child,
+    this.delay = 0,
+    this.offset = 16,
+    this.enabled = true,
+    this.fade = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (MediaQuery.of(context).disableAnimations) return child;
+    if (!enabled || MediaQuery.of(context).disableAnimations) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: Duration(milliseconds: 650 + delay),
       curve: Interval(delay / (650 + delay), 1, curve: Curves.easeOutCubic),
       builder: (_, v, c) => Opacity(
-        opacity: v,
+        opacity: fade ? v : 1,
         child: Transform.translate(
           offset: Offset(0, (1 - v) * offset),
           child: c,
@@ -328,5 +389,35 @@ class _Rise extends StatelessWidget {
       ),
       child: child,
     );
+  }
+}
+
+/// Reports its child's height after layout.
+class _MeasureHeight extends SingleChildRenderObjectWidget {
+  final ValueChanged<double> onHeight;
+  const _MeasureHeight({required this.onHeight, required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMeasureHeight(onHeight);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderMeasureHeight r) =>
+      r.onHeight = onHeight;
+}
+
+class _RenderMeasureHeight extends RenderProxyBox {
+  ValueChanged<double> onHeight;
+  double? _last;
+  _RenderMeasureHeight(this.onHeight);
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final h = size.height;
+    if (h != _last) {
+      _last = h;
+      WidgetsBinding.instance.addPostFrameCallback((_) => onHeight(h));
+    }
   }
 }
