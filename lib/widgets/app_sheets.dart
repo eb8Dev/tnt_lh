@@ -149,6 +149,79 @@ Future<bool> confirmSheet(
   return ok == true;
 }
 
+/// One option in a [choiceSheet].
+class SheetChoice<T> {
+  final T value;
+  final String label;
+  final bool primary;
+  final bool destructive;
+  const SheetChoice(
+    this.value,
+    this.label, {
+    this.primary = false,
+    this.destructive = false,
+  });
+}
+
+/// Ask with more than two answers. Closing the sheet returns null, so the
+/// caller treats that as "leave things as they are", never as a choice.
+Future<T?> choiceSheet<T>(
+  BuildContext context, {
+  required String title,
+  String? message,
+  IconData? icon,
+  required List<SheetChoice<T>> choices,
+}) {
+  final danger = Colors.red.shade600;
+  return _sheet<T>(context, (ctx) {
+    final primary = Theme.of(ctx).colorScheme.primary;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (icon != null) ...[_icon(icon, primary), SizedBox(height: 14.h)],
+        _title(title),
+        if (message != null) ...[SizedBox(height: 6.h), _body(message)],
+        SizedBox(height: 22.h),
+        for (final c in choices) ...[
+          if (c.destructive && !c.primary)
+            SizedBox(
+              width: double.infinity,
+              height: 50.h,
+              child: TextButton(
+                onPressed: () => Navigator.pop(ctx, c.value),
+                style: TextButton.styleFrom(
+                  foregroundColor: danger,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                ),
+                child: Text(
+                  c.label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            )
+          else
+            SheetButton(
+              label: c.label,
+              primary: c.primary,
+              color: c.destructive ? danger : null,
+              onPressed: () {
+                if (c.primary) HapticFeedback.selectionClick();
+                Navigator.pop(ctx, c.value);
+              },
+            ),
+          SizedBox(height: 6.h),
+        ],
+      ],
+    );
+  });
+}
+
 /// Something went wrong (or something the customer must know). Replaces the
 /// snackbars: a short sheet with what happened and one button.
 Future<void> noticeSheet(

@@ -6,8 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/models/order_model.dart';
+import 'package:tnt_lh/orders/order_to_bag.dart';
 import 'package:tnt_lh/models/product_model.dart';
-import 'package:tnt_lh/providers/cart_provider.dart';
 import 'package:tnt_lh/providers/order_provider.dart';
 import 'package:tnt_lh/providers/product_provider.dart';
 import 'package:tnt_lh/utils/formatters.dart';
@@ -23,47 +23,14 @@ class YourUsualCard extends ConsumerStatefulWidget {
   ConsumerState<YourUsualCard> createState() => _YourUsualCardState();
 }
 
-/// An order line's options in the form the app sends them. The server
-/// labels cakes its own way ("1kg | Standard | Eggless"); sent back as-is
-/// that would read as a customer note, so it's turned back into the choice.
-String? _asChoice(String? label) {
-  final l = (label ?? '').trim();
-  if (l.isEmpty) return null;
-  if (RegExp(r'^[\d.]+kg \| (Standard|Customized)').hasMatch(l)) {
-    return l.toLowerCase().contains('eggless') ? 'Eggless' : null;
-  }
-  return l;
-}
-
 class _YourUsualCardState extends ConsumerState<YourUsualCard> {
   bool _added = false;
   bool _busy = false;
 
   Future<void> _addAll(Order order, Map<String, List<Product>> menu) async {
-    final byId = {
-      for (final list in menu.values)
-        for (final p in list) p.id: p,
-    };
-    final cart = ref.read(cartProvider.notifier);
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
-    var skipped = 0;
-    for (final item in order.items) {
-      final product = byId[item.product];
-      if (product == null || !product.isAvailable) {
-        skipped++;
-        continue;
-      }
-      try {
-        await cart.addToCart(
-          product: product,
-          quantity: item.quantity,
-          customization: _asChoice(item.customization),
-        );
-      } catch (_) {
-        skipped++;
-      }
-    }
+    final skipped = await addOrderToBag(ref, order, menu: menu);
     if (!mounted) return;
     setState(() {
       _busy = false;

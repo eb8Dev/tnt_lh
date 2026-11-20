@@ -17,6 +17,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tnt_lh/models/order_model.dart';
 import 'package:tnt_lh/services/order_service.dart';
 import 'package:tnt_lh/screens/store_home.dart';
+import 'package:tnt_lh/screens/bag_screen.dart';
+import 'package:tnt_lh/providers/brand_provider.dart';
+import 'package:tnt_lh/orders/order_to_bag.dart';
 import 'package:tnt_lh/screens/order_placed_screen.dart';
 import 'package:tnt_lh/services/review_service.dart';
 import 'package:tnt_lh/components/live_tracking_panel.dart';
@@ -364,6 +367,22 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       ),
     );
     if (reason == null || !mounted) return;
+
+    // Try to save the order first: most reasons have a fix that's better
+    // than starting over. Closing the sheet keeps the order.
+    final fix = await _offerFix(order, reason);
+    if (fix == null || fix == _CancelFix.keep || !mounted) return;
+    switch (fix) {
+      case _CancelFix.editAddress:
+        await _editAddress(order);
+        return;
+      case _CancelFix.call:
+        await _callStore(order);
+        return;
+      default:
+        break;
+    }
+
     HapticFeedback.mediumImpact();
     try {
       await OrderService.cancelOrder(
@@ -371,12 +390,161 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         reason: reason,
         brand: order.brand,
       );
-    } catch (_) {
-      // Most likely the store accepted it a moment ago; the refresh below
-      // shows where the order actually stands.
+    } catch (e) {
+      // Most likely the store accepted it a moment ago; the refresh shows
+      // where the order actually stands.
+      if (mounted) {
+        noticeSheet(context, title: "Couldn't cancel", message: errorText(e));
+      }
+      _reload();
+      return;
     }
     _reload();
     ref.invalidate(orderProvider);
+    if (!mounted) return;
+
+    if (fix == _CancelFix.editItems) {
+      final skipped = await addOrderToBag(ref, order);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => BagScreen(store: order.brand)),
+      );
+      if (skipped > 0 && mounted) {
+        noticeSheet(
+          context,
+          isError: false,
+          title: 'Your items are in the bag',
+          message:
+              '$skipped ${skipped == 1 ? "item isn't" : "items aren't"} on the menu right now, so we left ${skipped == 1 ? 'it' : 'them'} out.',
+        );
+      }
+    } else if (fix == _CancelFix.switchStore) {
+      final other = Brands.isBakery(order.brand)
+          ? Brands.cafeKey
+          : Brands.bakeryKey;
+      await ref.read(brandProvider.notifier).setBrand(other);
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const StoreHomeScreen(initialIndex: StoreHomeScreen.homeTab),
+        ),
+        (route) => false,
+      );
+    }
+  }
+
+  /// The fix for a reason to cancel, offered before cancelling.
+  Future<_CancelFix?> _offerFix(Order order, String reason) {
+    final online =
+        order.paymentMethod == 'Online' && order.paymentStatus == 'paid';
+    final refund = online
+        ? ' Your ${AppFormatters.rupees(order.total)} goes back to how you paid, in 5 to 7 working days.'
+        : '';
+    const cancel = SheetChoice(
+      _CancelFix.cancel,
+      'Cancel the order',
+      destructive: true,
+    );
+    const keep = SheetChoice(_CancelFix.keep, 'Keep my order');
+    final store = Brands.name(order.brand);
+    final otherStore = Brands.name(
+      Brands.isBakery(order.brand) ? Brands.cafeKey : Brands.bakeryKey,
+    );
+
+    switch (reason) {
+      case 'Wrong delivery address':
+        return choiceSheet(
+          context,
+          icon: PhosphorIcons.mapPin(),
+          title: 'Change the address instead?',
+          message:
+              "Your order hasn't left the store, so you can move it to the right place and keep everything else.",
+          choices: [
+            const SheetChoice(
+              _CancelFix.editAddress,
+              'Change the address',
+              primary: true,
+            ),
+            cancel,
+          ],
+        );
+      case 'Want to change the items':
+        return choiceSheet(
+          context,
+          icon: PhosphorIcons.pencilSimple(),
+          title: 'Edit it in your bag',
+          message:
+              "We'll cancel this one and put the same items in your bag, so you can change them and order again.$refund",
+          choices: [
+            const SheetChoice(
+              _CancelFix.editItems,
+              'Cancel and edit in bag',
+              primary: true,
+            ),
+            keep,
+          ],
+        );
+      case 'Ordered from the wrong store':
+        return choiceSheet(
+          context,
+          icon: PhosphorIcons.storefront(),
+          title: 'Order from $otherStore instead?',
+          message:
+              "We'll cancel this $store order and take you to $otherStore.$refund",
+          choices: [
+            SheetChoice(
+              _CancelFix.switchStore,
+              'Cancel and go to $otherStore',
+              primary: true,
+            ),
+            keep,
+          ],
+        );
+      case 'It is taking too long':
+        return choiceSheet(
+          context,
+          icon: PhosphorIcons.clock(),
+          title: "The store hasn't seen it yet",
+          message:
+              'Orders are usually accepted within a few minutes. A call to $store often speeds it up.',
+          choices: [
+            SheetChoice(_CancelFix.call, 'Call $store', primary: true),
+            keep,
+            cancel,
+          ],
+        );
+      default:
+        return choiceSheet(
+          context,
+          icon: PhosphorIcons.xCircle(),
+          title: 'Cancel this order?',
+          message: "The store hasn't accepted it yet.$refund",
+          choices: [
+            const SheetChoice(
+              _CancelFix.cancel,
+              'Cancel the order',
+              primary: true,
+              destructive: true,
+            ),
+            keep,
+          ],
+        );
+    }
+  }
+
+  Future<void> _callStore(Order order) async {
+    final settings = await OrderService.getSettings(brand: order.brand);
+    final phone = (settings['contactPhone'] ?? '').toString().trim();
+    if (!mounted) return;
+    if (phone.isEmpty) {
+      noticeSheet(context, message: "We couldn't find the store's number.");
+      return;
+    }
+    HapticFeedback.selectionClick();
+    await launchUrl(Uri(scheme: 'tel', path: phone));
   }
 
   Future<void> _editAddress(Order order) async {
@@ -2002,3 +2170,6 @@ class _RiderRow extends StatelessWidget {
     );
   }
 }
+
+/// What to do instead of (or as well as) cancelling.
+enum _CancelFix { keep, cancel, editAddress, editItems, switchStore, call }
