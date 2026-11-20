@@ -269,9 +269,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       Gap(Space.sm),
       _buildQuickTiles(),
     ];
+    // Addresses open from the tile above; a second "Saved addresses" card
+    // here showed the same thing twice.
     final settings = <Widget>[
-      _buildAddressSection(),
-      Gap(Space.sm),
       _buildPreferencesSection(user),
       Gap(Space.sm),
       _buildSupportSection(),
@@ -687,60 +687,6 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
 
   /// The address book lives on its own screen now (add, edit, default,
   /// delete, receiver details), shared with the bag and the home header.
-  Widget _buildAddressSection() {
-    final book = ref.watch(addressBookProvider).value;
-    final count = book?.addresses.length ?? 0;
-    final main = book?.addresses.where((a) => a.isDefault).firstOrNull;
-    return _sectionCard(
-      title: 'Saved addresses',
-      icon: PhosphorIcons.mapPin(),
-      children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(12.r),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddressBookScreen()),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      count == 0
-                          ? 'Add home, work and other places'
-                          : '$count saved ${count == 1 ? 'address' : 'addresses'}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (main != null)
-                      Text(
-                        '${main.label}: ${main.fullText}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12.sp,
-                          color: Colors.black54,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Icon(
-                PhosphorIcons.caretRight(),
-                size: 16.sp,
-                color: Colors.black38,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildPreferencesSection(User? user) {
     final prefs = user?.notificationPreferences ?? NotificationPreferences();
     return _sectionCard(
@@ -751,16 +697,6 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
           'Push',
           prefs.push,
           (v) => _updateNotificationPreference('push', v),
-        ),
-        _switchRow(
-          'Email',
-          prefs.email,
-          (v) => _updateNotificationPreference('email', v),
-        ),
-        _switchRow(
-          'SMS',
-          prefs.sms,
-          (v) => _updateNotificationPreference('sms', v),
         ),
         _switchRow(
           'Offers & treats',
