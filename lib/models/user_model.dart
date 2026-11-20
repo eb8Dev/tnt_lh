@@ -69,14 +69,22 @@ class User {
 class NotificationPreferences {
   final bool email;
   final bool sms;
+
+  /// Every reminder and offer (order updates always come through).
   final bool push;
   final bool offers;
+  final bool cartReminders;
+  final bool recommendations;
+  final bool comeback;
 
   NotificationPreferences({
     this.email = true,
     this.sms = true,
     this.push = true,
     this.offers = true,
+    this.cartReminders = true,
+    this.recommendations = true,
+    this.comeback = true,
   });
 
   factory NotificationPreferences.fromJson(Map<String, dynamic> json) {
@@ -85,24 +93,19 @@ class NotificationPreferences {
       sms: json['sms'] ?? true,
       push: json['push'] ?? true,
       offers: json['offers'] ?? true,
+      cartReminders: json['cartReminders'] ?? true,
+      recommendations: json['recommendations'] ?? true,
+      comeback: json['comeback'] ?? true,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {'email': email, 'sms': sms, 'push': push, 'offers': offers};
-  }
-
-  NotificationPreferences copyWith({
-    bool? email,
-    bool? sms,
-    bool? push,
-    bool? offers,
-  }) {
-    return NotificationPreferences(
-      email: email ?? this.email,
-      sms: sms ?? this.sms,
-      push: push ?? this.push,
-      offers: offers ?? this.offers,
-    );
-  }
+  Map<String, dynamic> toJson() => {
+    'email': email,
+    'sms': sms,
+    'push': push,
+    'offers': offers,
+    'cartReminders': cartReminders,
+    'recommendations': recommendations,
+    'comeback': comeback,
+  };
 }

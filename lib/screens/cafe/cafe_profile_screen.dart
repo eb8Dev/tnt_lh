@@ -170,6 +170,8 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
           NotificationPreferences().toJson(),
     );
     prefs[key] = value;
+    // The old all-or-nothing switch: choosing any reminder turns it back on.
+    if (value) prefs['push'] = true;
 
     try {
       await ref
@@ -693,41 +695,69 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       title: 'Notifications',
       icon: PhosphorIcons.bell(),
       children: [
-        _switchRow(
-          'Push',
-          prefs.push,
-          (v) => _updateNotificationPreference('push', v),
+        Text(
+          'Order and payment updates always come through. Choose the rest:',
+          style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black54),
         ),
+        Gap(Space.xs),
         _switchRow(
-          'Offers & treats',
+          'Offers and new dishes',
           prefs.offers,
           (v) => _updateNotificationPreference('offers', v),
+        ),
+        _switchRow(
+          'Bag reminders',
+          prefs.cartReminders,
+          (v) => _updateNotificationPreference('cartReminders', v),
+          subtitle: 'When something is left in your bag',
+        ),
+        _switchRow(
+          'Picked for you',
+          prefs.recommendations,
+          (v) => _updateNotificationPreference('recommendations', v),
+          subtitle: 'Dishes we think you will like',
+        ),
+        _switchRow(
+          "It's been a while",
+          prefs.comeback,
+          (v) => _updateNotificationPreference('comeback', v),
+          subtitle: "A nudge when you haven't ordered in a few weeks",
         ),
       ],
     );
   }
 
-  Widget _switchRow(String title, bool value, ValueChanged<bool> onChanged) {
+  Widget _switchRow(
+    String title,
+    bool value,
+    ValueChanged<bool> onChanged, {
+    String? subtitle,
+  }) {
     // The card behind it paints a background, which hides a ListTile's tap
     // highlight; its own transparent Material puts the ink back on top.
     return Material(
       type: MaterialType.transparency,
-      child: _switchTile(title, value, onChanged),
-    );
-  }
-
-  Widget _switchTile(String title, bool value, ValueChanged<bool> onChanged) {
-    return SwitchListTile(
-      title: Text(
-        title,
-        style: GoogleFonts.poppins(fontSize: 13.sp, color: Colors.black87),
+      child: SwitchListTile(
+        title: Text(
+          title,
+          style: GoogleFonts.poppins(fontSize: 13.sp, color: Colors.black87),
+        ),
+        subtitle: subtitle == null
+            ? null
+            : Text(
+                subtitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 11.sp,
+                  color: Colors.black45,
+                ),
+              ),
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
+        contentPadding: EdgeInsets.zero,
+        dense: subtitle == null,
+        visualDensity: VisualDensity.compact,
       ),
-      value: value,
-      onChanged: onChanged,
-      activeThumbColor: Theme.of(context).colorScheme.primary,
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      visualDensity: VisualDensity.compact,
     );
   }
 

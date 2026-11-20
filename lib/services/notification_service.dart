@@ -3,11 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:tnt_lh/services/auth_service.dart';
 import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/core/navigation.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tnt_lh/models/product_model.dart';
+import 'package:tnt_lh/providers/brand_provider.dart';
+import 'package:tnt_lh/screens/bag_screen.dart';
+import 'package:tnt_lh/screens/cafe/cafe_item_details_screen.dart';
+import 'package:tnt_lh/services/api_client.dart';
 
 const _channel = AndroidNotificationChannel(
   'high_importance_channel',
@@ -76,14 +83,85 @@ class NotificationService {
     } catch (_) {}
   }
 
+  /// Opens what a tapped push is about: the order, the bag, an item, or the
+  /// store's menu (bag reminders, offers, "it's been a while").
   static Future<void> _openFromData(Map<dynamic, dynamic> data) async {
-    final orderId = data['orderId']?.toString();
-    if (orderId == null || orderId.isEmpty) return;
+    final id = data['notificationId']?.toString();
+    if (id != null && id.isNotEmpty) _reportOpened(id);
+
     // Signed out since the notification was sent: nothing to show them.
     if (!await AuthService.hasSession()) return;
-    rootNavigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId)),
-    );
+    final nav = rootNavigatorKey.currentState;
+    final context = rootNavigatorKey.currentContext;
+    if (nav == null || context == null || !context.mounted) return;
+
+    final orderId = data['orderId']?.toString() ?? '';
+    final type = data['type']?.toString() ?? (orderId.isNotEmpty ? 'order' : 'menu');
+    final brand = data['brand']?.toString() ?? '';
+
+    if (type == 'order') {
+      if (orderId.isEmpty) return;
+      nav.push(
+        MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId)),
+      );
+      return;
+    }
+
+    // Everything else is about a store: show that one.
+    if (brand.isNotEmpty) {
+      await ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(brandProvider.notifier).setBrand(brand);
+    }
+    nav.popUntil((route) => route.isFirst);
+
+    switch (type) {
+      case 'cart':
+        nav.push(
+          MaterialPageRoute(
+            builder: (_) => BagScreen(store: brand.isEmpty ? null : brand),
+          ),
+        );
+      case 'product':
+        final product = await _product(data['id']?.toString(), brand);
+        if (product != null) {
+          nav.push(
+            MaterialPageRoute(
+              builder: (_) => ItemDetailsScreen(product: product),
+            ),
+          );
+        }
+      default:
+        // 'menu' and 'offer': the store's menu, which is where we now are.
+        break;
+    }
+  }
+
+  static Future<Product?> _product(String? id, String brand) async {
+    if (id == null || id.isEmpty) return null;
+    try {
+      final res = await ApiClient.get(
+        AppConfig.buildUrl(
+          '/customer/products/$id',
+          brand: brand.isEmpty ? null : brand,
+        ),
+      );
+      if (res.statusCode != 200) return null;
+      final body = json.decode(res.body);
+      final p = body is Map ? (body['data'] ?? body) : null;
+      return p is Map<String, dynamic> ? Product.fromJson(p) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Tells the server a push was tapped (opens, and orders that follow, are
+  /// counted in the admin panel). Best effort.
+  static void _reportOpened(String id) {
+    ApiClient.post(
+      AppConfig.buildUrl('/customer/notifications/$id/opened'),
+    ).catchError((_) => http.Response('', 0));
   }
 
   static bool _launchTapHandled = false;
@@ -189,7 +267,11 @@ class NotificationService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $authToken',
         },
-        body: json.encode({'fcmToken': fcmToken}),
+        // With the platform: an account can be signed in on several phones.
+        body: json.encode({
+          'fcmToken': fcmToken,
+          'platform': Platform.isIOS ? 'ios' : 'android',
+        }),
       );
       debugPrint('✅ Customer FCM Token registered');
     } catch (e) {

@@ -340,6 +340,12 @@ class AuthService {
 
   static Future<void> logout({String? brand}) async {
     final refreshToken = await _storage.read(key: _refreshTokenKey);
+    // This phone's push token, so the server signs out only this device
+    // (the account may be on others too).
+    String? pushToken;
+    try {
+      pushToken = await FirebaseMessaging.instance.getToken();
+    } catch (_) {}
     if (refreshToken != null) {
       final url = AppConfig.buildUrl('/customer/auth/logout', brand: brand);
       try {
@@ -350,7 +356,10 @@ class AuthService {
             'Content-Type': 'application/json',
             if (token != null) 'Authorization': 'Bearer $token',
           },
-          body: jsonEncode({'refreshToken': refreshToken}),
+          body: jsonEncode({
+            'refreshToken': refreshToken,
+            'fcmToken': ?pushToken,
+          }),
         );
       } catch (e) {
         // Ignore errors during remote logout/revocation
