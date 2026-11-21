@@ -282,6 +282,9 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
       _buildLogoutButton(),
       Gap(Space.sm),
       _buildDeleteAccountButton(),
+      Gap(Space.lg),
+      _buildCredit(),
+      Gap(Space.xl),
     ];
 
     // Landscape tablets: you on the left, addresses and settings on the right.
@@ -838,6 +841,28 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
     }
     // Back to the root: signed out, it shows the sign-in flow by itself.
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  /// Who built and runs the app.
+  Widget _buildCredit() {
+    return Column(
+      children: [
+        Image.asset(
+          'assets/images/manuen_wordmark.png',
+          height: 28.h,
+          semanticLabel: 'Manuen Infotech',
+        ),
+        Gap(Space.xs),
+        Text(
+          'Developed and managed by Manuen Infotech',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 11.5.sp,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildDeleteAccountButton() {
