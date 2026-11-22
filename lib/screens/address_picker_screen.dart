@@ -10,6 +10,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 import 'package:google_fonts/google_fonts.dart';
+import '../widgets/busy.dart';
 
 class AddressPickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -280,14 +281,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
           foregroundColor: Colors.black,
           mini: true,
           child: _isLoading
-              ? SizedBox(
-                  width: 18.w,
-                  height: 18.h,
-                  child: CircularProgressIndicator.adaptive(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
+              ? BusyLabel(color: Colors.black)
               : Icon(PhosphorIcons.crosshair()),
         ),
       ],
@@ -348,13 +342,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
               suffixIcon: _isSearching
                   ? Padding(
                       padding: EdgeInsets.all(12.r),
-                      child: SizedBox(
-                        width: 16.w,
-                        height: 16.h,
-                        child: const CircularProgressIndicator.adaptive(
-                          strokeWidth: 2,
-                        ),
-                      ),
+                      child: BusyDot(size: 16),
                     )
                   : IconButton(
                       icon: Icon(
@@ -463,12 +451,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (_isLoading)
-                SizedBox(
-                  width: 20.w,
-                  height: 20.h,
-                  child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-                ),
+              if (_isLoading) BusyLabel(),
             ],
           ),
           SizedBox(height: 16.h),

@@ -23,6 +23,7 @@ import 'package:tnt_lh/services/upload_service.dart';
 import 'package:tnt_lh/utils/loading_indicator.dart';
 import 'package:tnt_lh/utils/snack_bar_utils.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
+import '../../widgets/busy.dart';
 
 class CafeProfileScreen extends ConsumerStatefulWidget {
   const CafeProfileScreen({super.key});
@@ -383,16 +384,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                       border: Border.all(color: Colors.white, width: 1.5),
                     ),
                     child: _uploadingAvatar
-                        ? SizedBox(
-                            height: 10.sp,
-                            width: 10.sp,
-                            child: const CircularProgressIndicator.adaptive(
-                              strokeWidth: 1.6,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
+                        ? BusyDot(color: Colors.white, size: 10)
                         : PhosphorIcon(
                             PhosphorIcons.camera(PhosphorIconsStyle.fill),
                             color: Colors.white,
@@ -615,14 +607,7 @@ class _CafeProfileScreenState extends ConsumerState<CafeProfileScreen> {
                 ),
               ),
               child: authState.isLoading
-                  ? SizedBox(
-                      height: 18.h,
-                      width: 18.h,
-                      child: const CircularProgressIndicator.adaptive(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        strokeWidth: 2,
-                      ),
-                    )
+                  ? BusyLabel(color: Colors.white)
                   : Text(
                       'Save changes',
                       style: GoogleFonts.poppins(

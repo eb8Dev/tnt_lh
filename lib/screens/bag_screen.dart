@@ -28,6 +28,7 @@ import 'package:tnt_lh/payments/online_payment.dart';
 import 'package:tnt_lh/screens/order_detail_screen.dart';
 import 'package:tnt_lh/utils/formatters.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
+import '../widgets/busy.dart';
 
 /// The bag and checkout, on one page.
 ///
@@ -310,23 +311,33 @@ class _BagScreenState extends ConsumerState<BagScreen> {
       _idempotencyKey = null;
 
       final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? {};
-      final orderId = data['orderId']?.toString() ?? data['_id']?.toString() ?? '';
+      final orderId =
+          data['orderId']?.toString() ?? data['_id']?.toString() ?? '';
       final cart = ref.read(cartProvider.notifier);
 
       if (data['awaitingPayment'] == true) {
         // Online: the order reaches the café, and its items leave the bag,
         // only once it's paid (the server takes them out). A payment that
         // fails or is left for later keeps the bag as it was.
-        final ids = [for (final id in (data['orderIds'] as List? ?? [orderId])) id.toString()];
+        final ids = [
+          for (final id in (data['orderIds'] as List? ?? [orderId]))
+            id.toString(),
+        ];
         if (!mounted) return;
-        final paid = await completePayment(context, orderIds: ids, brand: store);
+        final paid = await completePayment(
+          context,
+          orderIds: ids,
+          brand: store,
+        );
         cart.fetchCart(background: true);
         if (!mounted) return;
         if (paid == PaymentResult.unpaid) {
           setState(() => _placing = false);
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId, brand: store)),
+            MaterialPageRoute(
+              builder: (_) => OrderDetailScreen(orderId: orderId, brand: store),
+            ),
           );
           return;
         }
@@ -748,20 +759,7 @@ class _BagScreenState extends ConsumerState<BagScreen> {
                           borderRadius: BorderRadius.circular(14.r),
                         ),
                         child: _placing
-                            ? Center(
-                                child: SizedBox(
-                                  width: 22.r,
-                                  height: 22.r,
-                                  child:
-                                      const CircularProgressIndicator.adaptive(
-                                        strokeWidth: 2.4,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                ),
-                              )
+                            ? Center(child: BusyLabel(color: Colors.white))
                             : Row(
                                 children: [
                                   if (toPay != null && hasAddress)
@@ -823,7 +821,13 @@ class _BagScreenState extends ConsumerState<BagScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('How would you like to pay?', style: GoogleFonts.poppins(fontSize: 17.sp, fontWeight: FontWeight.w700)),
+              Text(
+                'How would you like to pay?',
+                style: GoogleFonts.poppins(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               Gap(Space.sm),
               _PayOption(
                 icon: PhosphorIcons.qrCode(),
@@ -1732,13 +1736,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
                     child:
                         _busyCode != null &&
                             _busyCode == _code.text.trim().toUpperCase()
-                        ? SizedBox(
-                            width: 16.r,
-                            height: 16.r,
-                            child: const CircularProgressIndicator.adaptive(
-                              strokeWidth: 2,
-                            ),
-                          )
+                        ? BusyDot(size: 16)
                         : const Text('Apply'),
                   ),
                 ],
@@ -1793,14 +1791,7 @@ class _CouponSheetState extends ConsumerState<_CouponSheet> {
                                 ? null
                                 : () => _apply(code),
                             child: _busyCode == code
-                                ? SizedBox(
-                                    width: 14.r,
-                                    height: 14.r,
-                                    child:
-                                        const CircularProgressIndicator.adaptive(
-                                          strokeWidth: 2,
-                                        ),
-                                  )
+                                ? BusyDot(size: 14)
                                 : const Text('Apply'),
                           ),
                         ],
@@ -1821,7 +1812,11 @@ class _PayMethod extends StatelessWidget {
   final bool online;
   final bool canChoose;
   final VoidCallback onTap;
-  const _PayMethod({required this.online, required this.canChoose, required this.onTap});
+  const _PayMethod({
+    required this.online,
+    required this.canChoose,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1834,22 +1829,42 @@ class _PayMethod extends StatelessWidget {
           children: [
             Text(
               online ? 'PAY ONLINE' : 'PAY ON DELIVERY',
-              style: GoogleFonts.poppins(fontSize: 10.sp, letterSpacing: 0.6, color: Colors.black45, fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(
+                fontSize: 10.sp,
+                letterSpacing: 0.6,
+                color: Colors.black45,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (canChoose) ...[
               GapW(Space.xxs),
-              Icon(PhosphorIcons.caretUp(PhosphorIconsStyle.bold), size: 10.sp, color: Colors.black45),
+              Icon(
+                PhosphorIcons.caretUp(PhosphorIconsStyle.bold),
+                size: 10.sp,
+                color: Colors.black45,
+              ),
             ],
           ],
         ),
-        Text(online ? 'UPI, cards' : 'Cash', style: GoogleFonts.poppins(fontSize: 14.sp, fontWeight: FontWeight.w600)),
+        Text(
+          online ? 'UPI, cards' : 'Cash',
+          style: GoogleFonts.poppins(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
     if (!canChoose) return label;
     return Semantics(
       button: true,
-      label: 'Payment method: ${online ? 'online' : 'cash on delivery'}. Change',
-      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(10.r), child: Padding(padding: EdgeInsets.all(4.r), child: label)),
+      label:
+          'Payment method: ${online ? 'online' : 'cash on delivery'}. Change',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10.r),
+        child: Padding(padding: EdgeInsets.all(4.r), child: label),
+      ),
     );
   }
 }
@@ -1860,7 +1875,13 @@ class _PayOption extends StatelessWidget {
   final String subtitle;
   final bool selected;
   final VoidCallback onTap;
-  const _PayOption({required this.icon, required this.title, required this.subtitle, required this.selected, required this.onTap});
+  const _PayOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1873,7 +1894,10 @@ class _PayOption extends StatelessWidget {
         padding: EdgeInsets.all(14.r),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14.r),
-          border: Border.all(color: selected ? primary : Colors.black12, width: selected ? 2 : 1),
+          border: Border.all(
+            color: selected ? primary : Colors.black12,
+            width: selected ? 2 : 1,
+          ),
         ),
         child: Row(
           children: [
@@ -1883,12 +1907,29 @@ class _PayOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.poppins(fontSize: 14.5.sp, fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: GoogleFonts.poppins(fontSize: 12.sp, color: Colors.black54)),
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14.5.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12.sp,
+                      color: Colors.black54,
+                    ),
+                  ),
                 ],
               ),
             ),
-            if (selected) Icon(PhosphorIcons.checkCircle(PhosphorIconsStyle.fill), color: primary, size: 22.sp),
+            if (selected)
+              Icon(
+                PhosphorIcons.checkCircle(PhosphorIconsStyle.fill),
+                color: primary,
+                size: 22.sp,
+              ),
           ],
         ),
       ),

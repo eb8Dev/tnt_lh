@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../widgets/skeleton.dart';
 
 /// Product imagery in one place, handling all three states properly.
 ///
@@ -46,16 +47,7 @@ class ProductImage extends StatelessWidget {
     return Container(
       color: Colors.grey.shade100,
       alignment: Alignment.center,
-      child: SizedBox(
-        width: 18.sp,
-        height: 18.sp,
-        child: CircularProgressIndicator.adaptive(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            Colors.black.withValues(alpha: 0.15),
-          ),
-        ),
-      ),
+      child: const Skeleton(),
     );
   }
 

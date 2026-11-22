@@ -10,6 +10,7 @@ import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/models/address_model.dart';
 import 'package:tnt_lh/providers/address_provider.dart';
 import 'package:tnt_lh/screens/address_form_screen.dart';
+import '../widgets/skeleton.dart';
 
 /// Saved addresses. Opened from the profile to manage them, or from "Deliver
 /// to" (home header, bag) to choose one, in which case a tap picks it.
@@ -83,9 +84,16 @@ class AddressBookScreen extends ConsumerWidget {
               ...book.when(
                 loading: () => [
                   Padding(
-                    padding: EdgeInsets.only(top: Space.xl.h),
-                    child: const Center(
-                      child: CircularProgressIndicator.adaptive(),
+                    padding: EdgeInsets.only(top: Space.md.h),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < 3; i++)
+                          Skeleton(
+                            height: 76.h,
+                            radius: 16.r,
+                            margin: EdgeInsets.only(bottom: 10.h),
+                          ),
+                      ],
                     ),
                   ),
                 ],

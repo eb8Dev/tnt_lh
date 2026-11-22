@@ -12,6 +12,7 @@ import 'package:tnt_lh/core/config.dart';
 import 'package:tnt_lh/providers/rider_tracking_provider.dart';
 import 'package:tnt_lh/services/api_client.dart';
 import 'package:tnt_lh/utils/map_markers.dart';
+import '../widgets/skeleton.dart';
 
 class LiveTrackingPanel extends ConsumerStatefulWidget {
   final dynamic order;
@@ -539,11 +540,8 @@ class _LiveTrackingPanelState extends ConsumerState<LiveTrackingPanel> {
           borderRadius: BorderRadius.circular(32.r),
           border: Border.all(color: Colors.blue.shade100, width: 2.5.w),
         ),
-        child: Center(
-          child: CircularProgressIndicator.adaptive(
-            valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFFA9BCA4)),
-          ),
-        ),
+        clipBehavior: Clip.antiAlias,
+        child: const Skeleton(),
       );
     }
 

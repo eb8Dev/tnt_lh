@@ -140,15 +140,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: 24.h),
         child: Center(
-          child: SizedBox(
-            width: 22.sp,
-            height: 22.sp,
-            child: CircularProgressIndicator.adaptive(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
-              ),
-            ),
+          child: const Column(
+            children: [
+              Skeleton(height: 72, radius: 14),
+              SizedBox(height: 10),
+              Skeleton(height: 72, radius: 14),
+            ],
           ),
         ),
       );

@@ -30,6 +30,8 @@ import 'package:tnt_lh/payments/online_payment.dart';
 import 'package:tnt_lh/providers/socket_provider.dart';
 import 'package:tnt_lh/screens/rider_badge_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../widgets/skeleton.dart';
+import '../widgets/busy.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
@@ -759,7 +761,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             // on screen. Only a first load shows the spinner or the error.
             if (_shown == null) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator.adaptive());
+                return ListView(
+                  padding: EdgeInsets.all(16.r),
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    Skeleton(height: 120.h, radius: 20.r),
+                    SizedBox(height: 12.h),
+                    Skeleton(height: 200.h, radius: 20.r),
+                    SizedBox(height: 12.h),
+                    Skeleton(height: 90.h, radius: 20.r),
+                    SizedBox(height: 12.h),
+                    Skeleton(height: 140.h, radius: 20.r),
+                  ],
+                );
               }
               if (snapshot.hasError) {
                 return ErrorRetryView(error: snapshot.error!, onRetry: _reload);
@@ -1233,14 +1247,7 @@ class _ReportIssueSheetState extends State<_ReportIssueSheet> {
                 ),
               ),
               child: _busy
-                  ? SizedBox(
-                      height: 18.h,
-                      width: 18.h,
-                      child: const CircularProgressIndicator.adaptive(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                  ? BusyLabel(color: Colors.white)
                   : const Text('Submit'),
             ),
           ),
@@ -1434,16 +1441,7 @@ class _RateOrderSectionState extends State<_RateOrderSection> {
                   ),
                 ),
                 child: _busy
-                    ? SizedBox(
-                        height: 18.h,
-                        width: 18.h,
-                        child: const CircularProgressIndicator.adaptive(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
+                    ? BusyLabel(color: Colors.white)
                     : const Text('Submit rating'),
               ),
             ),

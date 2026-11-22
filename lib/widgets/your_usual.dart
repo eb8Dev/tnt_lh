@@ -11,6 +11,7 @@ import 'package:tnt_lh/models/product_model.dart';
 import 'package:tnt_lh/providers/order_provider.dart';
 import 'package:tnt_lh/providers/product_provider.dart';
 import 'package:tnt_lh/utils/formatters.dart';
+import '../widgets/busy.dart';
 
 /// "Your usual": the customer's last delivered order from this store, one tap
 /// to put it back in the bag. Items still on the menu are added at today's
@@ -148,16 +149,7 @@ class _YourUsualCardState extends ConsumerState<YourUsualCard> {
                         ),
                       ),
                       child: _busy
-                          ? SizedBox(
-                              width: 14.r,
-                              height: 14.r,
-                              child: const CircularProgressIndicator.adaptive(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
+                          ? BusyDot(color: Colors.white, size: 14)
                           : const Text('Add to bag'),
                     ),
             ),

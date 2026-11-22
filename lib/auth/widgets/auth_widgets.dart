@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/core/spacing.dart';
 import 'package:tnt_lh/widgets/tactile_button.dart';
+import '../../widgets/busy.dart';
 
 /// The big action button of the sign-in screens, with a busy state.
 class AuthPrimaryButton extends StatelessWidget {
@@ -35,15 +36,7 @@ class AuthPrimaryButton extends StatelessWidget {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: busy
-              ? SizedBox(
-                  key: const ValueKey('busy'),
-                  width: 22.r,
-                  height: 22.r,
-                  child: const CircularProgressIndicator.adaptive(
-                    strokeWidth: 2.4,
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                  ),
-                )
+              ? BusyLabel(color: Colors.white)
               : Text(
                   label,
                   key: ValueKey(label),

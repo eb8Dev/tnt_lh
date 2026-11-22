@@ -393,7 +393,7 @@ class _TypingDots extends StatelessWidget {
   }
 }
 
-/// "Send again in 0:27", with the time drawn as a ring draining away.
+/// "Send again in 0:27", with a clock beside it.
 class _ResendCountdown extends StatelessWidget {
   final int seconds;
   const _ResendCountdown({super.key, required this.seconds});
@@ -403,20 +403,7 @@ class _ResendCountdown extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
-        SizedBox(
-          width: 20.r,
-          height: 20.r,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(end: seconds / PhoneSignIn.resendAfter),
-            duration: const Duration(milliseconds: 900),
-            builder: (_, v, _) => CircularProgressIndicator(
-              value: v,
-              strokeWidth: 2.4,
-              color: primary,
-              backgroundColor: primary.withValues(alpha: 0.12),
-            ),
-          ),
-        ),
+        Icon(Icons.schedule_rounded, size: 18.r, color: primary),
         GapW(Space.sm),
         Text(
           'Send again in 0:${seconds.toString().padLeft(2, '0')}',

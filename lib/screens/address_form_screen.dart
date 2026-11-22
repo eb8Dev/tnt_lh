@@ -13,6 +13,7 @@ import 'package:tnt_lh/models/address_model.dart';
 import 'package:tnt_lh/providers/address_provider.dart';
 import 'package:tnt_lh/screens/address_picker_screen.dart';
 import 'package:tnt_lh/services/address_service.dart';
+import '../widgets/busy.dart';
 
 /// Add an address (map pin, then details) or edit one (details, with the pin
 /// one tap away). Returns the saved address, already in the address book.
@@ -535,16 +536,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                 ),
                 onPressed: _saving ? null : _save,
                 child: _saving
-                    ? SizedBox(
-                        width: 20.r,
-                        height: 20.r,
-                        child: const CircularProgressIndicator.adaptive(
-                          strokeWidth: 2.4,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
+                    ? BusyLabel(color: Colors.white)
                     : Text(
                         'Save address',
                         style: GoogleFonts.poppins(
