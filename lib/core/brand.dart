@@ -15,6 +15,18 @@ class Brands {
   static const String cafeName = 'Teas N Trees';
   static const String bakeryName = 'Cream N Crust';
 
+  /// The Teas N Trees name is always set in its own typeface (client's
+  /// rule), only the name itself. Script type reads small, so it's a size up.
+  static TextStyle nameStyle(String name, TextStyle base) {
+    if (name != cafeName) return base;
+    return base.copyWith(
+      fontFamily: 'PleaseDontTakeMyMan',
+      fontWeight: FontWeight.w400,
+      letterSpacing: 0,
+      fontSize: (base.fontSize ?? 14) * 1.35,
+    );
+  }
+
   static const Color cafeColor = Color(0xFF57733C);
 
   // Cream N Crust's brand colour, Rust #B7410E (from the client), with the

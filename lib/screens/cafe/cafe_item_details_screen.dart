@@ -196,10 +196,13 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
               ),
               child: Text(
                 isLittleH ? Brands.bakeryName : Brands.cafeName,
-                style: GoogleFonts.poppins(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.bold,
-                  color: themeColor,
+                style: Brands.nameStyle(
+                  isLittleH ? Brands.bakeryName : Brands.cafeName,
+                  GoogleFonts.poppins(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                    color: themeColor,
+                  ),
                 ),
               ),
             ),

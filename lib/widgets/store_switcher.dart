@@ -126,7 +126,12 @@ class StoreSwitcher extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 6.w),
-              Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Brands.nameStyle(label, DefaultTextStyle.of(context).style),
+              ),
             ],
           ),
         ),

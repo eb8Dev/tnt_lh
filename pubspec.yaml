@@ -123,6 +123,12 @@ flutter:
     # switched off in main.dart.
     - google_fonts/
 
+  # The Teas N Trees name is always set in this typeface (client's rule).
+  fonts:
+    - family: PleaseDontTakeMyMan
+      fonts:
+        - asset: assets/fonts/PleaseDontTakeMyMan.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

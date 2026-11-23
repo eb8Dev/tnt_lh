@@ -291,9 +291,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     children: [
                       Text(
                         isTeas ? Brands.cafeName : Brands.bakeryName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
+                        style: Brands.nameStyle(
+                          isTeas ? Brands.cafeName : Brands.bakeryName,
+                          GoogleFonts.poppins(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       Text(

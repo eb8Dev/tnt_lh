@@ -461,10 +461,13 @@ class _BrandLockup extends StatelessWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w600,
-                color: color,
+              style: Brands.nameStyle(
+                name,
+                GoogleFonts.poppins(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
               ),
             ),
           ),
