@@ -7,7 +7,12 @@ FROM THE CAFE
 Handcrafted teas, coffee, coolers, snacks and quick bites. Pick a size and add-ons where an item offers them.
 
 FROM THE BAKERY
-Cakes priced by weight, with eggless and custom options where the bakery offers them, plus pastries and everyday bakes.
+Cakes priced by weight, with eggless and custom options where the bakery offers them, plus cheesecakes, desserts, breads, pizzas and snacks.
+
+FIND WHAT YOU FEEL LIKE
+- Filter the menu by Veg, Egg or Chicken, in any combination
+- Sort by price, low to high or high to low
+- Every item carries its veg, egg or non-veg mark
 
 ORDERING THAT STAYS OUT OF YOUR WAY
 - Browse by category, search, or open the full menu

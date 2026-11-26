@@ -62,4 +62,18 @@ platform :android do
       sync_image_upload: true,         # mirror the folder: drop what's gone
     )
   end
+
+  # Store listing only: title, descriptions, icon and feature graphic from
+  # fastlane/metadata/android/en-US. No binary, no screenshots, no changelog.
+  desc "Upload the store listing (text, icon, feature graphic)"
+  lane :upload_listing do
+    upload_to_play_store(
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_changelogs: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: true,
+    )
+  end
 end

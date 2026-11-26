@@ -1,0 +1,4 @@
+- Now called TAC Eats, with a new icon
+- Filter the menu by Veg, Egg or Chicken, and sort by price
+- Veg, egg and non-veg marks on every item; eggless offered on items made with egg
+- A fresh look throughout, with the Teas N Trees name in its own typeface
