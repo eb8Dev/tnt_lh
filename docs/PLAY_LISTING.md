@@ -1,11 +1,11 @@
 # Play listing text (draft, 2026-10-13)
 
-The umbrella name is BrewCrust (chosen 2026-10-14). The App Store text lives in
+The umbrella name is TAC Eats (chosen 2026-11-27; was BrewCrust from 2026-10-14). The App Store text lives in
 `ios/fastlane/metadata` (customer) and `tnt_rider/ios/fastlane/metadata` (rider).
 
 ## Customer app
 
-**App name (30 max):** BrewCrust
+**App name (30 max):** TAC Eats
 
 **Short description (80 max):**
 Tea, snacks, cakes and bakes from two Guntur stores, delivered to your door.
@@ -14,14 +14,12 @@ Tea, snacks, cakes and bakes from two Guntur stores, delivered to your door.
 minus the "Apple" in the sign-in line ("Sign in with your phone number or Google").
 
 **What's new (next release):**
-- The app is now called BrewCrust
-- Little H is now Cream N Crust: new name, same bakery
-- Delete your account from the Profile screen
+- The app is now called TAC Eats
 - Fixes and improvements
 
 ## Rider app
 
-**App name (30 max):** BrewCrust Rider
+**App name (30 max):** TAC Eats Rider
 
 **Short description (80 max):**
 For Teas N Trees and Cream N Crust delivery riders: orders, routes and earnings.

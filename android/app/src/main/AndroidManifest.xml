@@ -7,7 +7,7 @@
          customer on a recent phone would never see them in the background. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="BrewCrust"
+        android:label="TAC Eats"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -97,7 +97,7 @@ class _BrandPanel extends StatelessWidget {
           ),
           const SizedBox(height: 40),
           Text(
-            'BrewCrust',
+            'TAC Eats',
             style: GoogleFonts.playfairDisplay(
               fontSize: 40,
               fontWeight: FontWeight.w700,

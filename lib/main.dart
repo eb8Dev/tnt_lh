@@ -73,7 +73,7 @@ class MyApp extends ConsumerWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, _) => MaterialApp(
-        title: 'Teas N Trees & Cream N Crust',
+        title: 'TAC Eats',
         debugShowCheckedModeBanner: false,
         navigatorKey: rootNavigatorKey,
         theme: theme,
