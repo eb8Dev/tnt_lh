@@ -1,3 +1,4 @@
+import '../../widgets/food_mark.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:tnt_lh/core/responsive.dart';
 import 'dart:async';
@@ -49,6 +50,25 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// opened in place, and which section is under the chips right now so the
   /// matching chip lights up as you scroll.
   final Set<String> _expandedSections = {};
+
+  /// Menu filter (Veg / Egg / Chicken, any combination) and price sort.
+  final Set<String> _foodFilter = {};
+  _PriceSort _sort = _PriceSort.none;
+  bool get _filtering => _foodFilter.isNotEmpty || _sort != _PriceSort.none;
+
+  List<Product> _applyFilter(List<Product> list) {
+    final out = _foodFilter.isEmpty
+        ? List<Product>.of(list)
+        : list.where((p) => _foodFilter.contains(p.foodType)).toList();
+    if (_sort != _PriceSort.none) {
+      out.sort(
+        (a, b) => _sort == _PriceSort.lowToHigh
+            ? a.displayPrice.compareTo(b.displayPrice)
+            : b.displayPrice.compareTo(a.displayPrice),
+      );
+    }
+    return out;
+  }
   final Map<String, GlobalKey> _sectionKeys = {};
 
   /// A notifier, not state: following the scroll must only rebuild the chip
@@ -377,13 +397,9 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
     // so its mere presence proves nothing — basePricePerKg does.
     final bool isCake = cake != null && cake.basePricePerKg > 0;
 
-    // Eggless only makes sense for bakery items. NOTE: `egglessAvailable`
-    // defaults to true on EVERY product in the backend schema (drinks
-    // included), so it cannot be trusted alone — the brand check is what
-    // actually gates this. See the schema TODO: eggless should be an explicit
-    // per-product flag with its own surcharge.
-    final bool offersEggless =
-        product.brand == 'littleh' && cake != null && cake.egglessAvailable;
+    // Eggless only for bakery items that contain egg (food type set per item
+    // in the admin panel); drinks and the rest never offer it.
+    final bool offersEggless = product.brand == 'littleh' && product.canBeEggless;
 
     if (hasSizeOptions || isCake || offersEggless) {
       _openAddToCartSheet(context, product);
@@ -551,8 +567,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                                   ),
                                 ),
                               ),
+                            SliverToBoxAdapter(child: _buildFilterRow()),
                             ...(_allMode
-                                ? _sectionSlivers(categoriesAsync)
+                                ? (_filtering
+                                    ? _filteredMenuSlivers()
+                                    : _sectionSlivers(categoriesAsync))
                                 : _productSlivers(productsAsync)),
                           ],
                         ),
@@ -638,8 +657,11 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                             ),
                           ),
                         ),
+                      SliverToBoxAdapter(child: _buildFilterRow()),
                       ...(_allMode
-                          ? _sectionSlivers(categoriesAsync)
+                          ? (_filtering
+                              ? _filteredMenuSlivers()
+                              : _sectionSlivers(categoriesAsync))
                           : _productSlivers(productsAsync)),
                     ],
                   ),
@@ -1083,6 +1105,158 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
   /// "All", as a menu: Bestsellers, then each category with its first few
   /// items and "See all". Sections are built (and their items fetched) only
   /// as they scroll into view.
+  void _clearFilters() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _foodFilter.clear();
+      _sort = _PriceSort.none;
+    });
+  }
+
+  /// Veg / Egg / Chicken (any combination) and a price sort, Zomato style.
+  /// Applies to every list on the menu.
+  Widget _buildFilterRow() {
+    final primary = Theme.of(context).colorScheme.primary;
+    Widget chip({
+      required String label,
+      required bool on,
+      required VoidCallback onTap,
+      Widget? leading,
+      IconData? trailing,
+    }) {
+      return Padding(
+        padding: EdgeInsets.only(right: 8.w),
+        child: TactileButton(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+            decoration: BoxDecoration(
+              color: on ? primary.withValues(alpha: 0.1) : Colors.white,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(
+                color: on ? primary : Colors.black.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (leading != null) ...[leading, SizedBox(width: 6.w)],
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5.sp,
+                    fontWeight: FontWeight.w600,
+                    color: on ? primary : Colors.black87,
+                  ),
+                ),
+                if (trailing != null) ...[
+                  SizedBox(width: 4.w),
+                  Icon(trailing, size: 14.sp, color: on ? primary : Colors.black54),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    Widget food(String type, String label) => chip(
+      label: label,
+      on: _foodFilter.contains(type),
+      leading: FoodMark(type: type, size: 12.sp),
+      onTap: () => setState(() {
+        if (!_foodFilter.remove(type)) _foodFilter.add(type);
+      }),
+    );
+
+    final sortLabel = switch (_sort) {
+      _PriceSort.none => 'Price',
+      _PriceSort.lowToHigh => 'Price: low to high',
+      _PriceSort.highToLow => 'Price: high to low',
+    };
+    return SizedBox(
+      height: 46.h,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
+        children: [
+          food('veg', 'Veg'),
+          food('egg', 'Egg'),
+          food('nonveg', 'Chicken'),
+          chip(
+            label: sortLabel,
+            on: _sort != _PriceSort.none,
+            trailing: switch (_sort) {
+              _PriceSort.none => PhosphorIcons.arrowsDownUp(),
+              _PriceSort.lowToHigh => PhosphorIcons.arrowUp(),
+              _PriceSort.highToLow => PhosphorIcons.arrowDown(),
+            },
+            // Tap cycles: off, low to high, high to low, off.
+            onTap: () => setState(() {
+              _sort = _PriceSort.values[(_sort.index + 1) % _PriceSort.values.length];
+            }),
+          ),
+          if (_filtering)
+            chip(label: 'Clear', on: false, onTap: _clearFilters),
+        ],
+      ),
+    );
+  }
+
+  /// With a filter or sort on, "All" shows one list across every category,
+  /// so the price order is the whole menu's, not each section's.
+  List<Widget> _filteredMenuSlivers() {
+    final async = ref.watch(storeMenuProvider(widget.brand));
+    if (!async.hasValue) {
+      return [const SliverToBoxAdapter(child: MenuGridSkeleton(title: false))];
+    }
+    final seen = <String>{};
+    final all = <Product>[
+      for (final list in async.value!.values)
+        for (final p in list)
+          if (seen.add(p.id)) p,
+    ];
+    final items = _applyFilter(all);
+    if (items.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _stateMessage(
+            icon: PhosphorIcons.funnel(),
+            message: "Nothing on the menu matches these filters.",
+            actionLabel: "Clear filters",
+            onAction: _clearFilters,
+          ),
+        ),
+      ];
+    }
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 2.h),
+          child: Text(
+            '${items.length} ${items.length == 1 ? 'item' : 'items'}',
+            style: GoogleFonts.poppins(fontSize: 11.sp, color: Colors.black45),
+          ),
+        ),
+      ),
+      SliverLayoutBuilder(
+        builder: (context, constraints) => SliverPadding(
+          padding: EdgeInsets.fromLTRB(16.w, 6.h, 16.w, 24.h),
+          sliver: SliverGrid.builder(
+            gridDelegate: _gridDelegate(context, constraints.crossAxisExtent),
+            itemCount: items.length,
+            itemBuilder: (context, index) => _buildGridCard(items[index]),
+          ),
+        ),
+      ),
+    ];
+  }
+
   List<Widget> _sectionSlivers(AsyncValue<List<Category>> categoriesAsync) {
     final cats = (categoriesAsync.value ?? const <Category>[])
         .where((c) => (c.productCount ?? 1) > 0)
@@ -1259,7 +1433,20 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
         ),
       ],
       data: (productsState) {
-        final products = productsState.products;
+        final products = _applyFilter(productsState.products);
+        if (products.isEmpty && _filtering) {
+          return [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _stateMessage(
+                icon: PhosphorIcons.funnel(),
+                message: "Nothing here matches these filters.",
+                actionLabel: "Clear filters",
+                onAction: _clearFilters,
+              ),
+            ),
+          ];
+        }
         if (products.isEmpty) {
           final searching = _searchQuery.trim().isNotEmpty;
           final filtered = _selectedCategoryId != null;
@@ -1705,16 +1892,24 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        product.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                          height: 1.15,
-                        ),
+                      Row(
+                        children: [
+                          FoodMark(type: product.foodType, size: 11.sp),
+                          SizedBox(width: 5.w),
+                          Expanded(
+                            child: Text(
+                              product.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                                height: 1.15,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 2.h),
                       Text(
@@ -2267,3 +2462,5 @@ class _CategoryTile extends StatelessWidget {
     );
   }
 }
+
+enum _PriceSort { none, lowToHigh, highToLow }

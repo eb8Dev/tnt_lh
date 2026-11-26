@@ -61,6 +61,10 @@ class Product {
   final List<SizeOption> sizeOptions;
   final CakePricing? cakePricing;
 
+  /// 'veg', 'egg' or 'nonveg', set per item in the admin panel. Drives the
+  /// menu filter and whether an item can be made eggless.
+  final String foodType;
+
   Product({
     required this.id,
     required this.name,
@@ -78,7 +82,13 @@ class Product {
     this.averageRating = 0.0,
     this.sizeOptions = const [],
     this.cakePricing,
+    this.foodType = 'veg',
   });
+
+  /// Only items that contain egg can be made eggless, and only where the
+  /// store allows it.
+  bool get canBeEggless =>
+      foodType == 'egg' && (cakePricing?.egglessAvailable ?? false);
 
   double get displayPrice {
     if (cakePricing != null && cakePricing!.basePricePerKg > 0) {
@@ -144,6 +154,9 @@ class Product {
       cakePricing: json['cakePricing'] != null
           ? CakePricing.fromJson(json['cakePricing'])
           : null,
+      foodType: const {'veg', 'egg', 'nonveg'}.contains(json['foodType'])
+          ? json['foodType'] as String
+          : 'veg',
     );
   }
 }

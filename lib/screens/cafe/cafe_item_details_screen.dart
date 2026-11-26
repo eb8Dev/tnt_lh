@@ -310,8 +310,7 @@ class _ItemDetailsScreenState extends ConsumerState<ItemDetailsScreen> {
             }).toList(),
           ),
         ],
-        if (isLittleH &&
-            widget.product.cakePricing?.egglessAvailable == true) ...[
+        if (isLittleH && widget.product.canBeEggless) ...[
           SizedBox(height: Space.ml.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
