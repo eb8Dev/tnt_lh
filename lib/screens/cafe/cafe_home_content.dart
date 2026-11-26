@@ -1178,15 +1178,23 @@ class _BrandHomeContentState extends ConsumerState<BrandHomeContent> {
       _PriceSort.lowToHigh => 'Price: low to high',
       _PriceSort.highToLow => 'Price: high to low',
     };
+    // Only the food types this store's menu has (Teas N Trees has no
+    // non-veg, so no Chicken chip there).
+    final menu = ref.watch(storeMenuProvider(widget.brand)).value;
+    final available = <String>{
+      for (final list in menu?.values ?? const <List<Product>>[])
+        for (final p in list) p.foodType,
+    };
+    bool has(String t) => menu == null || available.contains(t);
     return SizedBox(
       height: 46.h,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 4.h),
         children: [
-          food('veg', 'Veg'),
-          food('egg', 'Egg'),
-          food('nonveg', 'Chicken'),
+          if (has('veg')) food('veg', 'Veg'),
+          if (has('egg')) food('egg', 'Egg'),
+          if (has('nonveg')) food('nonveg', 'Chicken'),
           chip(
             label: sortLabel,
             on: _sort != _PriceSort.none,
