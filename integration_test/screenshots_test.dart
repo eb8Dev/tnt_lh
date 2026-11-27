@@ -137,10 +137,17 @@ void main() {
     await settle(tester, 5);
     await shot(tester, '03_bakery_home');
 
+    // The menu filter: egg items, cheapest first.
+    await tapIfThere(tester, find.text('Egg'));
+    await tapIfThere(tester, find.textContaining('Price'));
+    await settle(tester, 3);
+    await shot(tester, '04_menu_filter');
+    await tapIfThere(tester, find.text('Clear'));
+
     await tapIfThere(tester, find.byIcon(PhosphorIcons.shoppingBag()));
     await tapIfThere(tester, find.byIcon(PhosphorIcons.basket()));
     await settle(tester, 4);
-    await shot(tester, '04_bag');
+    await shot(tester, '05_bag');
 
     // Beyond the store set: the rest of the screens, for design review.
     await tapIfThere(tester, find.text('Checkout Store'));
