@@ -15,6 +15,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:tnt_lh/core/brand.dart';
 import 'package:tnt_lh/main.dart' as app;
+import 'package:tnt_lh/widgets/food_mark.dart';
 
 const _phone = String.fromEnvironment('SHOT_PHONE');
 const _code = String.fromEnvironment('SHOT_CODE');
@@ -113,15 +114,24 @@ void main() {
     final home = find.byIcon(PhosphorIcons.house(PhosphorIconsStyle.fill));
     expect(await waitFor(tester, home), isTrue, reason: 'home never showed');
     await settle(tester, 5); // images
+    // The app reopens on the last store; start on the cafe.
+    await tapIfThere(tester, find.text(Brands.cafeName));
+    await settle(tester, 4);
     await shot(tester, '01_cafe_home');
 
-    // A product's details: the first price on the page opens its card.
-    await tapIfThere(tester, find.textContaining('₹'));
+    // A product's details: tapping a menu card (each has its food mark) opens it.
+    // (the filter chips carry food marks too, so look only inside the menu grid)
+    final card = find.descendant(of: find.byType(GridView), matching: find.byType(FoodMark));
+    if (card.evaluate().isNotEmpty) {
+      await tester.ensureVisible(card.first); // the first section sits below the fold
+      await settle(tester, 2);
+    }
+    await tapIfThere(tester, card);
     await settle(tester, 3);
     await shot(tester, '02_item_details');
 
     // Add it, so the bag has something in it.
-    await tapIfThere(tester, find.textContaining('Add to Bag'));
+    await tapIfThere(tester, find.textContaining('to bag'));
     await settle(tester, 3);
     if (find
         .byIcon(PhosphorIcons.house(PhosphorIconsStyle.fill))
@@ -144,8 +154,7 @@ void main() {
     await shot(tester, '04_menu_filter');
     await tapIfThere(tester, find.text('Clear'));
 
-    await tapIfThere(tester, find.byIcon(PhosphorIcons.shoppingBag()));
-    await tapIfThere(tester, find.byIcon(PhosphorIcons.basket()));
+    await tapIfThere(tester, find.text('View bag'));
     await settle(tester, 4);
     await shot(tester, '05_bag');
 
